@@ -1,0 +1,52 @@
+[project]
+name = "shapix"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [{ name = "acecchini", email = "ale.cecchini.valette@gmail.com" }]
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "numpy>=1.26.3",
+  "jaxtyping>=0.3.5",
+  "beartype>=0.22.9"
+]
+
+[dependency-groups]
+optional = [
+  "torch>=2.8.0,<2.9.0",
+  "jax[cpu]>=0.7.1",
+]
+dev = [
+  "ruff>=0.14.11",
+  "pyright>=1.1.408",
+  "pytest>=9.0.2",
+  "pre-commit>=4.5.1",
+  "ipykernel>=7.1.0",
+  "matplotlib>=3.10.8",
+]
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv]
+default-groups = ["dev"]
+required-version = ">=0.10.4,<0.11.0"
+python-preference = "only-managed"
+
+[tool.pyright]
+typeCheckingMode = "standard"
+include = ["src", "tests"]
+reportUnusedImport = "warning"
+pythonVersion = "3.12"
+pythonPlatform = "Linux"
+venvPath = "."
+venv = ".venv"
+
+[build-system]
+requires = ["uv_build>=0.10.4,<0.11.0"]
+build-backend = "uv_build"

@@ -1,0 +1,9 @@
+[pytest]
+minversion = "9.0.2"
+testpaths = ["tests"]
+addopts = [
+  # Gives a quick list of why tests failed, were skipped, or xfailed,
+  "-ra",
+  # Quieter output
+  "-q",
+]

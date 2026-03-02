@@ -1,0 +1,33 @@
+preview = true
+indent-width = 2
+exclude = ["__pycache__"]
+line-length = 88
+target-version = "py312"
+
+[lint]
+ignore = [
+  # Zip without explicit strict -> more idomatic
+  "B905",
+  # Function is too complex
+  "C901",
+  # Classes could be dataclasses - we use regular classes for testing config behavior
+  "B903",
+]
+select = [
+  "B9",
+  "C",
+  "F",
+  "W",
+  "YTT",
+  "ASYNC",
+  "E101",
+  "E112",
+  "E113",
+  "E115",
+  "E117",
+]
+
+[format]
+skip-magic-trailing-comma = true
+docstring-code-format = true
+docstring-code-line-length = 100
