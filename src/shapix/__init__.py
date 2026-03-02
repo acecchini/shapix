@@ -21,13 +21,13 @@ Exports
 -------
 Dimension symbols
     ``B``, ``N``, ``P``, ``L``, ``C``, ``H``, ``W``, ``T`` — named dimensions.
-    ``_`` — anonymous (match any single dim, no binding).
+    ``__`` — anonymous (match any single dim, no binding).
     ``Scalar`` — scalar (no dimensions), ``Any`` — anonymous variadic.
 
 Unary operators (apply to any dimension)
     ``~N`` — variadic (match zero or more contiguous dims).
     ``+N`` — broadcastable (size 1 always matches).
-    ``~_`` — anonymous variadic (match any number of dims, no binding).
+    ``~__`` — anonymous variadic (match any number of dims, no binding).
 
 Classes
     :class:`Dimension` — create custom dimension symbols with arithmetic support.
@@ -46,7 +46,7 @@ Context managers
 from ._array_types import make_array_type as make_array_type
 from ._decorator import check as check
 from ._decorator import check_context as check_context
-from ._dimensions import _ as _
+from ._dimensions import __ as __
 from ._dimensions import Any as Any
 from ._dimensions import B as B
 from ._dimensions import C as C

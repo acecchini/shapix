@@ -25,14 +25,14 @@ src/shapix/
 - `Annotated[T, Is[validator]]` so beartype handles dispatch natively
 - Under `TYPE_CHECKING`: array types are NDArray aliases, dimensions are `type X = int`
 - Recursive `ArrayLike` type (PEP 695) — no depth limit
-- Unary operators: `~N` (variadic), `+N` (broadcastable), `_` (anonymous), `~_` (anonymous variadic)
+- Unary operators: `~N` (variadic), `+N` (broadcastable), `__` (anonymous), `~__` (anonymous variadic)
 - Internal string representation matches user-facing syntax: `~N` not `*N`, `+N` not `#N`
 
 ## Naming conventions
 
 - Array types: `F32`, `I64`, `Bool`, `Shaped`, `Int`, `Float`, etc.
 - Like types: `F32Like`, `I64Like` (scalar | array | nested sequence)
-- Dimensions: `N`, `C`, `H`, `W` (named); `~B` (variadic); `+N` (broadcast); `_` (anonymous); `~_` (anonymous variadic)
+- Dimensions: `N`, `C`, `H`, `W` (named); `~B` (variadic); `+N` (broadcast); `__` (anonymous); `~__` (anonymous variadic)
 
 ## Running tests
 

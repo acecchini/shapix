@@ -166,13 +166,13 @@ def add(x: F32[~B, C], y: F32[~B, C]) -> F32[~B, C]:
     return x + y
 ```
 
-Use `~_` (anonymous variadic) when you don't need consistency:
+Use `~__` (anonymous variadic) when you don't need consistency:
 
 ```python
-from shapix import _, C
+from shapix import __, C
 
 @beartype
-def last_dim(x: F32[~_, C]) -> F32[~_, C]:
+def last_dim(x: F32[~__, C]) -> F32[~__, C]:
     return x
 ```
 
@@ -193,15 +193,15 @@ broadcast_add(np.ones((4, 3), dtype=np.float32),
 
 ### Anonymous dimensions
 
-`_` matches any single dimension without binding — no cross-argument consistency:
+`__` matches any single dimension without binding — no cross-argument consistency:
 
 ```python
-from shapix import _, C
+from shapix import __, C
 
 @beartype
-def f(x: F32[_, C]) -> F32[_, C]:
+def f(x: F32[__, C]) -> F32[__, C]:
     return x
-# _ matches anything, only C is cross-checked
+# __ matches anything, only C is cross-checked
 ```
 
 ### Custom dimensions
@@ -230,8 +230,8 @@ Unary operators work on custom dimensions too: `~Vocab` (variadic), `+Vocab` (br
 | `int` | Fixed | `3` | Exact match |
 | `~` | Variadic | `~B` | Zero or more dims |
 | `+` | Broadcastable | `+N` | Size 1 always OK |
-| `_` | Anonymous | `_` | Match any, no binding |
-| `~_` | Anonymous variadic | `~_` | Zero or more, no binding |
+| `__` | Anonymous | `__` | Match any, no binding |
+| `~__` | Anonymous variadic | `~__` | Zero or more, no binding |
 | arithmetic | Symbolic | `N + 1` | Expression |
 
 ## Array types
@@ -390,8 +390,14 @@ However, some patterns produce type checker errors because they place **runtime 
 
 Add one line to your pyright config to silence operators, custom dimensions, and arithmetic globally. Then wrap bare integer literals in `Dimension()` to shift them to the same suppressed rule:
 
+```jsonc
+// pyrightconfig.json (recommended — Pylance always reads this)
+{ "reportInvalidTypeForm": false }
+```
+
+Or equivalently in `pyproject.toml`:
+
 ```toml
-# pyproject.toml
 [tool.pyright]
 reportInvalidTypeForm = false
 ```

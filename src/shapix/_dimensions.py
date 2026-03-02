@@ -21,8 +21,8 @@ Unary operators control matching behaviour:
 
 - ``~N`` — Variadic: match zero or more contiguous dims.
 - ``+N`` — Broadcastable: size 1 always matches.
-- ``_`` — Anonymous: match any single dim, no binding.
-- ``~_`` — Anonymous variadic: match any number of dims, no binding.
+- ``__`` — Anonymous: match any single dim, no binding.
+- ``~__`` — Anonymous variadic: match any number of dims, no binding.
 
 Plain ``int`` values (e.g. ``3``) are also accepted as fixed dimension sizes
 when subscripting array types.
@@ -54,7 +54,7 @@ __all__ = [
     "W",
     "T",
     # Anonymous
-    "_",
+    "__",
     # Special
     "Scalar",
     "Any",
@@ -201,7 +201,7 @@ if tp.TYPE_CHECKING:
     type H = int
     type W = int
     type T = int
-    type _ = int
+    type __ = int
     type Any = int
 else:
     # Common named dimensions
@@ -216,7 +216,7 @@ else:
     T = Dimension("T")
 
     # Anonymous (match anything, no binding)
-    _ = Dimension("_")
+    __ = Dimension("_")
 
     # Anonymous variadic (match any number of dims, no binding)
     Any = Dimension("~_")

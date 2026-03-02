@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from beartype import beartype
 
-from shapix import N, C, H, W, _
+from shapix import N, C, H, W, __
 from shapix._array_types import _ArrayFactory, make_array_type
 from shapix._dtypes import FLOAT32, INT64, SHAPED
 from shapix.numpy import F32, I64, Shaped
@@ -84,10 +84,10 @@ class TestShapeChecking:
 
     def test_anonymous_dim(self) -> None:
         @beartype
-        def f(x: F32[_, C]) -> F32[_, C]:
+        def f(x: F32[__, C]) -> F32[__, C]:
             return x
 
-        # _ is anonymous — matches anything, first arg can have different first dim
+        # __ is anonymous — matches anything, first arg can have different first dim
         f(np.ones((3, 5), dtype=np.float32))
         f(np.ones((99, 5), dtype=np.float32))
 

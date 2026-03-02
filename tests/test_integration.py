@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from beartype import beartype
 
-from shapix import N, C, H, W, B, Any, _
+from shapix import N, C, H, W, B, Any, __
 from shapix.numpy import F32, F64, Int, I32
 
 
@@ -152,7 +152,7 @@ class TestNestedCalls:
 class TestVariadicDims:
     def test_anonymous_variadic(self) -> None:
         @beartype
-        def f(x: F32[~_, C]) -> F32[~_, C]:
+        def f(x: F32[~__, C]) -> F32[~__, C]:
             return x
 
         f(np.ones((3,), dtype=np.float32))
@@ -160,7 +160,7 @@ class TestVariadicDims:
         f(np.ones((1, 2, 3), dtype=np.float32))
 
     def test_any_alias(self) -> None:
-        """Any is a backward-compat alias for ~_."""
+        """Any is a backward-compat alias for ~__."""
         @beartype
         def f(x: F32[Any, C]) -> F32[Any, C]:
             return x
@@ -227,10 +227,10 @@ class TestFixedDims:
 class TestAnonymousDims:
     def test_underscore(self) -> None:
         @beartype
-        def f(x: F32[_, C]) -> F32[_, C]:
+        def f(x: F32[__, C]) -> F32[__, C]:
             return x
 
-        # _ matches any value, no consistency check
+        # __ matches any value, no consistency check
         f(np.ones((3, 5), dtype=np.float32))
         f(np.ones((99, 5), dtype=np.float32))
 
