@@ -10,7 +10,7 @@ from beartype import beartype
 
 from shapix import N, C, H, W
 from shapix._memo import ShapeMemo, get_memo, pop_memo, push_memo
-from shapix.numpy import Float32Array
+from shapix.numpy import F32
 
 
 class TestExplicitMemo:
@@ -45,7 +45,7 @@ class TestFrameBasedMemo:
         """Calling the same function twice should not reuse stale bindings."""
 
         @beartype
-        def g(x: Float32Array[N]) -> Float32Array[N]:
+        def g(x: F32[N]) -> F32[N]:
             return x
 
         # First call: N=3
@@ -59,7 +59,7 @@ class TestFrameBasedMemo:
         """Sequential calls with multiple args each get independent memos."""
 
         @beartype
-        def f(x: Float32Array[N, C], y: Float32Array[N, C]) -> Float32Array[N, C]:
+        def f(x: F32[N, C], y: F32[N, C]) -> F32[N, C]:
             return x + y
 
         f(np.ones((2, 5), dtype=np.float32), np.ones((2, 5), dtype=np.float32))
@@ -69,13 +69,13 @@ class TestFrameBasedMemo:
         """Nested function calls get their own memos."""
 
         @beartype
-        def inner(x: Float32Array[N]) -> Float32Array[N]:
+        def inner(x: F32[N]) -> F32[N]:
             return x * 2
 
         @beartype
         def outer(
-            x: Float32Array[N, C], y: Float32Array[N]
-        ) -> Float32Array[N]:
+            x: F32[N, C], y: F32[N]
+        ) -> F32[N]:
             return inner(y)
 
         result = outer(
@@ -86,7 +86,7 @@ class TestFrameBasedMemo:
 
     def test_cross_arg_mismatch_detected(self) -> None:
         @beartype
-        def f(x: Float32Array[N], y: Float32Array[N]) -> Float32Array[N]:
+        def f(x: F32[N], y: F32[N]) -> F32[N]:
             return x + y
 
         with pytest.raises(Exception):
@@ -100,7 +100,7 @@ class TestThreadSafety:
         errors: list[str] = []
 
         @beartype
-        def f(x: Float32Array[N]) -> Float32Array[N]:
+        def f(x: F32[N]) -> F32[N]:
             return x
 
         def worker(size: int) -> None:

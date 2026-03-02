@@ -11,16 +11,17 @@ pre-defined symbols or create your own::
 Dimensions support full Python arithmetic to express derived shapes::
 
     from shapix import N
+    from shapix.numpy import F32
 
     @beartype
-    def pad(x: Float32Array[N]) -> Float32Array[N + 2]: ...
-    def flatten(x: Float32Array[N, C]) -> Float32Array[N * C]: ...
+    def pad(x: F32[N]) -> F32[N + 2]: ...
+    def flatten(x: F32[N, C]) -> F32[N * C]: ...
 
 Prefixes control matching behaviour:
 
 - *(none)* — Named: bind on first use, enforce on subsequent (``N``, ``C``).
-- ``*`` — Variadic: match zero or more contiguous dims (``sB`` = ``*B``).
-- ``#`` — Broadcastable: size 1 always matches (``hN`` = ``#N``).
+- ``*`` — Variadic: match zero or more contiguous dims (``vB`` = ``*B``).
+- ``#`` — Broadcastable: size 1 always matches (``bN`` = ``#N``).
 - ``_`` — Anonymous: match any size, no binding (``_N``, ``__``).
 - ``...`` — Anonymous variadic: match any number of dims (``Any``).
 
@@ -29,6 +30,8 @@ when subscripting array types.
 """
 
 from __future__ import annotations
+
+import typing as tp
 
 from ._shape import (
     FixedDim,
@@ -49,14 +52,14 @@ __all__ = [
     "W",
     "T",
     # Variadic
-    "sB",
-    "sN",
-    "sL",
-    "sC",
+    "vB",
+    "vN",
+    "vL",
+    "vC",
     # Broadcastable
-    "hN",
-    "hL",
-    "hC",
+    "bN",
+    "bL",
+    "bC",
     # Anonymous
     "_B",
     "_N",
@@ -193,36 +196,62 @@ class Dimension(str):
 # Pre-defined dimension symbols
 # ---------------------------------------------------------------------------
 
-# Common named dimensions
-Scalar = Dimension("")
-B = Dimension("B")
-N = Dimension("N")
-P = Dimension("P")
-L = Dimension("L")
-C = Dimension("C")
-H = Dimension("H")
-W = Dimension("W")
+if tp.TYPE_CHECKING:
+    # Type aliases so pyright accepts them in type expressions like
+    # ``F32[N, C]``.  At type-checking time the dims resolve to ``int``
+    # which is harmless — the *runtime* ``Dimension`` instances carry the
+    # actual semantics.
+    type Scalar = int
+    type B = int
+    type N = int
+    type P = int
+    type L = int
+    type C = int
+    type H = int
+    type W = int
+    type T = int
+    type vB = int
+    type vN = int
+    type vL = int
+    type vC = int
+    type bN = int
+    type bL = int
+    type bC = int
+    type _B = int
+    type _N = int
+    type _L = int
+    type _C = int
+    type __ = int
+    type Any = int
+else:
+    # Common named dimensions
+    Scalar = Dimension("")
+    B = Dimension("B")
+    N = Dimension("N")
+    P = Dimension("P")
+    L = Dimension("L")
+    C = Dimension("C")
+    H = Dimension("H")
+    W = Dimension("W")
+    T = Dimension("T")
 
-# Variadic (match zero or more dims)
-sB = Dimension("*B")
-sN = Dimension("*N")
-sL = Dimension("*L")
-sC = Dimension("*C")
+    # Variadic (match zero or more dims)
+    vB = Dimension("*B")
+    vN = Dimension("*N")
+    vL = Dimension("*L")
+    vC = Dimension("*C")
 
-# Broadcastable (size 1 always matches)
-hN = Dimension("#N")
-hL = Dimension("#L")
-hC = Dimension("#C")
+    # Broadcastable (size 1 always matches)
+    bN = Dimension("#N")
+    bL = Dimension("#L")
+    bC = Dimension("#C")
 
-# Anonymous (match anything, no binding)
-_B = Dimension("_B")
-_N = Dimension("_N")
-_L = Dimension("_L")
-_C = Dimension("_C")
-__ = Dimension("_")
+    # Anonymous (match anything, no binding)
+    _B = Dimension("_B")
+    _N = Dimension("_N")
+    _L = Dimension("_L")
+    _C = Dimension("_C")
+    __ = Dimension("_")
 
-# Special
-Any = Dimension("...")
-
-# Trees
-T = Dimension("T")
+    # Special
+    Any = Dimension("...")

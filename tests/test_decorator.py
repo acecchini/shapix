@@ -8,14 +8,14 @@ from beartype import beartype
 
 import shapix
 from shapix import N, C
-from shapix.numpy import Float32Array
+from shapix.numpy import F32
 
 
 class TestCheckDecorator:
     def test_basic_usage(self) -> None:
         @shapix.check
         @beartype
-        def f(x: Float32Array[N, C], y: Float32Array[N, C]) -> Float32Array[N, C]:
+        def f(x: F32[N, C], y: F32[N, C]) -> F32[N, C]:
             return x + y
 
         result = f(
@@ -27,7 +27,7 @@ class TestCheckDecorator:
     def test_cross_arg_mismatch(self) -> None:
         @shapix.check
         @beartype
-        def f(x: Float32Array[N], y: Float32Array[N]) -> Float32Array[N]:
+        def f(x: F32[N], y: F32[N]) -> F32[N]:
             return x + y
 
         with pytest.raises(Exception):
@@ -40,7 +40,7 @@ class TestCheckDecorator:
         from beartype._conf.confmain import BeartypeConf
 
         @shapix.check(conf=BeartypeConf())
-        def f(x: Float32Array[N]) -> Float32Array[N]:
+        def f(x: F32[N]) -> F32[N]:
             return x
 
         result = f(np.ones((5,), dtype=np.float32))
@@ -49,7 +49,7 @@ class TestCheckDecorator:
     def test_sequential_calls(self) -> None:
         @shapix.check
         @beartype
-        def g(x: Float32Array[N]) -> Float32Array[N]:
+        def g(x: F32[N]) -> F32[N]:
             return x
 
         g(np.ones((3,), dtype=np.float32))
@@ -62,7 +62,7 @@ class TestCheckContext:
 
         arr = np.ones((4, 3), dtype=np.float32)
         with shapix.check_context():
-            assert is_bearable(arr, Float32Array[N, C])
+            assert is_bearable(arr, F32[N, C])
 
     def test_isinstance_cross_check(self) -> None:
         from beartype.door import is_bearable
@@ -70,9 +70,9 @@ class TestCheckContext:
         x = np.ones((4, 3), dtype=np.float32)
         y = np.ones((4, 5), dtype=np.float32)
         with shapix.check_context():
-            assert is_bearable(x, Float32Array[N, C])
+            assert is_bearable(x, F32[N, C])
             # y has N=4 (matches) but different C=5 (should fail)
-            assert not is_bearable(y, Float32Array[N, C])
+            assert not is_bearable(y, F32[N, C])
 
     def test_context_cleanup(self) -> None:
         """After exiting the context, a new context gets a fresh memo."""
@@ -80,9 +80,9 @@ class TestCheckContext:
 
         with shapix.check_context():
             x = np.ones((4,), dtype=np.float32)
-            assert is_bearable(x, Float32Array[N])
+            assert is_bearable(x, F32[N])
 
         # New context — N should not be bound to 4
         with shapix.check_context():
             y = np.ones((10,), dtype=np.float32)
-            assert is_bearable(y, Float32Array[N])
+            assert is_bearable(y, F32[N])

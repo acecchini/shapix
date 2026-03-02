@@ -3,10 +3,10 @@
 Usage::
 
     from shapix import N, C, H, W
-    from shapix.torch import Float32Tensor
+    from shapix.torch import F32
 
     @beartype
-    def forward(x: Float32Tensor[N, C, H, W]) -> Float32Tensor[N, C, H, W]:
+    def forward(x: F32[N, C, H, W]) -> F32[N, C, H, W]:
         ...
 """
 
@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import typing as tp
 
+import numpy as np
 from torch import Tensor
 
 from ._array_types import make_array_type
@@ -44,64 +45,128 @@ from ._dtypes import (
     UINT64,
 )
 
+# ---------------------------------------------------------------------------
+# Tensor types (shape-checked via beartype Is[])
+# ---------------------------------------------------------------------------
+
 if tp.TYPE_CHECKING:
-    type BoolTensor[*Dims] = Tensor
+    type Bool[*Dims] = Tensor
 
-    type Int8Tensor[*Dims] = Tensor
-    type Int16Tensor[*Dims] = Tensor
-    type Int32Tensor[*Dims] = Tensor
-    type Int64Tensor[*Dims] = Tensor
+    type I8[*Dims] = Tensor
+    type I16[*Dims] = Tensor
+    type I32[*Dims] = Tensor
+    type I64[*Dims] = Tensor
 
-    type UInt8Tensor[*Dims] = Tensor
-    type UInt16Tensor[*Dims] = Tensor
-    type UInt32Tensor[*Dims] = Tensor
-    type UInt64Tensor[*Dims] = Tensor
+    type U8[*Dims] = Tensor
+    type U16[*Dims] = Tensor
+    type U32[*Dims] = Tensor
+    type U64[*Dims] = Tensor
 
-    type Float16Tensor[*Dims] = Tensor
-    type Float32Tensor[*Dims] = Tensor
-    type Float64Tensor[*Dims] = Tensor
-    type BFloat16Tensor[*Dims] = Tensor
+    type F16[*Dims] = Tensor
+    type F32[*Dims] = Tensor
+    type F64[*Dims] = Tensor
+    type BF16[*Dims] = Tensor
 
-    type Complex64Tensor[*Dims] = Tensor
-    type Complex128Tensor[*Dims] = Tensor
+    type C64[*Dims] = Tensor
+    type C128[*Dims] = Tensor
 
-    type IntTensor[*Dims] = Tensor
-    type UIntTensor[*Dims] = Tensor
-    type IntegerTensor[*Dims] = Tensor
-    type FloatTensor[*Dims] = Tensor
-    type RealTensor[*Dims] = Tensor
-    type ComplexTensor[*Dims] = Tensor
-    type InexactTensor[*Dims] = Tensor
-    type NumTensor[*Dims] = Tensor
-    type ShapedTensor[*Dims] = Tensor
+    type Int[*Dims] = Tensor
+    type UInt[*Dims] = Tensor
+    type Integer[*Dims] = Tensor
+    type Float[*Dims] = Tensor
+    type Real[*Dims] = Tensor
+    type Complex[*Dims] = Tensor
+    type Inexact[*Dims] = Tensor
+    type Num[*Dims] = Tensor
+    type Shaped[*Dims] = Tensor
 
 else:
-    BoolTensor = make_array_type(Tensor, BOOL)
+    Bool = make_array_type(Tensor, BOOL)
 
-    Int8Tensor = make_array_type(Tensor, INT8)
-    Int16Tensor = make_array_type(Tensor, INT16)
-    Int32Tensor = make_array_type(Tensor, INT32)
-    Int64Tensor = make_array_type(Tensor, INT64)
+    I8 = make_array_type(Tensor, INT8)
+    I16 = make_array_type(Tensor, INT16)
+    I32 = make_array_type(Tensor, INT32)
+    I64 = make_array_type(Tensor, INT64)
 
-    UInt8Tensor = make_array_type(Tensor, UINT8)
-    UInt16Tensor = make_array_type(Tensor, UINT16)
-    UInt32Tensor = make_array_type(Tensor, UINT32)
-    UInt64Tensor = make_array_type(Tensor, UINT64)
+    U8 = make_array_type(Tensor, UINT8)
+    U16 = make_array_type(Tensor, UINT16)
+    U32 = make_array_type(Tensor, UINT32)
+    U64 = make_array_type(Tensor, UINT64)
 
-    Float16Tensor = make_array_type(Tensor, FLOAT16)
-    Float32Tensor = make_array_type(Tensor, FLOAT32)
-    Float64Tensor = make_array_type(Tensor, FLOAT64)
-    BFloat16Tensor = make_array_type(Tensor, BFLOAT16)
+    F16 = make_array_type(Tensor, FLOAT16)
+    F32 = make_array_type(Tensor, FLOAT32)
+    F64 = make_array_type(Tensor, FLOAT64)
+    BF16 = make_array_type(Tensor, BFLOAT16)
 
-    Complex64Tensor = make_array_type(Tensor, COMPLEX64)
-    Complex128Tensor = make_array_type(Tensor, COMPLEX128)
+    C64 = make_array_type(Tensor, COMPLEX64)
+    C128 = make_array_type(Tensor, COMPLEX128)
 
-    IntTensor = make_array_type(Tensor, INT)
-    UIntTensor = make_array_type(Tensor, UINT)
-    IntegerTensor = make_array_type(Tensor, INTEGER)
-    FloatTensor = make_array_type(Tensor, FLOAT)
-    RealTensor = make_array_type(Tensor, REAL)
-    ComplexTensor = make_array_type(Tensor, COMPLEX)
-    InexactTensor = make_array_type(Tensor, INEXACT)
-    NumTensor = make_array_type(Tensor, NUM)
-    ShapedTensor = make_array_type(Tensor, SHAPED)
+    Int = make_array_type(Tensor, INT)
+    UInt = make_array_type(Tensor, UINT)
+    Integer = make_array_type(Tensor, INTEGER)
+    Float = make_array_type(Tensor, FLOAT)
+    Real = make_array_type(Tensor, REAL)
+    Complex = make_array_type(Tensor, COMPLEX)
+    Inexact = make_array_type(Tensor, INEXACT)
+    Num = make_array_type(Tensor, NUM)
+    Shaped = make_array_type(Tensor, SHAPED)
+
+# ---------------------------------------------------------------------------
+# Like types (scalar | tensor | nested sequences — for input validation)
+# ---------------------------------------------------------------------------
+
+from .numpy import (
+    ArrayLike,
+    BoolLike,
+    Complex64Like,
+    Complex128Like,
+    ComplexLike,
+    Float16Like,
+    Float32Like,
+    Float64Like,
+    FloatLike,
+    InexactLike,
+    Int8Like,
+    Int16Like,
+    Int32Like,
+    Int64Like,
+    IntegerLike,
+    IntLike,
+    NumLike,
+    RealLike,
+    ShapedLike,
+    UInt8Like,
+    UInt16Like,
+    UInt32Like,
+    UInt64Like,
+    UIntLike,
+)
+
+type BoolLk = ArrayLike[BoolLike, Tensor | np.ndarray]
+
+type I8Like = ArrayLike[Int8Like, Tensor | np.ndarray]
+type I16Like = ArrayLike[Int16Like, Tensor | np.ndarray]
+type I32Like = ArrayLike[Int32Like, Tensor | np.ndarray]
+type I64Like = ArrayLike[Int64Like, Tensor | np.ndarray]
+
+type U8Like = ArrayLike[UInt8Like, Tensor | np.ndarray]
+type U16Like = ArrayLike[UInt16Like, Tensor | np.ndarray]
+type U32Like = ArrayLike[UInt32Like, Tensor | np.ndarray]
+type U64Like = ArrayLike[UInt64Like, Tensor | np.ndarray]
+
+type F16Like = ArrayLike[Float16Like, Tensor | np.ndarray]
+type F32Like = ArrayLike[Float32Like, Tensor | np.ndarray]
+type F64Like = ArrayLike[Float64Like, Tensor | np.ndarray]
+
+type C64Like = ArrayLike[Complex64Like, Tensor | np.ndarray]
+type C128Like = ArrayLike[Complex128Like, Tensor | np.ndarray]
+
+type IntLk = ArrayLike[IntLike, Tensor | np.ndarray]
+type UIntLk = ArrayLike[UIntLike, Tensor | np.ndarray]
+type IntegerLk = ArrayLike[IntegerLike, Tensor | np.ndarray]
+type FloatLk = ArrayLike[FloatLike, Tensor | np.ndarray]
+type RealLk = ArrayLike[RealLike, Tensor | np.ndarray]
+type ComplexLk = ArrayLike[ComplexLike, Tensor | np.ndarray]
+type InexactLk = ArrayLike[InexactLike, Tensor | np.ndarray]
+type NumLk = ArrayLike[NumLike, Tensor | np.ndarray]
+type ShapedLk = ArrayLike[ShapedLike, Tensor | np.ndarray]

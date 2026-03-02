@@ -9,7 +9,7 @@ from beartype import beartype
 from shapix import N, C, H, W, __, _N
 from shapix._array_types import _ArrayFactory, make_array_type
 from shapix._dtypes import FLOAT32, INT64, SHAPED
-from shapix.numpy import Float32Array, Int64Array, ShapedArray
+from shapix.numpy import F32, I64, Shaped
 
 
 class TestMakeArrayType:
@@ -31,14 +31,14 @@ class TestMakeArrayType:
 class TestDtypeChecking:
     def test_correct_dtype(self) -> None:
         @beartype
-        def f(x: Float32Array[N]) -> Float32Array[N]:
+        def f(x: F32[N]) -> F32[N]:
             return x
 
         f(np.ones((5,), dtype=np.float32))
 
     def test_wrong_dtype(self) -> None:
         @beartype
-        def f(x: Float32Array[N]) -> Float32Array[N]:
+        def f(x: F32[N]) -> F32[N]:
             return x
 
         with pytest.raises(Exception):
@@ -46,10 +46,10 @@ class TestDtypeChecking:
 
     def test_category_dtype(self) -> None:
         @beartype
-        def f(x: ShapedArray[N]) -> ShapedArray[N]:
+        def f(x: Shaped[N]) -> Shaped[N]:
             return x
 
-        # ShapedArray accepts any dtype
+        # Shaped accepts any dtype
         f(np.ones((5,), dtype=np.float32))
         f(np.ones((5,), dtype=np.int64))
         f(np.ones((5,), dtype=np.bool_))
@@ -58,7 +58,7 @@ class TestDtypeChecking:
 class TestShapeChecking:
     def test_correct_shape(self) -> None:
         @beartype
-        def f(x: Float32Array[N, C]) -> Float32Array[N, C]:
+        def f(x: F32[N, C]) -> F32[N, C]:
             return x
 
         result = f(np.ones((4, 3), dtype=np.float32))
@@ -66,7 +66,7 @@ class TestShapeChecking:
 
     def test_wrong_rank(self) -> None:
         @beartype
-        def f(x: Float32Array[N, C]) -> Float32Array[N, C]:
+        def f(x: F32[N, C]) -> F32[N, C]:
             return x
 
         with pytest.raises(Exception):
@@ -74,7 +74,7 @@ class TestShapeChecking:
 
     def test_fixed_dim(self) -> None:
         @beartype
-        def f(x: Float32Array[3, N]) -> Float32Array[3, N]:
+        def f(x: F32[3, N]) -> F32[3, N]:
             return x
 
         f(np.ones((3, 5), dtype=np.float32))
@@ -84,7 +84,7 @@ class TestShapeChecking:
 
     def test_anonymous_dim(self) -> None:
         @beartype
-        def f(x: Float32Array[_N, C]) -> Float32Array[_N, C]:
+        def f(x: F32[_N, C]) -> F32[_N, C]:
             return x
 
         # _N is anonymous — matches anything, first arg can have different first dim
@@ -93,7 +93,7 @@ class TestShapeChecking:
 
     def test_return_value_checked(self) -> None:
         @beartype
-        def f(x: Float32Array[N, C]) -> Float32Array[N, C]:
+        def f(x: F32[N, C]) -> F32[N, C]:
             return np.zeros((1, 1), dtype=np.float32)
 
         with pytest.raises(Exception):
@@ -103,14 +103,14 @@ class TestShapeChecking:
 class TestSymbolicDims:
     def test_addition(self) -> None:
         @beartype
-        def f(x: Float32Array[N], y: Float32Array[N + 1]) -> Float32Array[N]:
+        def f(x: F32[N], y: F32[N + 1]) -> F32[N]:
             return x
 
         f(np.ones((5,), dtype=np.float32), np.ones((6,), dtype=np.float32))
 
     def test_addition_mismatch(self) -> None:
         @beartype
-        def f(x: Float32Array[N], y: Float32Array[N + 1]) -> Float32Array[N]:
+        def f(x: F32[N], y: F32[N + 1]) -> F32[N]:
             return x
 
         with pytest.raises(Exception):
@@ -118,7 +118,7 @@ class TestSymbolicDims:
 
     def test_multiplication(self) -> None:
         @beartype
-        def f(x: Float32Array[N], y: Float32Array[2 * N]) -> Float32Array[N]:
+        def f(x: F32[N], y: F32[2 * N]) -> F32[N]:
             return x
 
         f(np.ones((5,), dtype=np.float32), np.ones((10,), dtype=np.float32))

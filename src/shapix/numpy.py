@@ -1,17 +1,19 @@
 """NumPy array type annotations with runtime shape and dtype checking.
 
-Scalar "Like" types (e.g. ``Int8Like``, ``Float32Like``) use beartype's
+Scalar types (e.g. ``Int8Like``, ``Float32Like``) use beartype's
 ``Annotated[T, Is[...]]`` to validate value ranges at runtime.
 
-Array types (e.g. ``Float32Array``, ``IntArray``) are subscriptable with
-dimension symbols::
+Array types (e.g. ``F32``, ``Int``) are subscriptable with dimension symbols::
 
     from shapix import N, C, H, W
-    from shapix.numpy import Float32Array
+    from shapix.numpy import F32
 
     @beartype
-    def conv(x: Float32Array[N, C, H, W]) -> Float32Array[N, C, H, W]:
+    def conv(x: F32[N, C, H, W]) -> F32[N, C, H, W]:
         ...
+
+``Like`` types (e.g. ``F32Like``) accept scalars, nested sequences, or arrays
+— use them for function inputs that will be converted to arrays.
 """
 
 from __future__ import annotations
@@ -114,82 +116,106 @@ type Seed = np.uint64
 type SeedLike = UInt64Like
 
 # ---------------------------------------------------------------------------
-# ArrayLike recursive types (scalar-or-nested-sequence, for input validation)
+# Recursive ArrayLike template (scalar | array | nested sequences of any depth)
 # ---------------------------------------------------------------------------
 
-type _ArrayLike1D[_Scalar, _Array] = Sequence[_Scalar] | _Array
-type _ArrayLike2D[_Scalar, _Array] = Sequence[_ArrayLike1D[_Scalar, _Array]] | _Array
-type _ArrayLike3D[_Scalar, _Array] = Sequence[_ArrayLike2D[_Scalar, _Array]] | _Array
-type _ArrayLike4D[_Scalar, _Array] = Sequence[_ArrayLike3D[_Scalar, _Array]] | _Array
-type _ArrayLike5D[_Scalar, _Array] = Sequence[_ArrayLike4D[_Scalar, _Array]] | _Array
-type _ArrayLike1DLess[_Scalar, _Array] = _Scalar | _ArrayLike1D[_Scalar, _Array]
-type _ArrayLike2DLess[_Scalar, _Array] = _ArrayLike1DLess[_Scalar, _Array] | _ArrayLike2D[_Scalar, _Array]
-type _ArrayLike3DLess[_Scalar, _Array] = _ArrayLike2DLess[_Scalar, _Array] | _ArrayLike3D[_Scalar, _Array]
-type _ArrayLike4DLess[_Scalar, _Array] = _ArrayLike3DLess[_Scalar, _Array] | _ArrayLike4D[_Scalar, _Array]
-type _ArrayLike5DLess[_Scalar, _Array] = _ArrayLike4DLess[_Scalar, _Array] | _ArrayLike5D[_Scalar, _Array]
+type ArrayLike[_Scalar, _Array] = _Scalar | _Array | Sequence[ArrayLike[_Scalar, _Array]]
 
 # ---------------------------------------------------------------------------
-# Array types
+# Array types (shape-checked via beartype Is[])
 # ---------------------------------------------------------------------------
 
 if tp.TYPE_CHECKING:
     from numpy.typing import NDArray
 
-    type BoolArray[*Dims] = NDArray[np.bool_]
+    type Bool[*Dims] = NDArray[np.bool_]
 
-    type Int8Array[*Dims] = NDArray[np.int8]
-    type Int16Array[*Dims] = NDArray[np.int16]
-    type Int32Array[*Dims] = NDArray[np.int32]
-    type Int64Array[*Dims] = NDArray[np.int64]
+    type I8[*Dims] = NDArray[np.int8]
+    type I16[*Dims] = NDArray[np.int16]
+    type I32[*Dims] = NDArray[np.int32]
+    type I64[*Dims] = NDArray[np.int64]
 
-    type UInt8Array[*Dims] = NDArray[np.uint8]
-    type UInt16Array[*Dims] = NDArray[np.uint16]
-    type UInt32Array[*Dims] = NDArray[np.uint32]
-    type UInt64Array[*Dims] = NDArray[np.uint64]
+    type U8[*Dims] = NDArray[np.uint8]
+    type U16[*Dims] = NDArray[np.uint16]
+    type U32[*Dims] = NDArray[np.uint32]
+    type U64[*Dims] = NDArray[np.uint64]
 
-    type Float16Array[*Dims] = NDArray[np.float16]
-    type Float32Array[*Dims] = NDArray[np.float32]
-    type Float64Array[*Dims] = NDArray[np.float64]
+    type F16[*Dims] = NDArray[np.float16]
+    type F32[*Dims] = NDArray[np.float32]
+    type F64[*Dims] = NDArray[np.float64]
 
-    type Complex64Array[*Dims] = NDArray[np.complex64]
-    type Complex128Array[*Dims] = NDArray[np.complex128]
+    type C64[*Dims] = NDArray[np.complex64]
+    type C128[*Dims] = NDArray[np.complex128]
 
-    type IntArray[*Dims] = NDArray[np.signedinteger[tp.Any]]
-    type UIntArray[*Dims] = NDArray[np.unsignedinteger[tp.Any]]
-    type IntegerArray[*Dims] = NDArray[np.integer[tp.Any]]
-    type FloatArray[*Dims] = NDArray[np.floating[tp.Any]]
-    type RealArray[*Dims] = NDArray[np.integer[tp.Any] | np.floating[tp.Any]]
-    type ComplexArray[*Dims] = NDArray[np.complexfloating[tp.Any, tp.Any]]
-    type InexactArray[*Dims] = NDArray[np.inexact[tp.Any]]
-    type NumArray[*Dims] = NDArray[np.number[tp.Any]]
-    type ShapedArray[*Dims] = NDArray[np.bool_ | np.number[tp.Any]]
+    type Int[*Dims] = NDArray[np.signedinteger[tp.Any]]
+    type UInt[*Dims] = NDArray[np.unsignedinteger[tp.Any]]
+    type Integer[*Dims] = NDArray[np.integer[tp.Any]]
+    type Float[*Dims] = NDArray[np.floating[tp.Any]]
+    type Real[*Dims] = NDArray[np.integer[tp.Any] | np.floating[tp.Any]]
+    type Complex[*Dims] = NDArray[np.complexfloating[tp.Any, tp.Any]]
+    type Inexact[*Dims] = NDArray[np.inexact[tp.Any]]
+    type Num[*Dims] = NDArray[np.number[tp.Any]]
+    type Shaped[*Dims] = NDArray[np.bool_ | np.number[tp.Any]]
 
 else:
-    BoolArray = make_array_type(np.ndarray, BOOL)
+    Bool = make_array_type(np.ndarray, BOOL)
 
-    Int8Array = make_array_type(np.ndarray, INT8)
-    Int16Array = make_array_type(np.ndarray, INT16)
-    Int32Array = make_array_type(np.ndarray, INT32)
-    Int64Array = make_array_type(np.ndarray, INT64)
+    I8 = make_array_type(np.ndarray, INT8)
+    I16 = make_array_type(np.ndarray, INT16)
+    I32 = make_array_type(np.ndarray, INT32)
+    I64 = make_array_type(np.ndarray, INT64)
 
-    UInt8Array = make_array_type(np.ndarray, UINT8)
-    UInt16Array = make_array_type(np.ndarray, UINT16)
-    UInt32Array = make_array_type(np.ndarray, UINT32)
-    UInt64Array = make_array_type(np.ndarray, UINT64)
+    U8 = make_array_type(np.ndarray, UINT8)
+    U16 = make_array_type(np.ndarray, UINT16)
+    U32 = make_array_type(np.ndarray, UINT32)
+    U64 = make_array_type(np.ndarray, UINT64)
 
-    Float16Array = make_array_type(np.ndarray, FLOAT16)
-    Float32Array = make_array_type(np.ndarray, FLOAT32)
-    Float64Array = make_array_type(np.ndarray, FLOAT64)
+    F16 = make_array_type(np.ndarray, FLOAT16)
+    F32 = make_array_type(np.ndarray, FLOAT32)
+    F64 = make_array_type(np.ndarray, FLOAT64)
 
-    Complex64Array = make_array_type(np.ndarray, COMPLEX64)
-    Complex128Array = make_array_type(np.ndarray, COMPLEX128)
+    C64 = make_array_type(np.ndarray, COMPLEX64)
+    C128 = make_array_type(np.ndarray, COMPLEX128)
 
-    IntArray = make_array_type(np.ndarray, INT)
-    UIntArray = make_array_type(np.ndarray, UINT)
-    IntegerArray = make_array_type(np.ndarray, INTEGER)
-    FloatArray = make_array_type(np.ndarray, FLOAT)
-    RealArray = make_array_type(np.ndarray, REAL)
-    ComplexArray = make_array_type(np.ndarray, COMPLEX)
-    InexactArray = make_array_type(np.ndarray, INEXACT)
-    NumArray = make_array_type(np.ndarray, NUM)
-    ShapedArray = make_array_type(np.ndarray, SHAPED)
+    Int = make_array_type(np.ndarray, INT)
+    UInt = make_array_type(np.ndarray, UINT)
+    Integer = make_array_type(np.ndarray, INTEGER)
+    Float = make_array_type(np.ndarray, FLOAT)
+    Real = make_array_type(np.ndarray, REAL)
+    Complex = make_array_type(np.ndarray, COMPLEX)
+    Inexact = make_array_type(np.ndarray, INEXACT)
+    Num = make_array_type(np.ndarray, NUM)
+    Shaped = make_array_type(np.ndarray, SHAPED)
+
+# ---------------------------------------------------------------------------
+# Like types (scalar | array | nested sequences — for input validation)
+# ---------------------------------------------------------------------------
+
+type BoolLk = ArrayLike[BoolLike, np.ndarray]
+
+type I8Like = ArrayLike[Int8Like, np.ndarray]
+type I16Like = ArrayLike[Int16Like, np.ndarray]
+type I32Like = ArrayLike[Int32Like, np.ndarray]
+type I64Like = ArrayLike[Int64Like, np.ndarray]
+
+type U8Like = ArrayLike[UInt8Like, np.ndarray]
+type U16Like = ArrayLike[UInt16Like, np.ndarray]
+type U32Like = ArrayLike[UInt32Like, np.ndarray]
+type U64Like = ArrayLike[UInt64Like, np.ndarray]
+
+type F16Like = ArrayLike[Float16Like, np.ndarray]
+type F32Like = ArrayLike[Float32Like, np.ndarray]
+type F64Like = ArrayLike[Float64Like, np.ndarray]
+
+type C64Like = ArrayLike[Complex64Like, np.ndarray]
+type C128Like = ArrayLike[Complex128Like, np.ndarray]
+
+type IntLk = ArrayLike[IntLike, np.ndarray]
+type UIntLk = ArrayLike[UIntLike, np.ndarray]
+type IntegerLk = ArrayLike[IntegerLike, np.ndarray]
+type FloatLk = ArrayLike[FloatLike, np.ndarray]
+type RealLk = ArrayLike[RealLike, np.ndarray]
+type ComplexLk = ArrayLike[ComplexLike, np.ndarray]
+type InexactLk = ArrayLike[InexactLike, np.ndarray]
+type NumLk = ArrayLike[NumLike, np.ndarray]
+type ShapedLk = ArrayLike[ShapedLike, np.ndarray]

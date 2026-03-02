@@ -7,10 +7,10 @@ Quick start::
 
     from beartype import beartype
     from shapix import N, C, H, W
-    from shapix.numpy import Float32Array
+    from shapix.numpy import F32
 
     @beartype
-    def conv(x: Float32Array[N, C, H, W]) -> Float32Array[N, C, H, W]:
+    def conv(x: F32[N, C, H, W]) -> F32[N, C, H, W]:
         ...
 
 Dimension symbols (``N``, ``C``, ``H``, ``W``, …) are bound on first use
@@ -21,8 +21,8 @@ Exports
 -------
 Dimension symbols
     ``B``, ``N``, ``P``, ``L``, ``C``, ``H``, ``W``, ``T`` — named dimensions.
-    ``sB``, ``sN``, ``sL``, ``sC`` — variadic (match zero or more dims).
-    ``hN``, ``hL``, ``hC`` — broadcastable (size 1 always matches).
+    ``vB``, ``vN``, ``vL``, ``vC`` — variadic (match zero or more dims).
+    ``bN``, ``bL``, ``bC`` — broadcastable (size 1 always matches).
     ``_B``, ``_N``, ``_L``, ``_C``, ``__`` — anonymous (match any, no binding).
     ``Scalar`` — scalar (no dimensions), ``Any`` — anonymous variadic.
 
@@ -59,11 +59,11 @@ from ._dimensions import _B as _B
 from ._dimensions import _C as _C
 from ._dimensions import _L as _L
 from ._dimensions import _N as _N
-from ._dimensions import hC as hC
-from ._dimensions import hL as hL
-from ._dimensions import hN as hN
-from ._dimensions import sB as sB
-from ._dimensions import sC as sC
-from ._dimensions import sL as sL
-from ._dimensions import sN as sN
+from ._dimensions import bC as bC
+from ._dimensions import bL as bL
+from ._dimensions import bN as bN
+from ._dimensions import vB as vB
+from ._dimensions import vC as vC
+from ._dimensions import vL as vL
+from ._dimensions import vN as vN
 from ._dtypes import DtypeSpec as DtypeSpec
