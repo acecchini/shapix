@@ -7,8 +7,7 @@ authors = [{ name = "acecchini", email = "ale.cecchini.valette@gmail.com" }]
 requires-python = ">=3.12,<3.13"
 dependencies = [
   "numpy>=1.26.3",
-  "jaxtyping>=0.3.5",
-  "beartype>=0.22.9"
+  "beartype>=0.22.9",
 ]
 
 [dependency-groups]
