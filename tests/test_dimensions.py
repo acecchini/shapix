@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from shapix._dimensions import Dimension
-from shapix._shape import FixedDim, NamedDim, SymbolicDim, VariadicDim
+from shapix._shape import ANONYMOUS, ANONYMOUS_VARIADIC, FixedDim, NamedDim, SymbolicDim, VariadicDim
 
 
 class TestDimensionCreation:
@@ -68,21 +68,21 @@ class TestDimSpec:
         assert spec.broadcastable is False
 
     def test_broadcastable(self) -> None:
-        d = Dimension("#N")
+        d = Dimension("+N")
         spec = d._dim_spec
         assert isinstance(spec, NamedDim)
         assert spec.name == "N"
         assert spec.broadcastable is True
 
     def test_variadic(self) -> None:
-        d = Dimension("*batch")
+        d = Dimension("~batch")
         spec = d._dim_spec
         assert isinstance(spec, VariadicDim)
         assert spec.name == "batch"
         assert spec.broadcastable is False
 
     def test_variadic_broadcastable(self) -> None:
-        d = Dimension("*#batch")
+        d = Dimension("~+batch")
         spec = d._dim_spec
         assert isinstance(spec, VariadicDim)
         assert spec.name == "batch"
@@ -103,11 +103,63 @@ class TestDimSpec:
     def test_anonymous_underscore(self) -> None:
         d = Dimension("_")
         spec = d._dim_spec
-        assert isinstance(spec, NamedDim)
-        assert spec.name == "_"
+        assert spec is ANONYMOUS
 
-    def test_ellipsis(self) -> None:
-        d = Dimension("...")
+    def test_anonymous_variadic(self) -> None:
+        d = Dimension("~_")
+        spec = d._dim_spec
+        assert spec is ANONYMOUS_VARIADIC
+
+    def test_scalar(self) -> None:
+        d = Dimension("")
+        assert d._dim_spec is None
+
+
+class TestUnaryOperators:
+    def test_invert_makes_variadic(self) -> None:
+        d = ~Dimension("N")
+        assert str(d) == "~N"
         spec = d._dim_spec
         assert isinstance(spec, VariadicDim)
-        assert spec.name == "_"
+        assert spec.name == "N"
+        assert spec.broadcastable is False
+
+    def test_invert_idempotent(self) -> None:
+        d = ~Dimension("~N")
+        assert str(d) == "~N"
+
+    def test_pos_makes_broadcastable(self) -> None:
+        d = +Dimension("N")
+        assert str(d) == "+N"
+        spec = d._dim_spec
+        assert isinstance(spec, NamedDim)
+        assert spec.name == "N"
+        assert spec.broadcastable is True
+
+    def test_pos_idempotent(self) -> None:
+        d = +Dimension("+N")
+        assert str(d) == "+N"
+
+    def test_invert_anonymous(self) -> None:
+        """~_ should produce anonymous variadic."""
+        d = ~Dimension("_")
+        assert str(d) == "~_"
+        spec = d._dim_spec
+        assert spec is ANONYMOUS_VARIADIC
+
+    def test_invert_on_custom_dim(self) -> None:
+        Batch = Dimension("Batch")
+        d = ~Batch
+        assert str(d) == "~Batch"
+        spec = d._dim_spec
+        assert isinstance(spec, VariadicDim)
+        assert spec.name == "Batch"
+
+    def test_pos_on_custom_dim(self) -> None:
+        Batch = Dimension("Batch")
+        d = +Batch
+        assert str(d) == "+Batch"
+        spec = d._dim_spec
+        assert isinstance(spec, NamedDim)
+        assert spec.name == "Batch"
+        assert spec.broadcastable is True

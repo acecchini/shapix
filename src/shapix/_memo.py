@@ -156,5 +156,5 @@ def bindings_str(memo: ShapeMemo) -> str:
     for name, size in memo.single.items():
         parts.append(f"{name}={size}")
     for name, (_, shape) in memo.variadic.items():
-        parts.append(f"*{name}={shape}")
+        parts.append(f"~{name}={shape}")
     return ", ".join(parts)

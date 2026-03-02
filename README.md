@@ -143,14 +143,14 @@ Supported operators: `+`, `-`, `*`, `/`, `//`, `**`, `%`.
 
 ### Variadic dimensions
 
-Match zero or more contiguous dimensions. Prefixed with `v` (for "variadic"):
+Apply `~` (tilde) to any dimension to make it **variadic** — matching zero or more contiguous dimensions:
 
 ```python
-from shapix import vB, C
+from shapix import B, C
 from shapix.numpy import F32
 
 @beartype
-def normalize(x: F32[vB, C]) -> F32[vB, C]:
+def normalize(x: F32[~B, C]) -> F32[~B, C]:
     return x / x.sum(axis=-1, keepdims=True)
 
 normalize(np.ones((3,), dtype=np.float32))        # *B=(),     C=3
@@ -162,51 +162,46 @@ Named variadic dimensions enforce cross-argument consistency on the matched shap
 
 ```python
 @beartype
-def add(x: F32[vB, C], y: F32[vB, C]) -> F32[vB, C]:
+def add(x: F32[~B, C], y: F32[~B, C]) -> F32[~B, C]:
     return x + y
 ```
 
-Use `Any` (an anonymous variadic) when you don't need consistency:
+Use `~_` (anonymous variadic) when you don't need consistency:
 
 ```python
-from shapix import Any, C
+from shapix import _, C
 
 @beartype
-def last_dim(x: F32[Any, C]) -> F32[Any, C]:
+def last_dim(x: F32[~_, C]) -> F32[~_, C]:
     return x
 ```
 
 ### Broadcastable dimensions
 
-Prefixed with `b` (for "broadcast"). Size 1 always matches, regardless of the bound value:
+Apply `+` (unary plus) to any dimension to make it **broadcastable** — size 1 always matches, regardless of the bound value:
 
 ```python
-from shapix import N, C, bN
+from shapix import N, C
 
 @beartype
-def broadcast_add(x: F32[N, C], y: F32[bN, C]) -> F32[N, C]:
+def broadcast_add(x: F32[N, C], y: F32[+N, C]) -> F32[N, C]:
     return x + y
 
 broadcast_add(np.ones((4, 3), dtype=np.float32),
-              np.ones((1, 3), dtype=np.float32))   # OK — bN allows size 1
+              np.ones((1, 3), dtype=np.float32))   # OK — +N allows size 1
 ```
 
 ### Anonymous dimensions
 
-Prefixed with `_`. Match any size without binding — no cross-argument consistency:
+`_` matches any single dimension without binding — no cross-argument consistency:
 
 ```python
-from shapix import _N, C, __
+from shapix import _, C
 
 @beartype
-def f(x: F32[_N, C]) -> F32[_N, C]:
+def f(x: F32[_, C]) -> F32[_, C]:
     return x
-# _N matches anything, only C is cross-checked
-
-@beartype
-def g(x: F32[__, __]) -> F32[__, __]:
-    return x
-# Both dims unchecked
+# _ matches anything, only C is cross-checked
 ```
 
 ### Custom dimensions
@@ -225,16 +220,18 @@ def embed(tokens: I64[N, Seq], table: F32[Vocab, Embed]) -> F32[N, Seq, Embed]:
     ...
 ```
 
+Unary operators work on custom dimensions too: `~Vocab` (variadic), `+Vocab` (broadcastable).
+
 ### Summary
 
-| Prefix | Meaning | Example | Behavior |
+| Syntax | Meaning | Example | Behavior |
 |--------|---------|---------|----------|
 | *(none)* | Named | `N` | Bind & enforce |
 | `int` | Fixed | `3` | Exact match |
-| `v` | Variadic | `vB` | Zero or more dims |
-| `b` | Broadcastable | `bN` | Size 1 always OK |
-| `_` | Anonymous | `_N`, `__` | Match any, no binding |
-| `...` | Any variadic | `Any` | Zero or more, no binding |
+| `~` | Variadic | `~B` | Zero or more dims |
+| `+` | Broadcastable | `+N` | Size 1 always OK |
+| `_` | Anonymous | `_` | Match any, no binding |
+| `~_` | Anonymous variadic | `~_` | Zero or more, no binding |
 | arithmetic | Symbolic | `N + 1` | Expression |
 
 ## Array types
@@ -375,6 +372,57 @@ Shapix uses three key mechanisms:
 2. **Frame-based memo management** — beartype's `Is[validator]` call stack is deterministic: `validator → _is_valid_bool → beartype_wrapper`. All parameter checks for one function call share the same wrapper frame. Shapix identifies this frame via `sys._getframe()` and associates a dimension memo (name → size bindings) with it. This is how cross-argument consistency works with zero boilerplate.
 
 3. **Thread-local storage** — Each thread gets its own memo stack via `threading.local()`, ensuring thread safety.
+
+## Static type checkers (pyright / Pylance)
+
+Shapix's pre-defined dimension symbols (`N`, `C`, `H`, `W`, …) work out of the box with pyright and Pylance — under `TYPE_CHECKING` they resolve to `int` type aliases, so annotations like `F32[N, C]` are fully valid type expressions.
+
+However, some patterns produce type checker errors because they place **runtime values** where pyright expects **types**:
+
+| Pattern | Example | Pyright rule |
+|---------|---------|--------------|
+| Integer literals | `F32[N, 3, H, W]` | `reportGeneralTypeIssues` |
+| Unary operators | `F32[~B, C]`, `F32[+N, C]` | `reportInvalidTypeForm` |
+| Arithmetic | `F32[N + 2]` | `reportInvalidTypeForm` |
+| Custom dimensions | `F32[Vocab, Embed]` | `reportInvalidTypeForm` |
+
+### Option A — Suppress `reportInvalidTypeForm` and wrap integers (recommended)
+
+Add one line to your pyright config to silence operators, custom dimensions, and arithmetic globally. Then wrap bare integer literals in `Dimension()` to shift them to the same suppressed rule:
+
+```toml
+# pyproject.toml
+[tool.pyright]
+reportInvalidTypeForm = false
+```
+
+```python
+from shapix import N, H, W, Dimension
+
+# Integer literals — wrap in Dimension() to avoid reportGeneralTypeIssues
+@beartype
+def rgb_to_gray(x: F32[N, Dimension("3"), H, W]) -> F32[N, Dimension("1"), H, W]:
+    ...
+
+# Operators, arithmetic, custom dimensions — all covered by the suppression
+@beartype
+def pad(x: F32[N]) -> F32[N + 2]:
+    ...
+```
+
+### Option B — Inline `# type: ignore`
+
+If you prefer not to change your pyright config, silence individual lines:
+
+```python
+@beartype
+def rgb_to_gray(x: F32[N, 3, H, W]) -> F32[N, 1, H, W]:  # type: ignore[reportGeneralTypeIssues]
+    ...
+
+@beartype
+def f(x: F32[~B, C]) -> F32[~B, C]:  # type: ignore[reportInvalidTypeForm]
+    ...
+```
 
 ## Compared to jaxtyping
 

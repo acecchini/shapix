@@ -21,10 +21,13 @@ Exports
 -------
 Dimension symbols
     ``B``, ``N``, ``P``, ``L``, ``C``, ``H``, ``W``, ``T`` — named dimensions.
-    ``vB``, ``vN``, ``vL``, ``vC`` — variadic (match zero or more dims).
-    ``bN``, ``bL``, ``bC`` — broadcastable (size 1 always matches).
-    ``_B``, ``_N``, ``_L``, ``_C``, ``__`` — anonymous (match any, no binding).
+    ``_`` — anonymous (match any single dim, no binding).
     ``Scalar`` — scalar (no dimensions), ``Any`` — anonymous variadic.
+
+Unary operators (apply to any dimension)
+    ``~N`` — variadic (match zero or more contiguous dims).
+    ``+N`` — broadcastable (size 1 always matches).
+    ``~_`` — anonymous variadic (match any number of dims, no binding).
 
 Classes
     :class:`Dimension` — create custom dimension symbols with arithmetic support.
@@ -43,6 +46,7 @@ Context managers
 from ._array_types import make_array_type as make_array_type
 from ._decorator import check as check
 from ._decorator import check_context as check_context
+from ._dimensions import _ as _
 from ._dimensions import Any as Any
 from ._dimensions import B as B
 from ._dimensions import C as C
@@ -54,16 +58,4 @@ from ._dimensions import P as P
 from ._dimensions import Scalar as Scalar
 from ._dimensions import T as T
 from ._dimensions import W as W
-from ._dimensions import __ as __
-from ._dimensions import _B as _B
-from ._dimensions import _C as _C
-from ._dimensions import _L as _L
-from ._dimensions import _N as _N
-from ._dimensions import bC as bC
-from ._dimensions import bL as bL
-from ._dimensions import bN as bN
-from ._dimensions import vB as vB
-from ._dimensions import vC as vC
-from ._dimensions import vL as vL
-from ._dimensions import vN as vN
 from ._dtypes import DtypeSpec as DtypeSpec

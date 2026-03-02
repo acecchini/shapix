@@ -27,12 +27,10 @@ from ._dimensions import Dimension
 from ._dtypes import DtypeSpec, extract_dtype_str
 from ._memo import get_memo
 from ._shape import (
-    ANONYMOUS,
-    ANONYMOUS_VARIADIC,
-    DimSpec,
-    FixedDim,
-    NamedDim,
-    check_shape,
+  DimSpec,
+  FixedDim,
+  NamedDim,
+  check_shape,
 )
 
 __all__ = ["make_array_type"]
@@ -44,67 +42,63 @@ __all__ = ["make_array_type"]
 
 
 class _ShapeChecker:
-    """Callable invoked by beartype to validate dtype + shape at runtime.
+  """Callable invoked by beartype to validate dtype + shape at runtime.
 
-    Instances are created once per unique annotation (e.g.
-    ``Float32Array[N, C]``) and reused across all functions that share it.
-    """
+  Instances are created once per unique annotation (e.g.
+  ``Float32Array[N, C]``) and reused across all functions that share it.
+  """
 
-    __slots__ = ("_dtype_spec", "_shape_spec", "_repr", "_fail_id")
+  __slots__ = ("_dtype_spec", "_shape_spec", "_repr", "_fail_id")
 
-    def __init__(
-        self,
-        dtype_spec: DtypeSpec,
-        shape_spec: tuple[DimSpec, ...],
-    ) -> None:
-        self._dtype_spec = dtype_spec
-        self._shape_spec = shape_spec
-        self._fail_id: int | None = None
+  def __init__(self, dtype_spec: DtypeSpec, shape_spec: tuple[DimSpec, ...]) -> None:
+    self._dtype_spec = dtype_spec
+    self._shape_spec = shape_spec
+    self._fail_id: int | None = None
 
-        # Pre-compute repr for beartype error messages
-        dims = ", ".join(repr(d) for d in shape_spec)
-        self._repr = f"{dtype_spec.name}[{dims}]"
+    # Pre-compute repr for beartype error messages
+    dims = ", ".join(repr(d) for d in shape_spec)
+    self._repr = f"{dtype_spec.name}[{dims}]"
 
-    def __call__(self, obj: object) -> bool:
-        # When beartype's error-generation code re-invokes us, it does so
-        # from a different call-stack frame, which creates a fresh memo.
-        # That memo lacks the bindings from prior params, so a previously
-        # failing check would incorrectly pass.  To stay consistent, replay
-        # the failure for one re-check, then clear it.
-        obj_id = id(obj)
-        if self._fail_id == obj_id:
-            self._fail_id = None
-            return False
+  def __call__(self, obj: object) -> bool:
+    # When beartype's error-generation code re-invokes us, it does so
+    # from a different call-stack frame, which creates a fresh memo.
+    # That memo lacks the bindings from prior params, so a previously
+    # failing check would incorrectly pass.  To stay consistent, replay
+    # the failure for one re-check, then clear it.
+    obj_id = id(obj)
+    if self._fail_id == obj_id:
+      self._fail_id = None
+      return False
 
-        # Dtype check
-        if extract_dtype_str(obj) not in self._dtype_spec.allowed:
-            return False
+    # Dtype check
+    if extract_dtype_str(obj) not in self._dtype_spec.allowed:
+      return False
 
-        # Shape check with memo (auto-detects call context)
-        shape = getattr(obj, "shape", None)
-        if shape is None:
-            return False
+    # Shape check with memo (auto-detects call context)
+    shape = getattr(obj, "shape", None)
+    if shape is None:
+      return False
 
-        memo = get_memo(_depth=3)
+    memo = get_memo(_depth=3)
 
-        # Snapshot memo state so we can restore on failure (avoid polluting
-        # the memo with partial bindings from a bad argument).
-        single_snap = memo.single.copy()
-        variadic_snap = memo.variadic.copy()
+    # Snapshot memo state so we can restore on failure (avoid polluting
+    # the memo with partial bindings from a bad argument).
+    single_snap = memo.single.copy()
+    variadic_snap = memo.variadic.copy()
 
-        result = check_shape(tuple(shape), self._shape_spec, memo) == ""
+    result = check_shape(tuple(shape), self._shape_spec, memo) == ""
 
-        if not result:
-            memo.single.clear()
-            memo.single.update(single_snap)
-            memo.variadic.clear()
-            memo.variadic.update(variadic_snap)
-            self._fail_id = obj_id
+    if not result:
+      memo.single.clear()
+      memo.single.update(single_snap)
+      memo.variadic.clear()
+      memo.variadic.update(variadic_snap)
+      self._fail_id = obj_id
 
-        return result
+    return result
 
-    def __repr__(self) -> str:
-        return self._repr
+  def __repr__(self) -> str:
+    return self._repr
 
 
 # ---------------------------------------------------------------------------
@@ -113,56 +107,56 @@ class _ShapeChecker:
 
 
 class _ArrayFactory:
-    """Subscriptable factory: ``Float32Array[N, C]`` → ``Annotated[ndarray, Is[...]]``.
+  """Subscriptable factory: ``Float32Array[N, C]`` → ``Annotated[ndarray, Is[...]]``.
 
-    Created via :func:`make_array_type` and not instantiated directly.
-    """
+  Created via :func:`make_array_type` and not instantiated directly.
+  """
 
-    __slots__ = ("_array_type", "_dtype_spec", "__name__")
+  __slots__ = ("_array_type", "_dtype_spec", "__name__")
 
-    def __init__(self, array_type: type, dtype_spec: DtypeSpec) -> None:
-        self._array_type = array_type
-        self._dtype_spec = dtype_spec
-        self.__name__ = f"{dtype_spec.name}Array"
+  def __init__(self, array_type: type, dtype_spec: DtypeSpec) -> None:
+    self._array_type = array_type
+    self._dtype_spec = dtype_spec
+    self.__name__ = f"{dtype_spec.name}Array"
 
-    def __getitem__(self, dims: object) -> type:
-        if not isinstance(dims, tuple):
-            dims = (dims,)
+  def __getitem__(self, dims: object) -> type:
+    if not isinstance(dims, tuple):
+      dims = (dims,)
 
-        shape_spec = _to_shape_spec(dims)
-        checker = _ShapeChecker(self._dtype_spec, shape_spec)
-        return Annotated[self._array_type, Is[checker]]  # type: ignore[return-value]
+    shape_spec = _to_shape_spec(dims)
+    checker = _ShapeChecker(self._dtype_spec, shape_spec)
+    return Annotated[self._array_type, Is[checker]]  # type: ignore[return-value]
 
-    def __repr__(self) -> str:
-        return self.__name__
+  def __repr__(self) -> str:
+    return self.__name__
 
 
 def make_array_type(array_type: type, dtype_spec: DtypeSpec) -> _ArrayFactory:
-    """Create a subscriptable array type factory for a given base type and dtype.
+  """Create a subscriptable array type factory for a given base type and dtype.
 
-    Parameters
-    ----------
-    array_type:
-        The base array class (e.g. ``np.ndarray``, ``jax.Array``,
-        ``torch.Tensor``, or any class with ``.dtype`` and ``.shape``).
-    dtype_spec:
-        A :class:`~shapix._dtypes.DtypeSpec` defining the allowed dtypes.
+  Parameters
+  ----------
+  array_type:
+      The base array class (e.g. ``np.ndarray``, ``jax.Array``,
+      ``torch.Tensor``, or any class with ``.dtype`` and ``.shape``).
+  dtype_spec:
+      A :class:`~shapix._dtypes.DtypeSpec` defining the allowed dtypes.
 
-    Returns
-    -------
-    _ArrayFactory
-        A subscriptable factory. ``factory[N, C]`` produces
-        ``Annotated[array_type, Is[checker]]``.
+  Returns
+  -------
+  _ArrayFactory
+      A subscriptable factory. ``factory[N, C]`` produces
+      ``Annotated[array_type, Is[checker]]``.
 
-    Example::
+  Example::
 
-        import numpy as np
-        from shapix._dtypes import FLOAT32
+      import numpy as np
+      from shapix._dtypes import FLOAT32
 
-        Float32Array = make_array_type(np.ndarray, FLOAT32)
-        Float32Array[N, C, H, W]  # → Annotated[ndarray, Is[...]]
-    """
-    return _ArrayFactory(array_type, dtype_spec)
+      Float32Array = make_array_type(np.ndarray, FLOAT32)
+      Float32Array[N, C, H, W]  # → Annotated[ndarray, Is[...]]
+  """
+  return _ArrayFactory(array_type, dtype_spec)
 
 
 # ---------------------------------------------------------------------------
@@ -171,25 +165,15 @@ def make_array_type(array_type: type, dtype_spec: DtypeSpec) -> _ArrayFactory:
 
 
 def _to_shape_spec(dims: tuple[object, ...]) -> tuple[DimSpec, ...]:
-    """Convert a tuple of user-facing dim objects to internal DimSpec."""
-    specs: list[DimSpec] = []
-    for d in dims:
-        if isinstance(d, int):
-            specs.append(FixedDim(d))
-        elif isinstance(d, Dimension):
-            raw = str(d)
-            # Underscore-prefixed named dims → anonymous (match anything)
-            if raw.startswith("_"):
-                specs.append(ANONYMOUS)
-            elif raw == "...":
-                specs.append(ANONYMOUS_VARIADIC)
-            elif raw == "":
-                continue  # Scalar — no dimensions
-            else:
-                specs.append(d._dim_spec)  # noqa: SLF001
-        elif isinstance(d, (NamedDim, FixedDim)):
-            specs.append(d)
-        else:
-            # Last resort: treat as a named dim via str
-            specs.append(NamedDim(str(d), broadcastable=False))
-    return tuple(specs)
+  """Convert a tuple of user-facing dim objects to internal DimSpec."""
+  specs: list[DimSpec] = []
+  for d in dims:
+    if isinstance(d, int):
+      specs.append(FixedDim(d))
+    elif isinstance(d, Dimension):
+      spec = d._dim_spec  # noqa: SLF001
+      if spec is not None:
+        specs.append(spec)
+    else:
+      specs.append(NamedDim(str(d), broadcastable=False))
+  return tuple(specs)

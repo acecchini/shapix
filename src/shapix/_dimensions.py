@@ -17,13 +17,12 @@ Dimensions support full Python arithmetic to express derived shapes::
     def pad(x: F32[N]) -> F32[N + 2]: ...
     def flatten(x: F32[N, C]) -> F32[N * C]: ...
 
-Prefixes control matching behaviour:
+Unary operators control matching behaviour:
 
-- *(none)* — Named: bind on first use, enforce on subsequent (``N``, ``C``).
-- ``*`` — Variadic: match zero or more contiguous dims (``vB`` = ``*B``).
-- ``#`` — Broadcastable: size 1 always matches (``bN`` = ``#N``).
-- ``_`` — Anonymous: match any size, no binding (``_N``, ``__``).
-- ``...`` — Anonymous variadic: match any number of dims (``Any``).
+- ``~N`` — Variadic: match zero or more contiguous dims.
+- ``+N`` — Broadcastable: size 1 always matches.
+- ``_`` — Anonymous: match any single dim, no binding.
+- ``~_`` — Anonymous variadic: match any number of dims, no binding.
 
 Plain ``int`` values (e.g. ``3``) are also accepted as fixed dimension sizes
 when subscripting array types.
@@ -34,6 +33,9 @@ from __future__ import annotations
 import typing as tp
 
 from ._shape import (
+    ANONYMOUS,
+    ANONYMOUS_VARIADIC,
+    DimSpec,
     FixedDim,
     NamedDim,
     SymbolicDim,
@@ -51,26 +53,12 @@ __all__ = [
     "H",
     "W",
     "T",
-    # Variadic
-    "vB",
-    "vN",
-    "vL",
-    "vC",
-    # Broadcastable
-    "bN",
-    "bL",
-    "bC",
     # Anonymous
-    "_B",
-    "_N",
-    "_L",
-    "_C",
-    "__",
+    "_",
     # Special
     "Scalar",
     "Any",
 ]
-
 
 
 class Dimension(str):
@@ -86,15 +74,6 @@ class Dimension(str):
         >>> 2 * N
         Dimension('(2*N)')
     """
-
-    # ------------------------------------------------------------------
-    # Construction helpers
-    # ------------------------------------------------------------------
-
-    def __class_getitem__(cls, item: str | tuple[str, ...]) -> Dimension:  # type: ignore[override]
-        if isinstance(item, tuple):
-            return cls(" ".join(cls(i) for i in item))
-        return cls(item)
 
     # ------------------------------------------------------------------
     # Arithmetic → symbolic dimension expressions
@@ -145,40 +124,52 @@ class Dimension(str):
     def __neg__(self) -> Dimension:
         return self.__class__(f"-{self}")
 
-    def __abs__(self) -> Dimension:
-        return self.__class__(f"abs({self})")
+    def __invert__(self) -> Dimension:
+        """``~N`` → variadic dimension (matches zero or more contiguous dims)."""
+        raw = str(self)
+        if raw.startswith("~"):
+            return self
+        return self.__class__(f"~{raw}")
+
+    def __pos__(self) -> Dimension:
+        """``+N`` → broadcastable dimension (size 1 always matches)."""
+        raw = str(self)
+        if raw.startswith("+"):
+            return self
+        return self.__class__(f"+{raw}")
 
     # ------------------------------------------------------------------
     # Conversion to internal dim spec
     # ------------------------------------------------------------------
 
     @property
-    def _dim_spec(self) -> NamedDim | FixedDim | SymbolicDim | VariadicDim:
-        """Convert this symbol to an internal shape-spec object."""
+    def _dim_spec(self) -> DimSpec | None:
+        """Convert this symbol to an internal shape-spec object.
+
+        Returns ``None`` for the scalar sentinel (empty string).
+        """
         raw = str(self)
 
         # Empty → scalar (no dims)
         if raw == "":
-            return FixedDim(-1)  # sentinel, handled by array factory
+            return None
 
-        # Ellipsis → anonymous variadic
-        if raw == "...":
-            return VariadicDim("_", broadcastable=False)
+        # Anonymous single dim
+        if raw == "_":
+            return ANONYMOUS
 
-        # Variadic: *name or *#name
-        if raw.startswith("*"):
+        # Variadic: ~name or ~+name
+        if raw.startswith("~"):
             rest = raw[1:]
-            if rest.startswith("#"):
+            if rest == "_" or rest.startswith("_"):
+                return ANONYMOUS_VARIADIC
+            if rest.startswith("+"):
                 return VariadicDim(rest[1:], broadcastable=True)
             return VariadicDim(rest, broadcastable=False)
 
-        # Broadcastable: #name
-        if raw.startswith("#"):
+        # Broadcastable: +name
+        if raw.startswith("+"):
             return NamedDim(raw[1:], broadcastable=True)
-
-        # Anonymous: bare _ or _name
-        if raw == "_":
-            return NamedDim("_", broadcastable=False)  # treated as anonymous in check
 
         # Pure integer
         if raw.lstrip("-").isdigit():
@@ -210,18 +201,7 @@ if tp.TYPE_CHECKING:
     type H = int
     type W = int
     type T = int
-    type vB = int
-    type vN = int
-    type vL = int
-    type vC = int
-    type bN = int
-    type bL = int
-    type bC = int
-    type _B = int
-    type _N = int
-    type _L = int
-    type _C = int
-    type __ = int
+    type _ = int
     type Any = int
 else:
     # Common named dimensions
@@ -235,23 +215,8 @@ else:
     W = Dimension("W")
     T = Dimension("T")
 
-    # Variadic (match zero or more dims)
-    vB = Dimension("*B")
-    vN = Dimension("*N")
-    vL = Dimension("*L")
-    vC = Dimension("*C")
-
-    # Broadcastable (size 1 always matches)
-    bN = Dimension("#N")
-    bL = Dimension("#L")
-    bC = Dimension("#C")
-
     # Anonymous (match anything, no binding)
-    _B = Dimension("_B")
-    _N = Dimension("_N")
-    _L = Dimension("_L")
-    _C = Dimension("_C")
-    __ = Dimension("_")
+    _ = Dimension("_")
 
-    # Special
-    Any = Dimension("...")
+    # Anonymous variadic (match any number of dims, no binding)
+    Any = Dimension("~_")

@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from beartype import beartype
 
-from shapix import N, C, H, W, Any, __, vB, bN
+from shapix import N, C, H, W, B, Any, _
 from shapix.numpy import F32, F64, Int, I32
 
 
@@ -150,20 +150,29 @@ class TestNestedCalls:
 
 
 class TestVariadicDims:
-    def test_any_prefix(self) -> None:
+    def test_anonymous_variadic(self) -> None:
         @beartype
-        def f(x: F32[Any, C]) -> F32[Any, C]:
+        def f(x: F32[~_, C]) -> F32[~_, C]:
             return x
 
         f(np.ones((3,), dtype=np.float32))
         f(np.ones((2, 3), dtype=np.float32))
         f(np.ones((1, 2, 3), dtype=np.float32))
 
+    def test_any_alias(self) -> None:
+        """Any is a backward-compat alias for ~_."""
+        @beartype
+        def f(x: F32[Any, C]) -> F32[Any, C]:
+            return x
+
+        f(np.ones((3,), dtype=np.float32))
+        f(np.ones((2, 3), dtype=np.float32))
+
     def test_variadic_named(self) -> None:
         @beartype
         def f(
-            x: F32[vB, C], y: F32[vB, C]
-        ) -> F32[vB, C]:
+            x: F32[~B, C], y: F32[~B, C]
+        ) -> F32[~B, C]:
             return x + y
 
         result = f(
@@ -175,8 +184,8 @@ class TestVariadicDims:
     def test_variadic_mismatch(self) -> None:
         @beartype
         def f(
-            x: F32[vB, C], y: F32[vB, C]
-        ) -> F32[vB, C]:
+            x: F32[~B, C], y: F32[~B, C]
+        ) -> F32[~B, C]:
             return x + y
 
         with pytest.raises(Exception):
@@ -189,15 +198,15 @@ class TestVariadicDims:
 class TestBroadcastableDims:
     def test_size_1_matches(self) -> None:
         @beartype
-        def f(x: F32[bN, C]) -> F32[bN, C]:
+        def f(x: F32[+N, C]) -> F32[+N, C]:
             return x
 
-        # bN allows size 1 always
+        # +N allows size 1 always
         f(np.ones((1, 5), dtype=np.float32))
 
     def test_normal_size(self) -> None:
         @beartype
-        def f(x: F32[bN, C]) -> F32[bN, C]:
+        def f(x: F32[+N, C]) -> F32[+N, C]:
             return x
 
         f(np.ones((10, 5), dtype=np.float32))
@@ -218,10 +227,10 @@ class TestFixedDims:
 class TestAnonymousDims:
     def test_underscore(self) -> None:
         @beartype
-        def f(x: F32[__, C]) -> F32[__, C]:
+        def f(x: F32[_, C]) -> F32[_, C]:
             return x
 
-        # __ matches any value, no consistency check
+        # _ matches any value, no consistency check
         f(np.ones((3, 5), dtype=np.float32))
         f(np.ones((99, 5), dtype=np.float32))
 

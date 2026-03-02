@@ -41,6 +41,7 @@ python-preference = "only-managed"
 typeCheckingMode = "standard"
 include = ["src", "tests"]
 reportUnusedImport = "warning"
+reportInvalidTypeForm = false
 pythonVersion = "3.12"
 pythonPlatform = "Linux"
 venvPath = "."

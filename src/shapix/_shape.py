@@ -13,10 +13,10 @@ Dimension spec types:
 - :class:`SymbolicDim` — arithmetic expression evaluated against bound
   dimensions (``N+1``, ``H*W``). Optionally broadcastable.
 - :class:`VariadicDim` — matches zero or more contiguous dims and binds the
-  matched sub-shape (``*spatial``). Optionally broadcastable.
+  matched sub-shape (``~spatial``). Optionally broadcastable.
 - :data:`ANONYMOUS` — matches any single dim without binding (``_``).
 - :data:`ANONYMOUS_VARIADIC` — matches any number of dims without binding
-  (``*_``, ``...``).
+  (``~_``).
 
 The :func:`check_shape` function returns ``""`` on success or a human-readable
 error message explaining the mismatch.
@@ -54,7 +54,7 @@ class NamedDim:
     broadcastable: bool = False
 
     def __repr__(self) -> str:
-        prefix = "#" if self.broadcastable else ""
+        prefix = "+" if self.broadcastable else ""
         return f"{prefix}{self.name}"
 
 
@@ -87,8 +87,8 @@ class VariadicDim:
     broadcastable: bool = False
 
     def __repr__(self) -> str:
-        prefix = "#" if self.broadcastable else ""
-        return f"*{prefix}{self.name}"
+        prefix = "+" if self.broadcastable else ""
+        return f"~{prefix}{self.name}"
 
 
 class _Anonymous:
@@ -106,7 +106,7 @@ class _AnonymousVariadic:
     __slots__ = ()
 
     def __repr__(self) -> str:
-        return "*_"
+        return "~_"
 
 
 ANONYMOUS = _Anonymous()
@@ -266,7 +266,7 @@ def _check_variadic(dim: VariadicDim, shape: tuple[int, ...], memo: ShapeMemo) -
             broadcast = np.broadcast_shapes(shape, prev_shape)
         except ValueError:
             return (
-                f"variadic '*{dim.name}' shape {shape} cannot broadcast "
+                f"variadic '~{dim.name}' shape {shape} cannot broadcast "
                 f"with existing {prev_shape}"
             )
         # Update to the broadcast result
@@ -274,6 +274,6 @@ def _check_variadic(dim: VariadicDim, shape: tuple[int, ...], memo: ShapeMemo) -
         return ""
 
     return (
-        f"variadic '*{dim.name}' shape {shape} does not match "
+        f"variadic '~{dim.name}' shape {shape} does not match "
         f"existing {prev_shape}"
     )

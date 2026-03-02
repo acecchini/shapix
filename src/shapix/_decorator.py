@@ -22,61 +22,66 @@ __all__ = ["check", "check_context"]
 @overload
 def check(fn: Callable[..., object], /) -> Callable[..., object]: ...
 @overload
-def check(*, conf: object = ...) -> Callable[[Callable[..., object]], Callable[..., object]]: ...
+def check(
+  *, conf: object = ...
+) -> Callable[[Callable[..., object]], Callable[..., object]]: ...
 
 
-def check(fn: Callable[..., object] | None = None, /, *, conf: object | None = None) -> object:
-    """Decorator that manages the dimension memo around a function call.
+def check(
+  fn: Callable[..., object] | None = None, /, *, conf: object | None = None
+) -> object:
+  """Decorator that manages the dimension memo around a function call.
 
-    Usage::
+  Usage::
 
-        # Memo only — pair with @beartype
-        @shapix.check
-        @beartype
-        def f(x: Float32Array[N, C]) -> Float32Array[N, C]: ...
+      # Memo only — pair with @beartype
+      @shapix.check
+      @beartype
+      def f(x: Float32Array[N, C]) -> Float32Array[N, C]: ...
 
-        # Memo + beartype combined
-        @shapix.check(conf=BeartypeConf(strategy=BeartypeStrategy.On))
-        def f(x: Float32Array[N, C]) -> Float32Array[N, C]: ...
-    """
 
-    def decorator(fn: Callable[..., object]) -> Callable[..., object]:
-        inner = fn
-        if conf is not None:
-            from beartype import beartype
+      # Memo + beartype combined
+      @shapix.check(conf=BeartypeConf(strategy=BeartypeStrategy.On))
+      def f(x: Float32Array[N, C]) -> Float32Array[N, C]: ...
+  """
 
-            inner = beartype(fn, conf=conf)  # type: ignore[arg-type]
+  def decorator(fn: Callable[..., object]) -> Callable[..., object]:
+    inner = fn
+    if conf is not None:
+      from beartype import beartype
 
-        @functools.wraps(fn)
-        def wrapper(*args: object, **kwargs: object) -> object:
-            push_memo()
-            try:
-                return inner(*args, **kwargs)
-            finally:
-                pop_memo()
+      inner = beartype(fn, conf=conf)  # type: ignore[arg-type]
 
-        return wrapper
+    @functools.wraps(fn)
+    def wrapper(*args: object, **kwargs: object) -> object:
+      push_memo()
+      try:
+        return inner(*args, **kwargs)
+      finally:
+        pop_memo()
 
-    if fn is not None:
-        return decorator(fn)
-    return decorator
+    return wrapper
+
+  if fn is not None:
+    return decorator(fn)
+  return decorator
 
 
 class check_context:
-    """Context manager for manual ``isinstance`` checks with shared memo.
+  """Context manager for manual ``isinstance`` checks with shared memo.
 
-    Usage::
+  Usage::
 
-        with shapix.check_context():
-            assert isinstance(x, Float32Array[N, C])
-            assert isinstance(y, Float32Array[N])  # same N
-    """
+      with shapix.check_context():
+        assert isinstance(x, Float32Array[N, C])
+        assert isinstance(y, Float32Array[N])  # same N
+  """
 
-    __slots__ = ()
+  __slots__ = ()
 
-    def __enter__(self) -> check_context:
-        push_memo()
-        return self
+  def __enter__(self) -> check_context:
+    push_memo()
+    return self
 
-    def __exit__(self, *_: object) -> None:
-        pop_memo()
+  def __exit__(self, *_: object) -> None:
+    pop_memo()
