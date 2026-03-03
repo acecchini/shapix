@@ -12,24 +12,25 @@ from __future__ import annotations
 
 import functools
 from collections.abc import Callable
-from typing import overload
+from typing import ParamSpec, TypeVar, overload
 
 from ._memo import pop_memo, push_memo
 
 __all__ = ["check", "check_context"]
 
+P = ParamSpec("P")
+R = TypeVar("R")
+
 
 @overload
-def check(fn: Callable[..., object], /) -> Callable[..., object]: ...
+def check(fn: Callable[P, R], /) -> Callable[P, R]: ...
 @overload
-def check(
-  *, conf: object = ...
-) -> Callable[[Callable[..., object]], Callable[..., object]]: ...
+def check(*, conf: object = ...) -> Callable[[Callable[P, R]], Callable[P, R]]: ...
 
 
 def check(
-  fn: Callable[..., object] | None = None, /, *, conf: object | None = None
-) -> object:
+  fn: Callable[P, R] | None = None, /, *, conf: object | None = None
+) -> Callable[P, R] | Callable[[Callable[P, R]], Callable[P, R]]:
   """Decorator that manages the dimension memo around a function call.
 
   Usage::
@@ -45,7 +46,7 @@ def check(
       def f(x: Float32Array[N, C]) -> Float32Array[N, C]: ...
   """
 
-  def decorator(fn: Callable[..., object]) -> Callable[..., object]:
+  def decorator(fn: Callable[P, R]) -> Callable[P, R]:
     inner = fn
     if conf is not None:
       from beartype import beartype
@@ -53,18 +54,18 @@ def check(
       inner = beartype(fn, conf=conf)  # type: ignore[arg-type]
 
     @functools.wraps(fn)
-    def wrapper(*args: object, **kwargs: object) -> object:
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
       push_memo()
       try:
-        return inner(*args, **kwargs)
+        return inner(*args, **kwargs)  # type: ignore[return-value]
       finally:
         pop_memo()
 
-    return wrapper
+    return wrapper  # type: ignore[return-value]
 
   if fn is not None:
     return decorator(fn)
-  return decorator
+  return decorator  # type: ignore[return-value]
 
 
 class check_context:

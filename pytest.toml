@@ -7,3 +7,6 @@ addopts = [
   # Quieter output
   "-q",
 ]
+markers = [
+  "typecheck: type-checker compatibility tests (pyright, mypy, ty)",
+]

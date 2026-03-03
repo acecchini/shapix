@@ -188,20 +188,18 @@ class Dimension(str):
 # ---------------------------------------------------------------------------
 
 if tp.TYPE_CHECKING:
-  # Type aliases so pyright accepts them in type expressions like
-  # ``F32[N, C]``.  At type-checking time the dims resolve to ``int``
-  # which is harmless — the *runtime* ``Dimension`` instances carry the
-  # actual semantics.
-  type Scalar = int
-  type B = int
-  type N = int
-  type P = int
-  type L = int
-  type C = int
-  type H = int
-  type W = int
-  type T = int
-  type __ = int
+  # Declared as ``Dimension`` so type checkers see the full operator set
+  # (``__add__``, ``__invert__``, ``__pos__``, …) and ``F32[N, C]`` subscripts.
+  Scalar: Dimension
+  B: Dimension
+  N: Dimension
+  P: Dimension
+  L: Dimension
+  C: Dimension
+  H: Dimension
+  W: Dimension
+  T: Dimension
+  __: Dimension
 else:
   # Common named dimensions
   Scalar = Dimension("")
