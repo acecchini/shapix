@@ -16,14 +16,10 @@ repos:
     rev: 0.10.7
     hooks:
       - id: uv-lock
-
-  - repo: https://github.com/tsvikas/sync-with-uv
-    rev: v0.5.0
-    hooks:
-      - id: sync-with-uv
+      - id: uv-sync
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.4 # overwritten by `sync-with-uv` hook
+    rev: v0.15.4
     hooks:
       - id: ruff-check
         args: [--fix, --output-format=concise]
@@ -31,13 +27,13 @@ repos:
         args: [--output-format=concise]
 
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.4.1 # overwritten by `sync-with-uv` hook
+    rev: v2.4.1
     hooks:
     - id: codespell
       stages: [pre-commit, commit-msg]
 
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.351 # overwritten by `sync-with-uv` hook
+    rev: v1.1.351
     hooks:
     - id: pyright
       stages: [pre-push]
