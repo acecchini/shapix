@@ -53,7 +53,6 @@ __all__ = [
   "C",
   "H",
   "W",
-  "T",
   # Anonymous
   "__",
   # Special
@@ -198,7 +197,6 @@ if tp.TYPE_CHECKING:
   C: Dimension
   H: Dimension
   W: Dimension
-  T: Dimension
   __: Dimension
 else:
   # Common named dimensions
@@ -210,7 +208,6 @@ else:
   C = Dimension("C")
   H = Dimension("H")
   W = Dimension("W")
-  T = Dimension("T")
 
   # Anonymous (match anything, no binding)
   __ = Dimension("__")

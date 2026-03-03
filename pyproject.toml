@@ -5,15 +5,16 @@ description = "Add your description here"
 readme = "README.md"
 authors = [{ name = "acecchini", email = "ale.cecchini.valette@gmail.com" }]
 requires-python = ">=3.12"
-dependencies = ["numpy>=2.2.0", "beartype>=0.22.9"]
+dependencies = ["beartype>=0.22.9"]
 
 [dependency-groups]
-# CPU-only variants for dev/CI testing. Shapix is device-agnostic — it checks
-# .shape and .dtype only, so GPU/TPU builds (torch+cuda, jax[cuda12], etc.)
-# work without any extra configuration. Users install their own backend.
-torch = ["torch>=2.6.0"]
-jax = ["jax[cpu]>=0.5.0"]
+# Backends are CPU-only for dev/CI. Shapix is device-agnostic — it checks
+# .shape and .dtype only. Users install their own numpy/jax/torch/optree.
 dev = [
+  "numpy>=2.2.0",
+  "torch>=2.6.0",
+  "jax[cpu]>=0.5.0",
+  "optree>=0.14.0",
   "ruff>=0.15.4",
   "pyright>=1.1.408",
   "mypy>=1.19.1",

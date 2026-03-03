@@ -30,11 +30,13 @@ Shapix turns array shape annotations into **Python objects** that beartype valid
 pip install shapix
 ```
 
-Optional backends:
+Shapix has one dependency: [beartype](https://github.com/beartype/beartype). Install your preferred array framework separately:
 
 ```bash
-pip install shapix[jax]    # JAX support
-pip install shapix[torch]  # PyTorch support
+pip install shapix numpy          # NumPy
+pip install shapix torch          # PyTorch
+pip install shapix jax            # JAX
+pip install shapix numpy optree   # NumPy + PyTree support
 ```
 
 ## Quick start
@@ -101,7 +103,7 @@ Bind to a size on first occurrence and enforce consistency on subsequent ones.
 | `H` | Height |
 | `W` | Width |
 | `L` | Sequence length |
-| `T` | Time / tree |
+| `T` | Tree structure |
 | `P` | Points / parameters |
 
 ```python
@@ -322,6 +324,70 @@ BF16_OR_F32 = DtypeSpec("BF16orF32", frozenset({"bfloat16", "float32"}))
 MixedArray = make_array_type(np.ndarray, BF16_OR_F32)
 ```
 
+## PyTree annotations
+
+PyTree annotations validate all leaves in a nested structure (dicts, lists, tuples, namedtuples). Requires `optree` (`pip install optree`).
+
+### Basic leaf checking
+
+```python
+from shapix import PyTree, T, S, N, C
+from shapix.numpy import F32
+
+@beartype
+def process(data: PyTree[F32[N, C]]) -> PyTree[F32[N, C]]:
+    ...
+
+# All leaves must be F32 arrays with consistent N and C
+process({"params": np.ones((3, 4), dtype=np.float32),
+         "state": np.ones((3, 4), dtype=np.float32)})
+```
+
+### Structure binding
+
+Named structure symbols (`T`, `S`) enforce that multiple arguments share identical tree shapes:
+
+```python
+@beartype
+def add_trees(x: PyTree[F32[N], T], y: PyTree[F32[N], T]) -> PyTree[F32[N]]:
+    ...
+
+add_trees({"a": x1, "b": x2}, {"a": y1, "b": y2})  # OK — same structure
+add_trees({"a": x1}, [y1, y2])                       # Raises — different structure
+```
+
+### Composite structures
+
+Use `S[T]` for nested structure matching — outer structure S, inner structure T:
+
+```python
+def f(x: PyTree[int, T], y: PyTree[int, S], z: PyTree[int, S[T]]): ...
+```
+
+### Prefix and suffix wildcards
+
+```python
+# T[...] — top-level structure matches T, subtrees are arbitrary
+def f(x: PyTree[F32[N], T[...]], y: PyTree[F32[N], T[...]]): ...
+
+# ..., T — full structure matches T
+def f(x: PyTree[F32[N], ..., T], y: PyTree[F32[N], ..., T]): ...
+```
+
+### Custom structure symbols
+
+Create your own with `Structure`:
+
+```python
+from shapix import Structure
+
+Params = Structure("Params")
+State = Structure("State")
+
+@beartype
+def train(params: PyTree[F32[N], Params], state: PyTree[I64[N], State]): ...
+```
+
 ## Advanced usage
 
 ### Package-wide instrumentation with `beartype.claw`
@@ -340,27 +406,28 @@ shapix_this_package()
 
 Every function in your package that uses shapix type annotations will be checked automatically.
 
-### Explicit memo management with `@shapix.check`
+### How cross-argument checking works (the memo)
 
-The frame-based memo works automatically with `@beartype` in virtually all cases. For exotic call-stack scenarios, or to combine memo management with custom `BeartypeConf`, use the explicit decorator:
+A **dimension memo** maps dimension names to sizes (e.g., `N→4`, `C→3`). Each function call gets a fresh memo. All parameter checks within that call share the same memo — that's how shapix knows `N=4` in `x` must match `N=4` in `y`.
+
+This happens **automatically** with `@beartype`. Shapix detects the beartype wrapper frame via `sys._getframe()` and associates a memo with it. No extra decorator needed.
+
+### `@shapix.check` (optional)
+
+`@shapix.check` provides **explicit** memo management. It's useful in two scenarios:
+
+1. **Combining memo with custom `BeartypeConf`** — a single decorator instead of stacking two:
 
 ```python
-import shapix
-from beartype import beartype
-
-# Option 1: Memo only — pair with @beartype
-@shapix.check
-@beartype
-def f(x: F32[N, C]) -> F32[N, C]:
-    ...
-
-# Option 2: Memo + beartype combined with custom config
-from beartype._conf.confmain import BeartypeConf
+from beartype import BeartypeConf
 
 @shapix.check(conf=BeartypeConf())
-def f(x: F32[N, C]) -> F32[N, C]:
-    ...
+def f(x: F32[N, C]) -> F32[N, C]: ...
 ```
+
+2. **Exotic call stacks** where frame-based detection is unreliable (deep decorator chains, recursive wrappers).
+
+For normal usage, just use `@beartype` — it works out of the box.
 
 ### Manual checks with `check_context`
 
@@ -383,7 +450,7 @@ Shapix uses three key mechanisms:
 
 1. **`Annotated[T, Is[validator]]`** — Each array type annotation (e.g., `F32[N, C]`) produces a `typing.Annotated` type with a beartype `Is[...]` validator. This lets beartype handle all the dispatch natively.
 
-2. **Frame-based memo management** — beartype's `Is[validator]` call stack is deterministic: `validator → _is_valid_bool → beartype_wrapper`. All parameter checks for one function call share the same wrapper frame. Shapix identifies this frame via `sys._getframe()` and associates a dimension memo (name → size bindings) with it. This is how cross-argument consistency works with zero boilerplate.
+2. **Frame-based memo** — beartype's `Is[validator]` call stack is deterministic: `validator → _is_valid_bool → beartype_wrapper`. All parameter checks for one function call share the same wrapper frame. Shapix identifies this frame via `sys._getframe()` and associates a dimension memo (name → size bindings) with it. This is how cross-argument consistency works with zero boilerplate.
 
 3. **Thread-local storage** — Each thread gets its own memo stack via `threading.local()`, ensuring thread safety.
 
@@ -453,6 +520,7 @@ def f(x: F32[~B, C]) -> F32[~B, C]:  # type: ignore[reportInvalidTypeForm]
 | BeartypeConf | Not supported (decorator conflict) | Fully supported |
 | Type checker | Metaclass magic (confuses pyright) | `Annotated` aliases (clean) |
 | Backends | NumPy, JAX | NumPy, JAX, PyTorch |
+| PyTree | Built-in with structure binding | Built-in with structure binding (via optree) |
 | Dependencies | jaxtyping + beartype | beartype only |
 | Custom decorator | Required | Not required |
 

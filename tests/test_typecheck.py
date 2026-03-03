@@ -30,10 +30,15 @@ COMMON_FILES = [
   "check_decorator.py",
   "check_like_types.py",
   "check_make_array_type.py",
+  "check_pytree.py",
 ]
 
 # Files that only pyright supports (F32[N, C] subscript annotations)
-PYRIGHT_ONLY_FILES = ["check_annotations.py"]
+PYRIGHT_ONLY_FILES = [
+  "check_annotations.py",
+  "check_annotations_jax.py",
+  "check_annotations_torch.py",
+]
 
 
 # ---------------------------------------------------------------------------

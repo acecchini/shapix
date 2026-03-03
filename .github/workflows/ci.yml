@@ -47,14 +47,49 @@ jobs:
       fail-fast: false
       matrix:
         python: ["3.12", "3.13", "3.14"]
-        suffix: ["", "-torch", "-jax", "-all"]
-    name: test (py${{ matrix.python }}${{ matrix.suffix }})
+    name: test (py${{ matrix.python }})
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v7
-      - run: uv run tox -e "py${{ matrix.python }}${{ matrix.suffix }}"
+      - run: uv run tox -e "py${{ matrix.python }}"
         env:
           TOX_PYTHON: python${{ matrix.python }}
+
+  numpy-compat:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ["numpy22", "numpy23", "numpy24"]
+    name: ${{ matrix.version }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+      - run: uv run tox -e "${{ matrix.version }}"
+
+  jax-compat:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ["jax05", "jax06", "jax07", "jax08", "jax09"]
+    name: ${{ matrix.version }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+      - run: uv run tox -e "${{ matrix.version }}"
+
+  torch-compat:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ["torch26", "torch27", "torch28", "torch29", "torch210"]
+    name: ${{ matrix.version }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+      - run: uv run tox -e "${{ matrix.version }}"
 
   beartype-compat:
     runs-on: ubuntu-latest
@@ -62,9 +97,21 @@ jobs:
       fail-fast: false
       matrix:
         version: ["bt020", "bt021", "bt022"]
-        suffix: ["", "-torch", "-jax"]
-    name: beartype (${{ matrix.version }}${{ matrix.suffix }})
+        suffix: ["", "-jax", "-torch"]
+    name: ${{ matrix.version }}${{ matrix.suffix }}
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v7
       - run: uv run tox -e "${{ matrix.version }}${{ matrix.suffix }}"
+
+  optree-compat:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ["optree014", "optree015", "optree016", "optree017", "optree018", "optree019"]
+    name: ${{ matrix.version }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+      - run: uv run tox -e "${{ matrix.version }}"

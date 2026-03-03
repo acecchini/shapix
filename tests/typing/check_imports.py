@@ -16,7 +16,9 @@ from shapix import (
   L,
   N,
   P,
+  S,
   Scalar,
+  Structure,
   T,
   W,
   __,
@@ -26,7 +28,10 @@ from shapix import (
 )
 
 # All pre-defined dimensions are Dimension instances
-dims: list[Dimension] = [B, C, H, L, N, P, Scalar, T, W, __]
+dims: list[Dimension] = [B, C, H, L, N, P, Scalar, W, __]
+
+# All pre-defined structure symbols are Structure instances
+structs: list[Structure] = [T, S]
 
 # check and check_context are callable
 assert callable(check)

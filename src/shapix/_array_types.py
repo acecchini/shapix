@@ -80,6 +80,7 @@ class _ShapeChecker:
     # the memo with partial bindings from a bad argument).
     single_snap = memo.single.copy()
     variadic_snap = memo.variadic.copy()
+    structures_snap = memo.structures.copy()
 
     result = check_shape(tuple(shape), self._shape_spec, memo) == ""
 
@@ -88,6 +89,8 @@ class _ShapeChecker:
       memo.single.update(single_snap)
       memo.variadic.clear()
       memo.variadic.update(variadic_snap)
+      memo.structures.clear()
+      memo.structures.update(structures_snap)
       self._fail_id = obj_id
 
     return result
