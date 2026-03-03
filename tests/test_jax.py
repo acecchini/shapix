@@ -1,0 +1,430 @@
+"""Tests for shapix.jax — JAX array types, Like types, and dtype handling."""
+
+from __future__ import annotations
+
+import numpy as np
+import pytest
+
+jax = pytest.importorskip("jax")
+jnp = jax.numpy
+
+from beartype import beartype
+from beartype.door import is_bearable
+from beartype.roar import (
+  BeartypeCallHintParamViolation,
+  BeartypeCallHintReturnViolation,
+)
+
+import shapix
+from shapix import B, C, N, __, Dimension
+from shapix.jax import (
+  BF16,
+  Bool,
+  F16,
+  F32,
+  F32Like,
+  Float,
+  I32,
+  I64Like,
+  Int,
+  Num,
+  Shaped,
+  U8,
+  BoolLk,
+)
+
+
+# =====================================================================
+# Dtype acceptance / rejection
+# =====================================================================
+
+
+class TestJaxDtypeAcceptance:
+  @pytest.mark.parametrize(
+    "ArrayType, good_dtype, bad_dtypes",
+    [
+      (F32, jnp.float32, [jnp.float16, jnp.int32, jnp.bool_]),
+      (F16, jnp.float16, [jnp.float32]),
+      (BF16, jnp.bfloat16, [jnp.float32, jnp.float16]),
+      (I32, jnp.int32, [jnp.float32, jnp.int16]),
+      (U8, jnp.uint8, [jnp.int8, jnp.int32]),
+      (Bool, jnp.bool_, [jnp.int32, jnp.float32]),
+    ],
+  )
+  def test_accepts_correct_rejects_wrong(
+    self, ArrayType: object, good_dtype: object, bad_dtypes: list[object]
+  ) -> None:
+    @beartype
+    def f(x: ArrayType[N]) -> ArrayType[N]:  # type: ignore[valid-type]
+      return x
+
+    f(jnp.ones(3, dtype=good_dtype))
+    for bad in bad_dtypes:
+      with pytest.raises(BeartypeCallHintParamViolation):
+        f(jnp.ones(3, dtype=bad))
+
+
+class TestJaxCategoryTypes:
+  def test_float_accepts_f32_f16_bf16(self) -> None:
+    @beartype
+    def f(x: Float[N]) -> Float[N]:
+      return x
+
+    f(jnp.ones(3, dtype=jnp.float32))
+    f(jnp.ones(3, dtype=jnp.float16))
+    f(jnp.ones(3, dtype=jnp.bfloat16))
+
+  def test_float_rejects_int(self) -> None:
+    @beartype
+    def f(x: Float[N]) -> Float[N]:
+      return x
+
+    with pytest.raises(BeartypeCallHintParamViolation):
+      f(jnp.ones(3, dtype=jnp.int32))
+
+  def test_int_rejects_unsigned(self) -> None:
+    @beartype
+    def f(x: Int[N]) -> Int[N]:
+      return x
+
+    with pytest.raises(BeartypeCallHintParamViolation):
+      f(jnp.ones(3, dtype=jnp.uint8))
+
+  def test_shaped_accepts_all(self) -> None:
+    @beartype
+    def f(x: Shaped[N]) -> Shaped[N]:
+      return x
+
+    for dtype in [jnp.float32, jnp.int32, jnp.uint8, jnp.bool_, jnp.bfloat16]:
+      f(jnp.ones(3, dtype=dtype))
+
+  def test_num_rejects_bool(self) -> None:
+    @beartype
+    def f(x: Num[N]) -> Num[N]:
+      return x
+
+    with pytest.raises(BeartypeCallHintParamViolation):
+      f(jnp.ones(3, dtype=jnp.bool_))
+
+
+# =====================================================================
+# Shape checking (smoke tests — shape logic tested exhaustively in test_numpy)
+# =====================================================================
+
+
+class TestJaxShapeChecking:
+  def test_basic_2d(self) -> None:
+    @beartype
+    def f(x: F32[N, C]) -> F32[N, C]:
+      return x
+
+    assert f(jnp.ones((4, 3), dtype=jnp.float32)).shape == (4, 3)
+
+  def test_wrong_rank(self) -> None:
+    @beartype
+    def f(x: F32[N, C]) -> F32[N, C]:
+      return x
+
+    with pytest.raises(BeartypeCallHintParamViolation):
+      f(jnp.ones(5, dtype=jnp.float32))
+
+  def test_cross_arg_consistency(self) -> None:
+    @beartype
+    def f(x: F32[N, C], y: F32[N, C]) -> F32[N, C]:
+      return x + y
+
+    assert f(
+      jnp.ones((4, 3), dtype=jnp.float32), jnp.ones((4, 3), dtype=jnp.float32)
+    ).shape == (4, 3)
+
+  def test_cross_arg_mismatch(self) -> None:
+    @beartype
+    def f(x: F32[N, C], y: F32[N, C]) -> F32[N, C]:
+      return x + y
+
+    with pytest.raises(BeartypeCallHintParamViolation):
+      f(jnp.ones((4, 3), dtype=jnp.float32), jnp.ones((5, 3), dtype=jnp.float32))
+
+  def test_fixed_dim(self) -> None:
+    @beartype
+    def f(x: F32[3, N]) -> F32[3, N]:
+      return x
+
+    f(jnp.ones((3, 5), dtype=jnp.float32))
+    with pytest.raises(BeartypeCallHintParamViolation):
+      f(jnp.ones((4, 5), dtype=jnp.float32))
+
+  def test_symbolic_dim(self) -> None:
+    @beartype
+    def f(x: F32[N], y: F32[N + 1]) -> F32[N]:
+      return x
+
+    f(jnp.ones(5, dtype=jnp.float32), jnp.ones(6, dtype=jnp.float32))
+    with pytest.raises(BeartypeCallHintParamViolation):
+      f(jnp.ones(5, dtype=jnp.float32), jnp.ones(5, dtype=jnp.float32))
+
+  def test_variadic(self) -> None:
+    @beartype
+    def f(x: F32[~B, C]) -> F32[~B, C]:
+      return x
+
+    f(jnp.ones(3, dtype=jnp.float32))
+    f(jnp.ones((2, 3, 4), dtype=jnp.float32))
+
+  def test_anonymous_variadic(self) -> None:
+    @beartype
+    def f(x: F32[~__, C]) -> F32[~__, C]:
+      return x
+
+    f(jnp.ones(3, dtype=jnp.float32))
+    f(jnp.ones((2, 3, 4), dtype=jnp.float32))
+
+  def test_broadcastable(self) -> None:
+    @beartype
+    def f(x: F32[N, C], y: F32[+N, C]) -> F32[N, C]:
+      return x + y
+
+    f(jnp.ones((4, 3), dtype=jnp.float32), jnp.ones((1, 3), dtype=jnp.float32))
+    f(jnp.ones((4, 3), dtype=jnp.float32), jnp.ones((4, 3), dtype=jnp.float32))
+    with pytest.raises(BeartypeCallHintParamViolation):
+      f(jnp.ones((4, 3), dtype=jnp.float32), jnp.ones((2, 3), dtype=jnp.float32))
+
+  def test_return_shape_violation(self) -> None:
+    @beartype
+    def f(x: F32[N, C]) -> F32[N, C]:
+      return jnp.ones((1, 1), dtype=jnp.float32)
+
+    with pytest.raises(BeartypeCallHintReturnViolation):
+      f(jnp.ones((4, 3), dtype=jnp.float32))
+
+  def test_return_dtype_violation(self) -> None:
+    @beartype
+    def f(x: F32[N]) -> F32[N]:
+      return x.astype(jnp.int32)
+
+    with pytest.raises(BeartypeCallHintReturnViolation):
+      f(jnp.ones(3, dtype=jnp.float32))
+
+  def test_sequential_calls_independent(self) -> None:
+    @beartype
+    def f(x: F32[N]) -> F32[N]:
+      return x
+
+    f(jnp.ones(3, dtype=jnp.float32))
+    f(jnp.ones(99, dtype=jnp.float32))
+
+  def test_anonymous_dim(self) -> None:
+    @beartype
+    def f(x: F32[__, C], y: F32[__, C]) -> F32[__, C]:
+      return x
+
+    f(jnp.ones((4, 3), dtype=jnp.float32), jnp.ones((99, 3), dtype=jnp.float32))
+
+
+# =====================================================================
+# BFloat16 (JAX/PyTorch-specific)
+# =====================================================================
+
+
+class TestJaxBFloat16:
+  def test_bf16_basic(self) -> None:
+    @beartype
+    def f(x: BF16[N, C]) -> BF16[N, C]:
+      return x
+
+    assert f(jnp.ones((4, 3), dtype=jnp.bfloat16)).shape == (4, 3)
+
+  def test_bf16_cross_arg(self) -> None:
+    @beartype
+    def f(x: BF16[N], y: BF16[N]) -> BF16[N]:
+      return x + y
+
+    f(jnp.ones(5, dtype=jnp.bfloat16), jnp.ones(5, dtype=jnp.bfloat16))
+    with pytest.raises(BeartypeCallHintParamViolation):
+      f(jnp.ones(5, dtype=jnp.bfloat16), jnp.ones(7, dtype=jnp.bfloat16))
+
+  def test_bf16_rejects_f32(self) -> None:
+    @beartype
+    def f(x: BF16[N]) -> BF16[N]:
+      return x
+
+    with pytest.raises(BeartypeCallHintParamViolation):
+      f(jnp.ones(3, dtype=jnp.float32))
+
+
+# =====================================================================
+# 64-bit dtypes (require jax_enable_x64)
+# =====================================================================
+
+
+class TestJax64Bit:
+  @pytest.fixture(autouse=True)
+  def _enable_x64(self) -> None:
+    jax.config.update("jax_enable_x64", True)
+    yield  # type: ignore[func-returns-value]
+    jax.config.update("jax_enable_x64", False)
+
+  def test_f64(self) -> None:
+    from shapix.jax import F64
+
+    @beartype
+    def f(x: F64[N]) -> F64[N]:
+      return x
+
+    f(jnp.ones(5, dtype=jnp.float64))
+
+  def test_i64(self) -> None:
+    from shapix.jax import I64
+
+    @beartype
+    def f(x: I64[N]) -> I64[N]:
+      return x
+
+    f(jnp.ones(5, dtype=jnp.int64))
+
+
+# =====================================================================
+# Cross-backend rejection
+# =====================================================================
+
+
+class TestJaxCrossBackendRejection:
+  def test_jax_type_rejects_numpy(self) -> None:
+    @beartype
+    def f(x: F32[N]) -> F32[N]:
+      return x
+
+    with pytest.raises(BeartypeCallHintParamViolation):
+      f(np.ones(3, dtype=np.float32))
+
+  def test_numpy_type_rejects_jax(self) -> None:
+    from shapix.numpy import F32 as NpF32
+
+    @beartype
+    def f(x: NpF32[N]) -> NpF32[N]:
+      return x
+
+    with pytest.raises(BeartypeCallHintParamViolation):
+      f(jnp.ones(3, dtype=jnp.float32))
+
+
+# =====================================================================
+# Like types
+# =====================================================================
+
+
+class TestJaxLikeTypes:
+  @pytest.mark.parametrize(
+    "value",
+    [1.5, [1.0, 2.0], [[1.0, 2.0], [3.0, 4.0]], (1.0, 2.0)],
+    ids=["scalar", "list", "nested_list", "tuple"],
+  )
+  def test_f32like_accepts_scalars_and_sequences(self, value: object) -> None:
+    assert is_bearable(value, F32Like)
+
+  def test_f32like_accepts_numpy(self) -> None:
+    assert is_bearable(np.ones(3, dtype=np.float32), F32Like)
+
+  def test_f32like_accepts_jax(self) -> None:
+    assert is_bearable(jnp.ones(3, dtype=jnp.float32), F32Like)
+
+  def test_f32like_rejects_non_numeric(self) -> None:
+    assert not is_bearable(object(), F32Like)
+
+  def test_i64like(self) -> None:
+    assert is_bearable(42, I64Like)
+    assert is_bearable([1, 2, 3], I64Like)
+
+  def test_boollk(self) -> None:
+    assert is_bearable(True, BoolLk)
+    assert is_bearable([True, False], BoolLk)
+
+
+class TestJaxLikeEdgeCases:
+  def test_deep_nesting(self) -> None:
+    assert is_bearable([[[[[[1.0]]]]]], F32Like)
+
+  def test_empty_list(self) -> None:
+    assert is_bearable([], F32Like)
+
+  def test_0d_jax_array(self) -> None:
+    assert is_bearable(jnp.array(1.5, dtype=jnp.float32), F32Like)
+
+  def test_0d_numpy_array(self) -> None:
+    assert is_bearable(np.array(1.5, dtype=np.float32), F32Like)
+
+  def test_dict_rejected(self) -> None:
+    assert not is_bearable({"a": 1.0}, F32Like)
+
+  def test_f32like_rejects_torch_tensor(self) -> None:
+    torch = pytest.importorskip("torch")
+    assert not is_bearable(torch.ones(3, dtype=torch.float32), F32Like)
+
+
+# =====================================================================
+# Decorator integration
+# =====================================================================
+
+
+class TestJaxDecoratorIntegration:
+  def test_shapix_check(self) -> None:
+    @shapix.check
+    @beartype
+    def f(x: F32[N], y: F32[N]) -> F32[N]:
+      return x + y
+
+    f(jnp.ones(3, dtype=jnp.float32), jnp.ones(3, dtype=jnp.float32))
+    with pytest.raises(BeartypeCallHintParamViolation):
+      f(jnp.ones(3, dtype=jnp.float32), jnp.ones(5, dtype=jnp.float32))
+
+  def test_check_context(self) -> None:
+    with shapix.check_context():
+      x = jnp.ones((4, 3), dtype=jnp.float32)
+      y = jnp.ones((5, 3), dtype=jnp.float32)
+      assert is_bearable(x, F32[N, C])
+      assert not is_bearable(y, F32[N, C])
+
+
+# =====================================================================
+# Custom dimensions with JAX
+# =====================================================================
+
+
+class TestJaxCustomDimensions:
+  def test_custom_dim(self) -> None:
+    Seq = Dimension("Seq")
+
+    @beartype
+    def f(x: F32[N, Seq]) -> F32[N, Seq]:
+      return x
+
+    f(jnp.ones((4, 10), dtype=jnp.float32))
+
+  def test_custom_variadic(self) -> None:
+    Batch = Dimension("Batch")
+
+    @beartype
+    def f(x: F32[~Batch, C]) -> F32[~Batch, C]:
+      return x
+
+    f(jnp.ones(3, dtype=jnp.float32))
+    f(jnp.ones((2, 3, 4), dtype=jnp.float32))
+
+
+# =====================================================================
+# Mixed JAX + NumPy in same function
+# =====================================================================
+
+
+class TestJaxMixedAnnotations:
+  def test_jax_input_numpy_return(self) -> None:
+    """Function takes JAX input, returns numpy — return type must match."""
+    from shapix.numpy import F32 as NpF32
+
+    @beartype
+    def f(x: F32[N]) -> NpF32[N]:
+      return np.asarray(x)
+
+    result = f(jnp.ones(5, dtype=jnp.float32))
+    assert isinstance(result, np.ndarray)
+    assert result.shape == (5,)

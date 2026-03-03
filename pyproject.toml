@@ -4,16 +4,18 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 authors = [{ name = "acecchini", email = "ale.cecchini.valette@gmail.com" }]
-requires-python = ">=3.12,<3.13"
-dependencies = ["numpy>=1.26.3", "beartype>=0.22.9"]
+requires-python = ">=3.12"
+dependencies = ["numpy>=2.2.0", "beartype>=0.22.9"]
 
 [dependency-groups]
-optional = ["torch>=2.8.0,<2.9.0", "jax[cpu]>=0.7.1"]
+torch = ["torch>=2.6.0"]
+jax = ["jax[cpu]>=0.5.0"]
 dev = [
   "ruff>=0.14.11",
   "pyright>=1.1.408",
   "pytest>=9.0.2",
   "pre-commit>=4.5.1",
+  "nox>=2025.5.1",
   "ipykernel>=7.1.0",
   "matplotlib>=3.10.8",
 ]

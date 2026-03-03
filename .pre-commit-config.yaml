@@ -1,0 +1,54 @@
+default_install_hook_types: [pre-commit, pre-push, commit-msg]
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+    - id: trailing-whitespace
+    - id: end-of-file-fixer
+    - id: check-docstring-first
+    - id: check-yaml
+    - id: check-executables-have-shebangs
+    - id: check-toml
+    - id: debug-statements
+
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.10.7
+    hooks:
+      - id: uv-lock
+
+  - repo: https://github.com/tsvikas/sync-with-uv
+    rev: v0.5.0
+    hooks:
+      - id: sync-with-uv
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.4 # overwritten by `sync-with-uv` hook
+    hooks:
+      - id: ruff-check
+        args: [--fix, --output-format=concise]
+      - id: ruff-format
+        args: [--output-format=concise]
+
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.1 # overwritten by `sync-with-uv` hook
+    hooks:
+    - id: codespell
+      stages: [pre-commit, commit-msg]
+
+  - repo: https://github.com/RobertCraigie/pyright-python
+    rev: v1.1.351 # overwritten by `sync-with-uv` hook
+    hooks:
+    - id: pyright
+      stages: [pre-push]
+      pass_filenames: false
+
+  - repo: local
+    hooks:
+      - id: pytest
+        name: pytest
+        entry: uv run pytest tests/ -x -q
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]

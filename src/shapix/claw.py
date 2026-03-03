@@ -6,6 +6,7 @@ wrapper for discoverability::
 
     # In your package's __init__.py:
     from shapix.claw import shapix_this_package
+
     shapix_this_package()
 
     # All subsequently imported submodules get @beartype automatically,
@@ -19,9 +20,9 @@ from beartype.claw import beartype_this_package as _beartype_this_package
 
 
 def shapix_this_package(*, conf: BeartypeConf = BeartypeConf()) -> None:
-    """Instrument the calling package with ``@beartype`` for runtime checking.
+  """Instrument the calling package with ``@beartype`` for runtime checking.
 
-    This is a thin wrapper around ``beartype.claw.beartype_this_package``
-    that exists as a semantic entry point for shapix users.
-    """
-    _beartype_this_package(conf=conf)
+  This is a thin wrapper around ``beartype.claw.beartype_this_package``
+  that exists as a semantic entry point for shapix users.
+  """
+  _beartype_this_package(conf=conf)

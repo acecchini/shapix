@@ -30,14 +30,14 @@ from typing import Union
 from ._memo import ShapeMemo
 
 __all__ = [
-    "NamedDim",
-    "FixedDim",
-    "SymbolicDim",
-    "VariadicDim",
-    "ANONYMOUS",
-    "ANONYMOUS_VARIADIC",
-    "DimSpec",
-    "check_shape",
+  "NamedDim",
+  "FixedDim",
+  "SymbolicDim",
+  "VariadicDim",
+  "ANONYMOUS",
+  "ANONYMOUS_VARIADIC",
+  "DimSpec",
+  "check_shape",
 ]
 
 
@@ -48,71 +48,73 @@ __all__ = [
 
 @dataclass(frozen=True, slots=True)
 class NamedDim:
-    """A named dimension that binds to / validates against the memo."""
+  """A named dimension that binds to / validates against the memo."""
 
-    name: str
-    broadcastable: bool = False
+  name: str
+  broadcastable: bool = False
 
-    def __repr__(self) -> str:
-        prefix = "+" if self.broadcastable else ""
-        return f"{prefix}{self.name}"
+  def __repr__(self) -> str:
+    prefix = "+" if self.broadcastable else ""
+    return f"{prefix}{self.name}"
 
 
 @dataclass(frozen=True, slots=True)
 class FixedDim:
-    """A dimension that must match an exact size."""
+  """A dimension that must match an exact size."""
 
-    size: int
+  size: int
 
-    def __repr__(self) -> str:
-        return str(self.size)
+  def __repr__(self) -> str:
+    return str(self.size)
 
 
 @dataclass(frozen=True, slots=True)
 class SymbolicDim:
-    """An arithmetic expression evaluated against bound dimensions."""
+  """An arithmetic expression evaluated against bound dimensions."""
 
-    expr: str
-    broadcastable: bool = False
+  expr: str
+  broadcastable: bool = False
 
-    def __repr__(self) -> str:
-        return self.expr
+  def __repr__(self) -> str:
+    return self.expr
 
 
 @dataclass(frozen=True, slots=True)
 class VariadicDim:
-    """Matches zero or more contiguous dimensions."""
+  """Matches zero or more contiguous dimensions."""
 
-    name: str
-    broadcastable: bool = False
+  name: str
+  broadcastable: bool = False
 
-    def __repr__(self) -> str:
-        prefix = "+" if self.broadcastable else ""
-        return f"~{prefix}{self.name}"
+  def __repr__(self) -> str:
+    prefix = "+" if self.broadcastable else ""
+    return f"~{prefix}{self.name}"
 
 
 class _Anonymous:
-    """Matches any single dimension without binding."""
+  """Matches any single dimension without binding."""
 
-    __slots__ = ()
+  __slots__ = ()
 
-    def __repr__(self) -> str:
-        return "__"
+  def __repr__(self) -> str:
+    return "__"
 
 
 class _AnonymousVariadic:
-    """Matches any number of dimensions without binding."""
+  """Matches any number of dimensions without binding."""
 
-    __slots__ = ()
+  __slots__ = ()
 
-    def __repr__(self) -> str:
-        return "~__"
+  def __repr__(self) -> str:
+    return "~__"
 
 
 ANONYMOUS = _Anonymous()
 ANONYMOUS_VARIADIC = _AnonymousVariadic()
 
-DimSpec = Union[NamedDim, FixedDim, SymbolicDim, VariadicDim, _Anonymous, _AnonymousVariadic]
+DimSpec = Union[
+  NamedDim, FixedDim, SymbolicDim, VariadicDim, _Anonymous, _AnonymousVariadic
+]
 
 
 # ---------------------------------------------------------------------------
@@ -121,76 +123,70 @@ DimSpec = Union[NamedDim, FixedDim, SymbolicDim, VariadicDim, _Anonymous, _Anony
 
 
 def check_shape(
-    shape: tuple[int, ...],
-    spec: tuple[DimSpec, ...],
-    memo: ShapeMemo,
+  shape: tuple[int, ...], spec: tuple[DimSpec, ...], memo: ShapeMemo
 ) -> str:
-    """Validate *shape* against *spec*, updating *memo* with bindings.
+  """Validate *shape* against *spec*, updating *memo* with bindings.
 
-    Parameters
-    ----------
-    shape:
-        The concrete array shape, e.g. ``(4, 3, 28, 28)``.
-    spec:
-        A tuple of :data:`DimSpec` objects describing the expected shape.
-    memo:
-        A :class:`ShapeMemo` that accumulates dimension bindings. Named
-        dimensions are bound on first occurrence and validated on subsequent
-        ones, enabling cross-argument consistency.
+  Parameters
+  ----------
+  shape:
+      The concrete array shape, e.g. ``(4, 3, 28, 28)``.
+  spec:
+      A tuple of :data:`DimSpec` objects describing the expected shape.
+  memo:
+      A :class:`ShapeMemo` that accumulates dimension bindings. Named
+      dimensions are bound on first occurrence and validated on subsequent
+      ones, enabling cross-argument consistency.
 
-    Returns
-    -------
-    str
-        ``""`` on success. A human-readable error message on mismatch.
-    """
-    # Find the variadic dim (at most one allowed)
-    variadic_idx: int | None = None
-    for i, dim in enumerate(spec):
-        if isinstance(dim, (VariadicDim, _AnonymousVariadic)):
-            variadic_idx = i
-            break
+  Returns
+  -------
+  str
+      ``""`` on success. A human-readable error message on mismatch.
+  """
+  # Find the variadic dim (at most one allowed)
+  variadic_idx: int | None = None
+  for i, dim in enumerate(spec):
+    if isinstance(dim, (VariadicDim, _AnonymousVariadic)):
+      variadic_idx = i
+      break
 
-    if variadic_idx is None:
-        # No variadic — exact rank match required
-        if len(shape) != len(spec):
-            return (
-                f"expected {len(spec)} dimensions but got {len(shape)} "
-                f"(shape={shape})"
-            )
-        return _check_fixed_dims(spec, shape, memo)
+  if variadic_idx is None:
+    # No variadic — exact rank match required
+    if len(shape) != len(spec):
+      return f"expected {len(spec)} dimensions but got {len(shape)} (shape={shape})"
+    return _check_fixed_dims(spec, shape, memo)
 
-    # Split around the variadic dim
-    n_prefix = variadic_idx
-    n_suffix = len(spec) - variadic_idx - 1
-    min_rank = n_prefix + n_suffix
+  # Split around the variadic dim
+  n_prefix = variadic_idx
+  n_suffix = len(spec) - variadic_idx - 1
+  min_rank = n_prefix + n_suffix
 
-    if len(shape) < min_rank:
-        return (
-            f"expected at least {min_rank} dimensions but got {len(shape)} "
-            f"(shape={shape})"
-        )
+  if len(shape) < min_rank:
+    return (
+      f"expected at least {min_rank} dimensions but got {len(shape)} (shape={shape})"
+    )
 
-    # Check prefix
-    err = _check_fixed_dims(spec[:n_prefix], shape[:n_prefix], memo)
+  # Check prefix
+  err = _check_fixed_dims(spec[:n_prefix], shape[:n_prefix], memo)
+  if err:
+    return err
+
+  # Check suffix
+  if n_suffix > 0:
+    err = _check_fixed_dims(spec[-n_suffix:], shape[-n_suffix:], memo)
     if err:
-        return err
+      return err
 
-    # Check suffix
-    if n_suffix > 0:
-        err = _check_fixed_dims(spec[-n_suffix:], shape[-n_suffix:], memo)
-        if err:
-            return err
+  # Check variadic middle
+  variadic_dim = spec[variadic_idx]
+  suffix_start = len(shape) - n_suffix if n_suffix else len(shape)
+  middle_shape = shape[n_prefix:suffix_start]
 
-    # Check variadic middle
-    variadic_dim = spec[variadic_idx]
-    suffix_start = len(shape) - n_suffix if n_suffix else len(shape)
-    middle_shape = shape[n_prefix:suffix_start]
+  if isinstance(variadic_dim, _AnonymousVariadic):
+    return ""
 
-    if isinstance(variadic_dim, _AnonymousVariadic):
-        return ""
-
-    assert isinstance(variadic_dim, VariadicDim)
-    return _check_variadic(variadic_dim, middle_shape, memo)
+  assert isinstance(variadic_dim, VariadicDim)
+  return _check_variadic(variadic_dim, middle_shape, memo)
 
 
 # ---------------------------------------------------------------------------
@@ -199,81 +195,72 @@ def check_shape(
 
 
 def _check_fixed_dims(
-    spec: tuple[DimSpec, ...] | list[DimSpec],
-    shape: tuple[int, ...],
-    memo: ShapeMemo,
+  spec: tuple[DimSpec, ...] | list[DimSpec], shape: tuple[int, ...], memo: ShapeMemo
 ) -> str:
-    for dim, size in zip(spec, shape):
-        err = _check_one(dim, size, memo)
-        if err:
-            return err
-    return ""
+  for dim, size in zip(spec, shape):
+    err = _check_one(dim, size, memo)
+    if err:
+      return err
+  return ""
 
 
 def _check_one(dim: DimSpec, size: int, memo: ShapeMemo) -> str:
-    if isinstance(dim, _Anonymous):
-        return ""
-
-    if isinstance(dim, FixedDim):
-        if dim.size != size:
-            return f"dimension expected {dim.size} but got {size}"
-        return ""
-
-    if isinstance(dim, NamedDim):
-        if dim.broadcastable and size == 1:
-            return ""
-        prev = memo.single.get(dim.name)
-        if prev is None:
-            memo.single[dim.name] = size
-            return ""
-        if prev != size:
-            return (
-                f"dimension '{dim.name}' expected {prev} but got {size}"
-            )
-        return ""
-
-    if isinstance(dim, SymbolicDim):
-        if dim.broadcastable and size == 1:
-            return ""
-        try:
-            expected = eval(dim.expr, {"__builtins__": {}}, memo.single)  # noqa: S307
-        except NameError as e:
-            return f"cannot evaluate '{dim.expr}': {e}"
-        if expected != size:
-            return (
-                f"dimension '{dim.expr}' evaluated to {expected} but got {size}"
-            )
-        return ""
-
+  if isinstance(dim, _Anonymous):
     return ""
+
+  if isinstance(dim, FixedDim):
+    if dim.size != size:
+      return f"dimension expected {dim.size} but got {size}"
+    return ""
+
+  if isinstance(dim, NamedDim):
+    if dim.broadcastable and size == 1:
+      return ""
+    prev = memo.single.get(dim.name)
+    if prev is None:
+      memo.single[dim.name] = size
+      return ""
+    if prev != size:
+      return f"dimension '{dim.name}' expected {prev} but got {size}"
+    return ""
+
+  if isinstance(dim, SymbolicDim):
+    if dim.broadcastable and size == 1:
+      return ""
+    try:
+      expected = eval(dim.expr, {"__builtins__": {}}, memo.single)  # noqa: S307
+    except NameError as e:
+      return f"cannot evaluate '{dim.expr}': {e}"
+    if expected != size:
+      return f"dimension '{dim.expr}' evaluated to {expected} but got {size}"
+    return ""
+
+  return ""
 
 
 def _check_variadic(dim: VariadicDim, shape: tuple[int, ...], memo: ShapeMemo) -> str:
-    prev = memo.variadic.get(dim.name)
-    if prev is None:
-        memo.variadic[dim.name] = (dim.broadcastable, shape)
-        return ""
+  prev = memo.variadic.get(dim.name)
+  if prev is None:
+    memo.variadic[dim.name] = (dim.broadcastable, shape)
+    return ""
 
-    prev_broadcastable, prev_shape = prev
-    if prev_shape == shape:
-        return ""
+  prev_broadcastable, prev_shape = prev
+  if prev_shape == shape:
+    return ""
 
-    # Broadcasting logic
-    if prev_broadcastable or dim.broadcastable:
-        try:
-            import numpy as np
+  # Broadcasting logic
+  if prev_broadcastable or dim.broadcastable:
+    try:
+      import numpy as np
 
-            broadcast = np.broadcast_shapes(shape, prev_shape)
-        except ValueError:
-            return (
-                f"variadic '~{dim.name}' shape {shape} cannot broadcast "
-                f"with existing {prev_shape}"
-            )
-        # Update to the broadcast result
-        memo.variadic[dim.name] = (prev_broadcastable and dim.broadcastable, broadcast)
-        return ""
+      broadcast = np.broadcast_shapes(shape, prev_shape)
+    except ValueError:
+      return (
+        f"variadic '~{dim.name}' shape {shape} cannot broadcast "
+        f"with existing {prev_shape}"
+      )
+    # Update to the broadcast result
+    memo.variadic[dim.name] = (prev_broadcastable and dim.broadcastable, broadcast)
+    return ""
 
-    return (
-        f"variadic '~{dim.name}' shape {shape} does not match "
-        f"existing {prev_shape}"
-    )
+  return f"variadic '~{dim.name}' shape {shape} does not match existing {prev_shape}"

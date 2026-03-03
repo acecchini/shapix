@@ -26,12 +26,7 @@ from beartype.vale import Is
 from ._dimensions import Dimension
 from ._dtypes import DtypeSpec, extract_dtype_str
 from ._memo import get_memo
-from ._shape import (
-  DimSpec,
-  FixedDim,
-  NamedDim,
-  check_shape,
-)
+from ._shape import DimSpec, FixedDim, NamedDim, check_shape
 
 __all__ = ["make_array_type"]
 

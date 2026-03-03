@@ -9,9 +9,9 @@ Quick start::
     from shapix import N, C, H, W
     from shapix.numpy import F32
 
+
     @beartype
-    def conv(x: F32[N, C, H, W]) -> F32[N, C, H, W]:
-        ...
+    def conv(x: F32[N, C, H, W]) -> F32[N, C, H, W]: ...
 
 Dimension symbols (``N``, ``C``, ``H``, ``W``, …) are bound on first use
 within a function call and enforced on subsequent occurrences. This gives

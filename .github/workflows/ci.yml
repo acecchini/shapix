@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --group dev
+      - run: uv run ruff check src/ tests/
+      - run: uv run ruff format --check src/ tests/
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --group dev
+      - run: uv run pyright src/
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.13", "3.14"]
+        backend: ["numpy-only", "torch", "jax", "all"]
+    name: test (py${{ matrix.python-version }}, ${{ matrix.backend }})
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install core + dev deps
+        run: uv sync --group dev
+      - name: Install torch
+        if: matrix.backend == 'torch' || matrix.backend == 'all'
+        run: uv sync --group dev --group torch
+      - name: Install jax
+        if: matrix.backend == 'jax' || matrix.backend == 'all'
+        run: uv sync --group dev --group jax
+      - name: Run tests
+        run: uv run pytest tests/ -v
