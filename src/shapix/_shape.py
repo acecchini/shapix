@@ -14,9 +14,9 @@ Dimension spec types:
   dimensions (``N+1``, ``H*W``). Optionally broadcastable.
 - :class:`VariadicDim` — matches zero or more contiguous dims and binds the
   matched sub-shape (``~spatial``). Optionally broadcastable.
-- :data:`ANONYMOUS` — matches any single dim without binding (``_``).
+- :data:`ANONYMOUS` — matches any single dim without binding (``__``).
 - :data:`ANONYMOUS_VARIADIC` — matches any number of dims without binding
-  (``~_``).
+  (``~__``).
 
 The :func:`check_shape` function returns ``""`` on success or a human-readable
 error message explaining the mismatch.
@@ -97,7 +97,7 @@ class _Anonymous:
     __slots__ = ()
 
     def __repr__(self) -> str:
-        return "_"
+        return "__"
 
 
 class _AnonymousVariadic:
@@ -106,7 +106,7 @@ class _AnonymousVariadic:
     __slots__ = ()
 
     def __repr__(self) -> str:
-        return "~_"
+        return "~__"
 
 
 ANONYMOUS = _Anonymous()

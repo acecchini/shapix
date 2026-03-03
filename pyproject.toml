@@ -5,16 +5,10 @@ description = "Add your description here"
 readme = "README.md"
 authors = [{ name = "acecchini", email = "ale.cecchini.valette@gmail.com" }]
 requires-python = ">=3.12,<3.13"
-dependencies = [
-  "numpy>=1.26.3",
-  "beartype>=0.22.9",
-]
+dependencies = ["numpy>=1.26.3", "beartype>=0.22.9"]
 
 [dependency-groups]
-optional = [
-  "torch>=2.8.0,<2.9.0",
-  "jax[cpu]>=0.7.1",
-]
+optional = ["torch>=2.8.0,<2.9.0", "jax[cpu]>=0.7.1"]
 dev = [
   "ruff>=0.14.11",
   "pyright>=1.1.408",

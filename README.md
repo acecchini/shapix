@@ -222,6 +222,20 @@ def embed(tokens: I64[N, Seq], table: F32[Vocab, Embed]) -> F32[N, Seq, Embed]:
 
 Unary operators work on custom dimensions too: `~Vocab` (variadic), `+Vocab` (broadcastable).
 
+To silence pyright/Pylance on custom dimensions, use the `TYPE_CHECKING` pattern:
+
+```python
+import typing as tp
+from shapix import Dimension
+
+if tp.TYPE_CHECKING:
+    type Vocab = int
+    type Embed = int
+else:
+    Vocab = Dimension("Vocab")
+    Embed = Dimension("Embed")
+```
+
 ### Summary
 
 | Syntax | Meaning | Example | Behavior |
@@ -384,7 +398,7 @@ However, some patterns produce type checker errors because they place **runtime 
 | Integer literals | `F32[N, 3, H, W]` | `reportGeneralTypeIssues` |
 | Unary operators | `F32[~B, C]`, `F32[+N, C]` | `reportInvalidTypeForm` |
 | Arithmetic | `F32[N + 2]` | `reportInvalidTypeForm` |
-| Custom dimensions | `F32[Vocab, Embed]` | `reportInvalidTypeForm` |
+| Custom dimensions | `F32[Vocab, Embed]` | `reportInvalidTypeForm` (or use `TYPE_CHECKING` pattern) |
 
 ### Option A — Suppress `reportInvalidTypeForm` and wrap integers (recommended)
 

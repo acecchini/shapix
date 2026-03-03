@@ -11,7 +11,7 @@ src/shapix/
 ├── _shape.py          # Shape spec types and matching logic
 ├── _dtypes.py         # Dtype specifications and matching
 ├── _array_types.py    # Array type factory → Annotated[T, Is[checker]]
-├── _dimensions.py     # Dimension symbols (N, C, ~B, +N, _, etc.)
+├── _dimensions.py     # Dimension symbols (N, C, ~B, +N, __, etc.)
 ├── _decorator.py      # Optional @shapix.check + check_context
 ├── numpy.py           # NumPy: F32, I64, F32Like, ArrayLike, etc.
 ├── jax.py             # JAX: F32, BF16, etc.

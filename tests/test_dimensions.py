@@ -101,12 +101,12 @@ class TestDimSpec:
         assert spec.expr == "(N+1)"
 
     def test_anonymous_underscore(self) -> None:
-        d = Dimension("_")
+        d = Dimension("__")
         spec = d._dim_spec
         assert spec is ANONYMOUS
 
     def test_anonymous_variadic(self) -> None:
-        d = Dimension("~_")
+        d = Dimension("~__")
         spec = d._dim_spec
         assert spec is ANONYMOUS_VARIADIC
 
@@ -141,9 +141,9 @@ class TestUnaryOperators:
         assert str(d) == "+N"
 
     def test_invert_anonymous(self) -> None:
-        """~_ should produce anonymous variadic."""
-        d = ~Dimension("_")
-        assert str(d) == "~_"
+        """~__ should produce anonymous variadic."""
+        d = ~Dimension("__")
+        assert str(d) == "~__"
         spec = d._dim_spec
         assert spec is ANONYMOUS_VARIADIC
 

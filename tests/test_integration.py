@@ -6,7 +6,8 @@ import numpy as np
 import pytest
 from beartype import beartype
 
-from shapix import N, C, H, W, B, Any, __
+import shapix
+from shapix import N, C, H, W, B, __
 from shapix.numpy import F32, F64, Int, I32
 
 
@@ -133,14 +134,17 @@ class TestNestedCalls:
         assert result.shape == (4,)
 
     def test_deep_nesting(self) -> None:
+        @shapix.check
         @beartype
         def a(x: F32[N]) -> F32[N]:
             return x
 
+        @shapix.check
         @beartype
         def b(x: F32[N, C]) -> F32[N]:
             return a(x[:, 0])
 
+        @shapix.check
         @beartype
         def c(x: F32[N, C, H]) -> F32[N]:
             return b(x[:, :, 0])
@@ -158,15 +162,6 @@ class TestVariadicDims:
         f(np.ones((3,), dtype=np.float32))
         f(np.ones((2, 3), dtype=np.float32))
         f(np.ones((1, 2, 3), dtype=np.float32))
-
-    def test_any_alias(self) -> None:
-        """Any is a backward-compat alias for ~__."""
-        @beartype
-        def f(x: F32[Any, C]) -> F32[Any, C]:
-            return x
-
-        f(np.ones((3,), dtype=np.float32))
-        f(np.ones((2, 3), dtype=np.float32))
 
     def test_variadic_named(self) -> None:
         @beartype

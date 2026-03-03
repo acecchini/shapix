@@ -57,7 +57,6 @@ __all__ = [
     "__",
     # Special
     "Scalar",
-    "Any",
 ]
 
 
@@ -155,13 +154,13 @@ class Dimension(str):
             return None
 
         # Anonymous single dim
-        if raw == "_":
+        if raw == "__":
             return ANONYMOUS
 
         # Variadic: ~name or ~+name
         if raw.startswith("~"):
             rest = raw[1:]
-            if rest == "_" or rest.startswith("_"):
+            if rest == "__":
                 return ANONYMOUS_VARIADIC
             if rest.startswith("+"):
                 return VariadicDim(rest[1:], broadcastable=True)
@@ -202,7 +201,6 @@ if tp.TYPE_CHECKING:
     type W = int
     type T = int
     type __ = int
-    type Any = int
 else:
     # Common named dimensions
     Scalar = Dimension("")
@@ -216,7 +214,4 @@ else:
     T = Dimension("T")
 
     # Anonymous (match anything, no binding)
-    __ = Dimension("_")
-
-    # Anonymous variadic (match any number of dims, no binding)
-    Any = Dimension("~_")
+    __ = Dimension("__")

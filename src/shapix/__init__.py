@@ -22,7 +22,7 @@ Exports
 Dimension symbols
     ``B``, ``N``, ``P``, ``L``, ``C``, ``H``, ``W``, ``T`` — named dimensions.
     ``__`` — anonymous (match any single dim, no binding).
-    ``Scalar`` — scalar (no dimensions), ``Any`` — anonymous variadic.
+    ``Scalar`` — scalar (no dimensions).
 
 Unary operators (apply to any dimension)
     ``~N`` — variadic (match zero or more contiguous dims).
@@ -47,7 +47,6 @@ from ._array_types import make_array_type as make_array_type
 from ._decorator import check as check
 from ._decorator import check_context as check_context
 from ._dimensions import __ as __
-from ._dimensions import Any as Any
 from ._dimensions import B as B
 from ._dimensions import C as C
 from ._dimensions import Dimension as Dimension
