@@ -8,6 +8,8 @@ wheels/
 
 # Virtual environments
 .venv
+.tox/
+.nox/
 .lsp_mcp.port
 .claude/
 !.claude/skills/
