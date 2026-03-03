@@ -39,7 +39,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v7
-      - run: uv run tox -e typecheck-compat
+      - run: uv run pytest tests/test_typecheck.py -v
 
   test:
     runs-on: ubuntu-latest
@@ -52,7 +52,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v7
-      - run: uv run tox -e "${{ matrix.python }}${{ matrix.suffix }}"
+      - run: uv run tox -e "py${{ matrix.python }}${{ matrix.suffix }}"
+        env:
+          TOX_PYTHON: python${{ matrix.python }}
 
   beartype-compat:
     runs-on: ubuntu-latest
@@ -60,8 +62,9 @@ jobs:
       fail-fast: false
       matrix:
         version: ["bt020", "bt021", "bt022"]
-    name: beartype (${{ matrix.version }})
+        suffix: ["", "-torch", "-jax"]
+    name: beartype (${{ matrix.version }}${{ matrix.suffix }})
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v7
-      - run: uv run tox -e ${{ matrix.version }}
+      - run: uv run tox -e "${{ matrix.version }}${{ matrix.suffix }}"

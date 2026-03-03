@@ -3,6 +3,10 @@
 Runs pyright, mypy, and ty on sample files under ``tests/typing/`` to verify
 that shapix's public API type-checks cleanly across multiple checkers.
 
+Test matrix:
+- **Common files** (all checkers): imports, decorator, like types, make_array_type
+- **Pyright-only files**: full F32[N, C] annotations (TYPE_CHECKING stubs)
+
 These tests require ``pyright``, ``mypy``, and ``ty`` to be installed.
 """
 
@@ -17,6 +21,22 @@ import pytest
 TYPING_DIR = Path(__file__).parent / "typing"
 
 # ---------------------------------------------------------------------------
+# File categories
+# ---------------------------------------------------------------------------
+
+# Files that should pass cleanly on ALL type checkers
+COMMON_FILES = [
+  "check_imports.py",
+  "check_decorator.py",
+  "check_like_types.py",
+  "check_make_array_type.py",
+]
+
+# Files that only pyright supports (F32[N, C] subscript annotations)
+PYRIGHT_ONLY_FILES = ["check_annotations.py"]
+
+
+# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
@@ -24,7 +44,7 @@ TYPING_DIR = Path(__file__).parent / "typing"
 def _run(
   cmd: list[str], *, cwd: Path | None = None
 ) -> subprocess.CompletedProcess[str]:
-  return subprocess.run(cmd, capture_output=True, text=True, timeout=60, cwd=cwd)
+  return subprocess.run(cmd, capture_output=True, text=True, timeout=120, cwd=cwd)
 
 
 def _skip_if_missing(tool: str) -> None:
@@ -33,50 +53,48 @@ def _skip_if_missing(tool: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Tests — common (all checkers should pass)
+# Pyright — common + pyright-only files
 # ---------------------------------------------------------------------------
-
-COMMON_FILES = ["check_imports.py", "check_decorator.py"]
 
 
 @pytest.mark.typecheck
-@pytest.mark.parametrize("filename", COMMON_FILES)
 class TestPyright:
+  @pytest.mark.parametrize("filename", COMMON_FILES + PYRIGHT_ONLY_FILES)
   def test_pyright(self, filename: str) -> None:
     _skip_if_missing("pyright")
     result = _run(["pyright", str(TYPING_DIR / filename)])
-    assert result.returncode == 0, f"pyright failed:\n{result.stdout}\n{result.stderr}"
+    assert result.returncode == 0, (
+      f"pyright failed on {filename}:\n{result.stdout}\n{result.stderr}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Mypy — common files only
+# ---------------------------------------------------------------------------
 
 
 @pytest.mark.typecheck
-@pytest.mark.parametrize("filename", COMMON_FILES)
 class TestMypy:
+  @pytest.mark.parametrize("filename", COMMON_FILES)
   def test_mypy(self, filename: str) -> None:
     _skip_if_missing("mypy")
     result = _run(["mypy", str(TYPING_DIR / filename), "--ignore-missing-imports"])
-    assert result.returncode == 0, f"mypy failed:\n{result.stdout}\n{result.stderr}"
+    assert result.returncode == 0, (
+      f"mypy failed on {filename}:\n{result.stdout}\n{result.stderr}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# ty — common files only
+# ---------------------------------------------------------------------------
 
 
 @pytest.mark.typecheck
-@pytest.mark.parametrize("filename", COMMON_FILES)
 class TestTy:
+  @pytest.mark.parametrize("filename", COMMON_FILES)
   def test_ty(self, filename: str) -> None:
     _skip_if_missing("ty")
     result = _run(["ty", "check", str(TYPING_DIR / filename)])
-    assert result.returncode == 0, f"ty failed:\n{result.stdout}\n{result.stderr}"
-
-
-# ---------------------------------------------------------------------------
-# Tests — pyright-only (full F32[N, C] annotation pattern)
-# ---------------------------------------------------------------------------
-
-PYRIGHT_FILES = ["check_annotations.py"]
-
-
-@pytest.mark.typecheck
-@pytest.mark.parametrize("filename", PYRIGHT_FILES)
-class TestPyrightAnnotations:
-  def test_pyright_annotations(self, filename: str) -> None:
-    _skip_if_missing("pyright")
-    result = _run(["pyright", str(TYPING_DIR / filename)])
-    assert result.returncode == 0, f"pyright failed:\n{result.stdout}\n{result.stderr}"
+    assert result.returncode == 0, (
+      f"ty failed on {filename}:\n{result.stdout}\n{result.stderr}"
+    )

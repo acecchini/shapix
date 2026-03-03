@@ -8,19 +8,22 @@ requires-python = ">=3.12"
 dependencies = ["numpy>=2.2.0", "beartype>=0.22.9"]
 
 [dependency-groups]
+# CPU-only variants for dev/CI testing. Shapix is device-agnostic — it checks
+# .shape and .dtype only, so GPU/TPU builds (torch+cuda, jax[cuda12], etc.)
+# work without any extra configuration. Users install their own backend.
 torch = ["torch>=2.6.0"]
 jax = ["jax[cpu]>=0.5.0"]
 dev = [
-  "ruff>=0.14.11",
+  "ruff>=0.15.4",
   "pyright>=1.1.408",
-  "mypy>=1.15",
-  "ty>=0.0.1a7",
+  "mypy>=1.19.1",
+  "ty>=0.0.20",
   "pytest>=9.0.2",
   "pre-commit>=4.5.1",
-  "tox>=4.19",
-  "tox-uv>=1",
+  "tox>=4.47.1",
+  "tox-uv>=1.33.1",
   "codespell>=2.4.1",
-  "ipykernel>=7.1.0",
+  "ipykernel>=7.2.0",
   "matplotlib>=3.10.8",
 ]
 

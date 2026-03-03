@@ -773,7 +773,7 @@ class TestMultipleViolations:
       return x
 
     with pytest.raises(BeartypeCallHintParamViolation):
-      f(np.ones((4, 5), dtype=np.int32))
+      f(np.ones((4, 5), dtype=np.int32))  # type: ignore
 
   def test_both_wrong(self) -> None:
     @beartype
@@ -781,7 +781,7 @@ class TestMultipleViolations:
       return x
 
     with pytest.raises(BeartypeCallHintParamViolation):
-      f(np.ones(3, dtype=np.int64))
+      f(np.ones(3, dtype=np.int64))  # type: ignore
 
 
 # =====================================================================
@@ -824,7 +824,7 @@ class TestArrayLikeAcceptance:
     def f(x: F32Like) -> float:
       return float(np.asarray(x).sum())
 
-    f(value)
+    f(value)  # type: ignore
 
 
 class TestArrayLikeRejection:
