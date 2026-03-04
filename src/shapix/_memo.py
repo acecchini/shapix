@@ -99,20 +99,24 @@ def get_memo(_depth: int = 2) -> ShapeMemo:
     return ShapeMemo()
 
   frame_id = id(frame)
+  code = frame.f_code
 
   if not hasattr(_local, "frame_stack"):
-    _local.frame_stack = []  # list[tuple[int, int, ShapeMemo]]
+    _local.frame_stack = []  # list[tuple[int, object, int, ShapeMemo]]
 
-  # Stack entries: (frame_id, max_lasti, memo)
-  stack: list[tuple[int, int, ShapeMemo]] = _local.frame_stack
+  # Stack entries: (frame_id, code_obj, max_lasti, memo)
+  # We store the code object alongside id(frame) to prevent false matches
+  # when CPython recycles a frame object at the same address for a different
+  # function (common in parametrised test loops and tight call sequences).
+  stack: list[tuple[int, object, int, ShapeMemo]] = _local.frame_stack
   lasti: int = frame.f_lasti
 
   # Fast path: same frame as last check (next param in same call)
-  if stack and stack[-1][0] == frame_id:
-    _, prev_lasti, prev_memo = stack[-1]
+  if stack and stack[-1][0] == frame_id and stack[-1][1] is code:
+    _, _, prev_lasti, prev_memo = stack[-1]
     if lasti >= prev_lasti:
       # Same call, advancing through params — update max_lasti
-      stack[-1] = (frame_id, lasti, prev_memo)
+      stack[-1] = (frame_id, code, lasti, prev_memo)
       return prev_memo
     # f_lasti went backwards → frame-id was reused (new call to same fn).
     # Discard the stale entry and fall through to create a fresh memo.
@@ -120,11 +124,11 @@ def get_memo(_depth: int = 2) -> ShapeMemo:
 
   # Check deeper in stack (returning to outer call after inner completed)
   for i in range(len(stack) - 2, -1, -1):
-    if stack[i][0] == frame_id:
-      _, prev_lasti, prev_memo = stack[i]
+    if stack[i][0] == frame_id and stack[i][1] is code:
+      _, _, prev_lasti, prev_memo = stack[i]
       if lasti >= prev_lasti:
         del stack[i + 1 :]
-        stack[i] = (frame_id, lasti, prev_memo)
+        stack[i] = (frame_id, code, lasti, prev_memo)
         return prev_memo
       # Frame-id reuse at a deeper level — discard everything from i onward
       del stack[i:]
@@ -137,10 +141,10 @@ def get_memo(_depth: int = 2) -> ShapeMemo:
     while f is not None:
       active.add(id(f))
       f = f.f_back
-    stack[:] = [(fid, li, m) for fid, li, m in stack if fid in active]
+    stack[:] = [(fid, c, li, m) for fid, c, li, m in stack if fid in active]
 
   memo = ShapeMemo()
-  stack.append((frame_id, lasti, memo))
+  stack.append((frame_id, code, lasti, memo))
   return memo
 
 
