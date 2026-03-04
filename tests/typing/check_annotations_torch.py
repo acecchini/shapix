@@ -1,4 +1,4 @@
-# pyright: reportMissingImports=false
+# pyright: reportMissingImports=false, reportInvalidTypeForm=false
 """Verify PyTorch tensor type annotations (pyright-specific).
 
 Tests the full shapix annotation pattern with PyTorch backend types.

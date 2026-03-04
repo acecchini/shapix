@@ -43,12 +43,12 @@ class _ShapeChecker:
   ``Float32Array[N, C]``) and reused across all functions that share it.
   """
 
-  __slots__ = ("_dtype_spec", "_shape_spec", "_repr", "_fail_id")
+  __slots__ = ("_dtype_spec", "_shape_spec", "_repr", "_fail_obj")
 
   def __init__(self, dtype_spec: DtypeSpec, shape_spec: tuple[DimSpec, ...]) -> None:
     self._dtype_spec = dtype_spec
     self._shape_spec = shape_spec
-    self._fail_id: int | None = None
+    self._fail_obj: object = None
 
     # Pre-compute repr for beartype error messages
     dims = ", ".join(repr(d) for d in shape_spec)
@@ -59,10 +59,10 @@ class _ShapeChecker:
     # from a different call-stack frame, which creates a fresh memo.
     # That memo lacks the bindings from prior params, so a previously
     # failing check would incorrectly pass.  To stay consistent, replay
-    # the failure for one re-check, then clear it.
-    obj_id = id(obj)
-    if self._fail_id == obj_id:
-      self._fail_id = None
+    # the failure for one re-check, then clear it.  We use ``is`` identity
+    # (not ``id()``) to avoid false matches from recycled addresses.
+    if self._fail_obj is not None and self._fail_obj is obj:
+      self._fail_obj = None
       return False
 
     # Dtype check
@@ -91,7 +91,7 @@ class _ShapeChecker:
       memo.variadic.update(variadic_snap)
       memo.structures.clear()
       memo.structures.update(structures_snap)
-      self._fail_id = obj_id
+      self._fail_obj = obj
 
     return result
 

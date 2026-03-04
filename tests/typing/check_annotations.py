@@ -1,3 +1,4 @@
+# pyright: reportInvalidTypeForm=false
 """Verify F32[N, C] annotation pattern (pyright-specific).
 
 This tests the full shapix annotation pattern including dimension-subscripted
