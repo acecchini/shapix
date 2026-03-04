@@ -1,11 +1,39 @@
 [project]
 name = "shapix"
 version = "0.1.0"
-description = "Add your description here"
+description = "Elegant runtime shape and dtype checking for NumPy, JAX, and PyTorch arrays — powered by beartype."
 readme = "README.md"
+license = "MIT"
 authors = [{ name = "acecchini", email = "ale.cecchini.valette@gmail.com" }]
 requires-python = ">=3.12"
 dependencies = ["beartype>=0.22.9"]
+keywords = [
+  "type-checking",
+  "shape",
+  "dtype",
+  "numpy",
+  "jax",
+  "pytorch",
+  "beartype",
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Scientific/Engineering",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Typing :: Typed",
+]
+
+[project.urls]
+Homepage = "https://github.com/acecchini/shapix"
+Repository = "https://github.com/acecchini/shapix"
+Issues = "https://github.com/acecchini/shapix/issues"
 
 [dependency-groups]
 # Backends are CPU-only for dev/CI. Shapix is device-agnostic — it checks
@@ -46,7 +74,7 @@ skip = "uv.lock,*.ipynb,.venv,.tox,.nox"
 
 [tool.pyright]
 typeCheckingMode = "standard"
-include = ["src"]
+include = ["src", "tests/typing"]
 reportUnusedImport = "warning"
 reportInvalidTypeForm = false
 pythonVersion = "3.12"

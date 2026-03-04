@@ -31,7 +31,7 @@ class TestCheckDecorator:
       f(np.ones((3,), dtype=np.float32), np.ones((5,), dtype=np.float32))
 
   def test_with_conf(self) -> None:
-    from beartype._conf.confmain import BeartypeConf
+    from beartype import BeartypeConf
 
     @shapix.check(conf=BeartypeConf())
     def f(x: F32[N]) -> F32[N]:
@@ -80,3 +80,10 @@ class TestCheckContext:
     with shapix.check_context():
       y = np.ones((10,), dtype=np.float32)
       assert is_bearable(y, F32[N])
+
+  def test_check_context_returns_self(self) -> None:
+    """check_context() works as a context manager and returns itself."""
+    ctx = shapix.check_context()
+    result = ctx.__enter__()
+    assert result is ctx
+    ctx.__exit__(None, None, None)

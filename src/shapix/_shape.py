@@ -25,7 +25,6 @@ error message explaining the mismatch.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Union
 
 from ._memo import ShapeMemo
 
@@ -112,9 +111,9 @@ class _AnonymousVariadic:
 ANONYMOUS = _Anonymous()
 ANONYMOUS_VARIADIC = _AnonymousVariadic()
 
-DimSpec = Union[
-  NamedDim, FixedDim, SymbolicDim, VariadicDim, _Anonymous, _AnonymousVariadic
-]
+type DimSpec = (
+  NamedDim | FixedDim | SymbolicDim | VariadicDim | _Anonymous | _AnonymousVariadic
+)
 
 
 # ---------------------------------------------------------------------------

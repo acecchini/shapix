@@ -26,7 +26,15 @@ from beartype.vale import Is
 from ._dimensions import Dimension
 from ._dtypes import DtypeSpec, extract_dtype_str
 from ._memo import get_memo
-from ._shape import DimSpec, FixedDim, NamedDim, check_shape
+from ._shape import (
+  ANONYMOUS_VARIADIC,
+  DimSpec,
+  FixedDim,
+  NamedDim,
+  VariadicDim,
+  _AnonymousVariadic,
+  check_shape,
+)
 
 __all__ = ["make_array_type"]
 
@@ -166,7 +174,9 @@ def _to_shape_spec(dims: tuple[object, ...]) -> tuple[DimSpec, ...]:
   """Convert a tuple of user-facing dim objects to internal DimSpec."""
   specs: list[DimSpec] = []
   for d in dims:
-    if isinstance(d, int):
+    if d is Ellipsis:
+      specs.append(ANONYMOUS_VARIADIC)
+    elif isinstance(d, int):
       specs.append(FixedDim(d))
     elif isinstance(d, Dimension):
       spec = d._dim_spec  # noqa: SLF001
@@ -174,4 +184,12 @@ def _to_shape_spec(dims: tuple[object, ...]) -> tuple[DimSpec, ...]:
         specs.append(spec)
     else:
       specs.append(NamedDim(str(d), broadcastable=False))
+
+  variadic_count = sum(
+    1 for s in specs if isinstance(s, (VariadicDim, _AnonymousVariadic))
+  )
+  if variadic_count > 1:
+    msg = "At most one variadic dimension allowed per shape spec"
+    raise TypeError(msg)
+
   return tuple(specs)

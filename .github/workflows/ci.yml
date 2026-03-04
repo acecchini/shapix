@@ -42,6 +42,7 @@ jobs:
       - run: uv run pytest tests/test_typecheck.py -v
 
   test:
+    needs: [ruff, codespell, typecheck]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -56,6 +57,7 @@ jobs:
           TOX_PYTHON: python${{ matrix.python }}
 
   numpy-compat:
+    needs: [ruff, codespell, typecheck]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -68,6 +70,7 @@ jobs:
       - run: uv run tox -e "${{ matrix.version }}"
 
   jax-compat:
+    needs: [ruff, codespell, typecheck]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -80,6 +83,7 @@ jobs:
       - run: uv run tox -e "${{ matrix.version }}"
 
   torch-compat:
+    needs: [ruff, codespell, typecheck]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -92,6 +96,7 @@ jobs:
       - run: uv run tox -e "${{ matrix.version }}"
 
   beartype-compat:
+    needs: [ruff, codespell, typecheck]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -105,6 +110,7 @@ jobs:
       - run: uv run tox -e "${{ matrix.version }}${{ matrix.suffix }}"
 
   optree-compat:
+    needs: [ruff, codespell, typecheck]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

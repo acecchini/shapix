@@ -12,23 +12,22 @@ from __future__ import annotations
 
 import functools
 from collections.abc import Callable
-from typing import ParamSpec, TypeVar, overload
+from typing import overload
 
 from ._memo import pop_memo, push_memo
 
 __all__ = ["check", "check_context"]
 
-P = ParamSpec("P")
-R = TypeVar("R")
-
 
 @overload
-def check(fn: Callable[P, R], /) -> Callable[P, R]: ...
+def check[**P, R](fn: Callable[P, R], /) -> Callable[P, R]: ...
 @overload
-def check(*, conf: object = ...) -> Callable[[Callable[P, R]], Callable[P, R]]: ...
+def check[**P, R](
+  *, conf: object = ...
+) -> Callable[[Callable[P, R]], Callable[P, R]]: ...
 
 
-def check(
+def check[**P, R](
   fn: Callable[P, R] | None = None, /, *, conf: object | None = None
 ) -> Callable[P, R] | Callable[[Callable[P, R]], Callable[P, R]]:
   """Decorator that manages the dimension memo around a function call.

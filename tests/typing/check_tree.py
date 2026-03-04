@@ -1,4 +1,4 @@
-"""Verify PyTree type annotations work with type checkers.
+"""Verify Tree type annotations work with type checkers.
 
 Tested with: pyright, mypy, ty
 """
@@ -7,13 +7,13 @@ from __future__ import annotations
 
 import typing as tp
 
-from shapix import Dimension, PyTree, Structure
+from shapix import Dimension, Structure, Tree
 
 # ---------------------------------------------------------------------------
 # Import validation
 # ---------------------------------------------------------------------------
 
-_pt = PyTree  # PyTree should be importable
+_pt = Tree  # Tree should be importable
 _st = Structure  # Structure should be importable
 
 # ---------------------------------------------------------------------------
@@ -39,19 +39,19 @@ else:
   S = Structure("S")
 
 # ---------------------------------------------------------------------------
-# Function signatures with PyTree
+# Function signatures with Tree
 # ---------------------------------------------------------------------------
 
 
-def process(data: PyTree[object]) -> PyTree[object]:
+def process(data: Tree[object]) -> Tree[object]:
   return data
 
 
-def transform(x: PyTree[object], y: PyTree[object]) -> PyTree[object]:
+def transform(x: Tree[object], y: Tree[object]) -> Tree[object]:
   return x
 
 
-def mixed(x: PyTree[object], scale: float) -> PyTree[object]:
+def mixed(x: Tree[object], scale: float) -> Tree[object]:
   return x
 
 
@@ -60,9 +60,9 @@ def mixed(x: PyTree[object], scale: float) -> PyTree[object]:
 # ---------------------------------------------------------------------------
 
 
-def identity(x: PyTree[object]) -> PyTree[object]:
+def identity(x: Tree[object]) -> Tree[object]:
   return x
 
 
-def to_none(x: PyTree[object]) -> None:
+def to_none(x: Tree[object]) -> None:
   pass

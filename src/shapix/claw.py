@@ -15,7 +15,7 @@ wrapper for discoverability::
 
 from __future__ import annotations
 
-from beartype._conf.confmain import BeartypeConf
+from beartype import BeartypeConf
 from beartype.claw import beartype_this_package as _beartype_this_package
 
 

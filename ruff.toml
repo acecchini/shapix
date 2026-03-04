@@ -5,29 +5,32 @@ line-length = 88
 target-version = "py312"
 
 [lint]
+select = ["B", "C", "E", "F", "W", "YTT", "ASYNC", "PLW"]
 ignore = [
-  # Zip without explicit strict -> more idomatic
+  # Zip without explicit strict — more idiomatic
   "B905",
   # Function is too complex
   "C901",
-  # Classes could be dataclasses - we use regular classes for testing config behavior
-  "B903",
+  # Mutable default in function arg — intentional for BeartypeConf()
+  "B008",
+  # Indentation rules — incompatible with 2-space indent
+  "E111", "E114",
+  # Line too long — handled by formatter
+  "E501",
 ]
-select = [
-  "B9",
-  "C",
-  "F",
-  "W",
-  "YTT",
-  "ASYNC",
-  "E101",
-  "E112",
-  "E113",
-  "E115",
-  "E117",
-  "E225",
-  "E227",
-  "E228",
+
+[lint.per-file-ignores]
+"tests/**" = [
+  # Imports after pytest.importorskip() — standard pytest pattern
+  "E402",
+  # pytest.raises(Exception) — intentional broad catch in tests
+  "B017",
+  # subprocess.run without check= — we inspect returncode manually
+  "PLW1510",
+]
+"tests/typing/**" = [
+  # Unary prefix increment (++N) — testing operator chaining
+  "B002",
 ]
 
 [format]

@@ -457,6 +457,75 @@ class TestVariadicDims:
 
 
 # =====================================================================
+# Ellipsis as anonymous variadic alias
+# =====================================================================
+
+
+class TestEllipsisDims:
+  def test_ellipsis_variadic_middle(self) -> None:
+    """F32[N, ..., C] should work like F32[N, ~__, C]."""
+
+    @beartype
+    def f(x: F32[N, ..., C]) -> F32[N, ..., C]:
+      return x
+
+    f(np.ones((4, 3), dtype=np.float32))  # no middle dims
+    f(np.ones((4, 5, 3), dtype=np.float32))  # 1 middle dim
+    f(np.ones((4, 5, 6, 3), dtype=np.float32))  # 2 middle dims
+
+  def test_ellipsis_at_start(self) -> None:
+    """F32[..., C] — any number of leading dims."""
+
+    @beartype
+    def f(x: F32[..., C]) -> F32[..., C]:
+      return x
+
+    f(np.ones(3, dtype=np.float32))  # just C
+    f(np.ones((4, 3), dtype=np.float32))  # one leading + C
+    f(np.ones((2, 4, 3), dtype=np.float32))  # two leading + C
+
+  def test_ellipsis_at_end(self) -> None:
+    """F32[N, ...] — any number of trailing dims."""
+
+    @beartype
+    def f(x: F32[N, ...]) -> F32[N, ...]:
+      return x
+
+    f(np.ones(3, dtype=np.float32))  # just N
+    f(np.ones((4, 3), dtype=np.float32))  # N + one trailing
+    f(np.ones((4, 3, 5), dtype=np.float32))  # N + two trailing
+
+  def test_ellipsis_matches_zero_dims(self) -> None:
+    """F32[N, ..., C] with shape (3, 4) — N=3, C=4, no middle."""
+
+    @beartype
+    def f(x: F32[N, ..., C]) -> F32[N, ..., C]:
+      return x
+
+    assert f(np.ones((3, 4), dtype=np.float32)).shape == (3, 4)
+
+  def test_ellipsis_no_cross_arg_binding(self) -> None:
+    """... (like ~__) doesn't bind, so no cross-arg consistency."""
+
+    @beartype
+    def f(x: F32[..., C], y: F32[..., C]) -> F32[..., C]:
+      return x
+
+    f(np.ones((2, 3, 4), dtype=np.float32), np.ones(4, dtype=np.float32))
+
+  def test_bare_ellipsis_any_shape(self) -> None:
+    """F32[...] matches any shape."""
+
+    @beartype
+    def f(x: F32[...]) -> F32[...]:
+      return x
+
+    f(np.ones(3, dtype=np.float32))
+    f(np.ones((3, 4), dtype=np.float32))
+    f(np.ones((2, 3, 4, 5), dtype=np.float32))
+
+
+# =====================================================================
 # Broadcastable dimensions
 # =====================================================================
 
@@ -862,3 +931,31 @@ class TestArrayLikeVariousTypes:
     assert f(3.14) == 3.14
     assert f([1.0, 2.0]) == 3.0
     assert f(np.array([1.0, 2.0])) == 3.0
+
+
+# =====================================================================
+# Multiple variadic rejection
+# =====================================================================
+
+
+class TestMultipleVariadicRejected:
+  def test_two_named_variadics(self) -> None:
+    with pytest.raises(TypeError, match="At most one variadic"):
+      F32[~B, ~N]
+
+  def test_double_ellipsis(self) -> None:
+    with pytest.raises(TypeError, match="At most one variadic"):
+      F32[..., ...]
+
+  def test_named_variadic_plus_ellipsis(self) -> None:
+    with pytest.raises(TypeError, match="At most one variadic"):
+      F32[~B, ..., C]
+
+  def test_single_variadic_still_works(self) -> None:
+    """Verify single variadics are not rejected."""
+
+    @beartype
+    def f(x: F32[~B, C]) -> F32[~B, C]:
+      return x
+
+    f(np.ones((2, 3, 4), dtype=np.float32))

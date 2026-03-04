@@ -36,7 +36,7 @@ Shapix has one dependency: [beartype](https://github.com/beartype/beartype). Ins
 pip install shapix numpy          # NumPy
 pip install shapix torch          # PyTorch
 pip install shapix jax            # JAX
-pip install shapix numpy optree   # NumPy + PyTree support
+pip install shapix numpy optree   # NumPy + tree support (optree or jax)
 ```
 
 ## Quick start
@@ -103,7 +103,6 @@ Bind to a size on first occurrence and enforce consistency on subsequent ones.
 | `H` | Height |
 | `W` | Width |
 | `L` | Sequence length |
-| `T` | Tree structure |
 | `P` | Points / parameters |
 
 ```python
@@ -248,6 +247,7 @@ else:
 | `+` | Broadcastable | `+N` | Size 1 always OK |
 | `__` | Anonymous | `__` | Match any, no binding |
 | `~__` | Anonymous variadic | `~__` | Zero or more, no binding |
+| `...` | Ellipsis (alias) | `...` | Same as `~__` |
 | arithmetic | Symbolic | `N + 1` | Expression |
 
 ## Array types
@@ -324,18 +324,26 @@ BF16_OR_F32 = DtypeSpec("BF16orF32", frozenset({"bfloat16", "float32"}))
 MixedArray = make_array_type(np.ndarray, BF16_OR_F32)
 ```
 
-## PyTree annotations
+## Tree annotations
 
-PyTree annotations validate all leaves in a nested structure (dicts, lists, tuples, namedtuples). Requires `optree` (`pip install optree`).
+Tree annotations validate all leaves in a nested structure (dicts, lists, tuples, namedtuples). Requires `optree` or `jax` for tree traversal.
+
+**Three ways to import `Tree`:**
+
+```python
+from shapix import Tree          # auto-detect: tries optree, falls back to jax
+from shapix.optree import Tree   # explicitly use optree
+from shapix.jax import Tree      # explicitly use jax.tree_util
+```
 
 ### Basic leaf checking
 
 ```python
-from shapix import PyTree, T, S, N, C
+from shapix import Tree, T, S, N, C
 from shapix.numpy import F32
 
 @beartype
-def process(data: PyTree[F32[N, C]]) -> PyTree[F32[N, C]]:
+def process(data: Tree[F32[N, C]]) -> Tree[F32[N, C]]:
     ...
 
 # All leaves must be F32 arrays with consistent N and C
@@ -349,29 +357,35 @@ Named structure symbols (`T`, `S`) enforce that multiple arguments share identic
 
 ```python
 @beartype
-def add_trees(x: PyTree[F32[N], T], y: PyTree[F32[N], T]) -> PyTree[F32[N]]:
+def add_trees(x: Tree[F32[N], T], y: Tree[F32[N], T]) -> Tree[F32[N]]:
     ...
 
 add_trees({"a": x1, "b": x2}, {"a": y1, "b": y2})  # OK — same structure
 add_trees({"a": x1}, [y1, y2])                       # Raises — different structure
 ```
 
-### Composite structures
+### Multi-level structure matching
 
-Use `S[T]` for nested structure matching — outer structure S, inner structure T:
-
-```python
-def f(x: PyTree[int, T], y: PyTree[int, S], z: PyTree[int, S[T]]): ...
-```
-
-### Prefix and suffix wildcards
+Structure names are listed left-to-right from outer to inner. Without `...`, each name except the last captures ONE level; the last captures the full remaining structure. Trailing `...` makes all names one-level-only with inner levels unchecked. Leading `...` matches names from the bottom up.
 
 ```python
-# T[...] — top-level structure matches T, subtrees are arbitrary
-def f(x: PyTree[F32[N], T[...]], y: PyTree[F32[N], T[...]]): ...
+# T = full tree structure (all levels)
+def f(x: Tree[F32[N], T], y: Tree[F32[N], T]): ...
 
-# ..., T — full structure matches T
-def f(x: PyTree[F32[N], ..., T], y: PyTree[F32[N], ..., T]): ...
+# T = top-level only, subtrees are arbitrary
+def f(x: Tree[F32[N], T, ...], y: Tree[F32[N], T, ...]): ...
+
+# T = bottom-level only (leaf-adjacent container)
+def f(x: Tree[F32[N], ..., T], y: Tree[F32[N], ..., T]): ...
+
+# T = top level, S = full remaining structure below
+def f(x: Tree[int, T], y: Tree[int, S], z: Tree[int, T, S]): ...
+
+# T = top, S = next, inner levels unchecked
+def f(x: Tree[F32[N], T, S, ...]): ...
+
+# S = bottom, T = second-from-bottom
+def f(x: Tree[F32[N], ..., T, S]): ...
 ```
 
 ### Custom structure symbols
@@ -385,7 +399,7 @@ Params = Structure("Params")
 State = Structure("State")
 
 @beartype
-def train(params: PyTree[F32[N], Params], state: PyTree[I64[N], State]): ...
+def train(params: Tree[F32[N], Params], state: Tree[I64[N], State]): ...
 ```
 
 ## Advanced usage
@@ -412,26 +426,59 @@ A **dimension memo** maps dimension names to sizes (e.g., `N→4`, `C→3`). Eac
 
 This happens **automatically** with `@beartype`. Shapix detects the beartype wrapper frame via `sys._getframe()` and associates a memo with it. No extra decorator needed.
 
-### `@shapix.check` (optional)
+### `@shapix.check` — explicit memo management
 
-`@shapix.check` provides **explicit** memo management. It's useful in two scenarios:
+To understand `@shapix.check`, you need to understand the problem it solves.
 
-1. **Combining memo with custom `BeartypeConf`** — a single decorator instead of stacking two:
+**The problem: sharing state across parameter checks.** When beartype validates `f(x, y)`, it checks `x` and `y` independently — it calls the `Is[...]` validator once per parameter. But shapix needs all those validators to share the same dimension memo, so that `N=4` bound by `x` is enforced on `y`. Something has to connect them.
+
+**The automatic approach** (no extra decorator needed) is frame-based detection. Shapix walks up the call stack with `sys._getframe()` to find the beartype wrapper frame. Since all parameter checks within one `f(x, y)` call share the same wrapper frame, shapix can key a memo to it. This just works:
 
 ```python
-from beartype import BeartypeConf
-
-@shapix.check(conf=BeartypeConf())
-def f(x: F32[N, C]) -> F32[N, C]: ...
+@beartype  # Shapix auto-detects this frame — nothing else needed
+def f(x: F32[N, C], y: F32[N, C]) -> F32[N, C]: ...
 ```
 
-2. **Exotic call stacks** where frame-based detection is unreliable (deep decorator chains, recursive wrappers).
+**`@shapix.check`** takes a different approach: instead of detecting the frame, it explicitly pushes a fresh memo onto a stack before the call and pops it after. All validators see this explicit memo first (it takes priority over frame detection):
 
-For normal usage, just use `@beartype` — it works out of the box.
+```python
+@shapix.check   # Pushes memo before call, pops after
+@beartype        # Validates parameters using that memo
+def f(x: F32[N, C], y: F32[N, C]) -> F32[N, C]: ...
+```
+
+Both approaches produce identical results in normal usage. You only need `@shapix.check` in specific situations:
+
+#### 1. Extra decorators between beartype and the call site
+
+Frame-based detection counts a fixed number of frames up from the validator. If something adds extra frames between beartype's wrapper and the actual function call, the detection can land on the wrong frame:
+
+```python
+# This works — beartype is the outermost wrapper, frame detection is stable
+@beartype
+def f(x: F32[N, C], y: F32[N, C]) -> F32[N, C]: ...
+
+# This might not — a middleware decorator adds extra frames
+@some_middleware   # Adds frames between beartype's wrapper and the caller
+@beartype
+def f(x: F32[N, C], y: F32[N, C]) -> F32[N, C]: ...
+
+# Fix: @shapix.check bypasses frame detection entirely
+@some_middleware
+@shapix.check
+@beartype
+def f(x: F32[N, C], y: F32[N, C]) -> F32[N, C]: ...
+```
+
+#### 2. Defensive coding
+
+If you want a guarantee that cross-argument checking works regardless of how your code is called (by test runners, async frameworks, deep middleware stacks), `@shapix.check` removes all dependence on call-stack structure.
+
+**When you don't need it:** If you're using plain `@beartype` and your tests pass, the frame-based detection is working. Most applications never need `@shapix.check`.
 
 ### Manual checks with `check_context`
 
-For `isinstance`-style checks outside of decorated functions, use `check_context` with beartype's `is_bearable`:
+For `isinstance`-style checks outside of decorated functions, use `check_context` with beartype's `is_bearable`. Without it, each check gets an independent memo — dimensions aren't cross-checked:
 
 ```python
 from beartype.door import is_bearable
@@ -439,9 +486,14 @@ import shapix
 from shapix import N, C
 from shapix.numpy import F32
 
+# Without check_context — each check is independent, N is NOT cross-checked
+is_bearable(x, F32[N, C])  # Binds N=4 in a temporary memo (discarded)
+is_bearable(y, F32[N, C])  # Binds N=999 in a new memo — no error!
+
+# With check_context — checks share a memo, N IS cross-checked
 with shapix.check_context():
-    assert is_bearable(x, F32[N, C])  # Binds N and C
-    assert is_bearable(y, F32[N, C])  # Must match same N, C
+    assert is_bearable(x, F32[N, C])  # Binds N=4
+    assert is_bearable(y, F32[N, C])  # Checks N=4 — raises if y has N=999
 ```
 
 ## How it works
@@ -520,7 +572,7 @@ def f(x: F32[~B, C]) -> F32[~B, C]:  # type: ignore[reportInvalidTypeForm]
 | BeartypeConf | Not supported (decorator conflict) | Fully supported |
 | Type checker | Metaclass magic (confuses pyright) | `Annotated` aliases (clean) |
 | Backends | NumPy, JAX | NumPy, JAX, PyTorch |
-| PyTree | Built-in with structure binding | Built-in with structure binding (via optree) |
+| Tree | Built-in with structure binding | Built-in with structure binding (via optree) |
 | Dependencies | jaxtyping + beartype | beartype only |
 | Custom decorator | Required | Not required |
 

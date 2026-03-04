@@ -30,7 +30,7 @@ COMMON_FILES = [
   "check_decorator.py",
   "check_like_types.py",
   "check_make_array_type.py",
-  "check_pytree.py",
+  "check_tree.py",
 ]
 
 # Files that only pyright supports (F32[N, C] subscript annotations)

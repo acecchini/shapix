@@ -33,7 +33,7 @@ class ShapeMemo:
   """Variadic dimension bindings: ``{"spatial": (False, (28, 28))}``."""
 
   structures: dict[str, object] = field(default_factory=dict)
-  """PyTree structure bindings: ``{"T": <PyTreeSpec>}``."""
+  """Tree structure bindings: ``{"T": <TreeSpec>}``."""
 
 
 _local = threading.local()

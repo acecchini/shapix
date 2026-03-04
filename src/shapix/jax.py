@@ -19,6 +19,8 @@ import numpy as np
 from jax import Array as JaxArray
 
 from ._array_types import make_array_type
+from ._tree import Structure as Structure
+from ._tree import _TreeFactory
 from ._dtypes import (
   BFLOAT16,
   BOOL,
@@ -171,3 +173,20 @@ type ComplexLk = ArrayLike[ComplexLike, JaxArray | np.ndarray]
 type InexactLk = ArrayLike[InexactLike, JaxArray | np.ndarray]
 type NumLk = ArrayLike[NumLike, JaxArray | np.ndarray]
 type ShapedLk = ArrayLike[ShapedLike, JaxArray | np.ndarray]
+
+
+# ---------------------------------------------------------------------------
+# Tree annotations (backed by jax.tree_util)
+# ---------------------------------------------------------------------------
+
+
+def _get_jax_tree_util() -> tp.Any:
+  import jax.tree_util as jtu
+
+  return jtu
+
+
+if tp.TYPE_CHECKING:
+  from ._tree import Tree as Tree
+else:
+  Tree = _TreeFactory(_get_jax_tree_util, name="Tree")

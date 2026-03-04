@@ -24,7 +24,7 @@ Dimension symbols
     ``__`` — anonymous (match any single dim, no binding).
     ``Scalar`` — scalar (no dimensions).
 
-PyTree structure symbols
+Tree structure symbols
     ``T``, ``S`` — named tree structure symbols.
     :class:`Structure` — create custom structure symbols.
 
@@ -32,11 +32,12 @@ Unary operators (apply to any dimension)
     ``~N`` — variadic (match zero or more contiguous dims).
     ``+N`` — broadcastable (size 1 always matches).
     ``~__`` — anonymous variadic (match any number of dims, no binding).
+    ``...`` — alias for ``~__`` (Ellipsis in subscripts).
 
 Classes
     :class:`Dimension` — create custom dimension symbols with arithmetic support.
     :class:`DtypeSpec` — describe a set of allowed dtypes by string name.
-    :class:`PyTree` — subscriptable pytree annotation (requires ``optree``).
+    :class:`Tree` — subscriptable tree annotation (requires ``optree`` or ``jax``).
 
 Functions
     :func:`make_array_type` — create subscriptable array type factories for
@@ -51,10 +52,10 @@ Context managers
 from ._array_types import make_array_type as make_array_type
 from ._decorator import check as check
 from ._decorator import check_context as check_context
-from ._pytree import PyTree as PyTree
-from ._pytree import S as S
-from ._pytree import Structure as Structure
-from ._pytree import T as T
+from ._tree import S as S
+from ._tree import Structure as Structure
+from ._tree import T as T
+from ._tree import Tree as Tree
 from ._dimensions import __ as __
 from ._dimensions import B as B
 from ._dimensions import C as C

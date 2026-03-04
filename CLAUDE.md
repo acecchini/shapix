@@ -13,9 +13,11 @@ src/shapix/
 ├── _array_types.py    # Array type factory → Annotated[T, Is[checker]]
 ├── _dimensions.py     # Dimension symbols (N, C, ~B, +N, __, etc.)
 ├── _decorator.py      # Optional @shapix.check + check_context
+├── _tree.py           # Tree annotations with leaf-type and structure checking
 ├── numpy.py           # NumPy: F32, I64, F32Like, ArrayLike, etc.
-├── jax.py             # JAX: F32, BF16, etc.
+├── jax.py             # JAX: F32, BF16, Tree (jax.tree_util), etc.
 ├── torch.py           # PyTorch: F32, BF16, etc.
+├── optree.py          # Tree backed by optree
 └── claw.py            # Import hook wrapping beartype.claw
 ```
 
