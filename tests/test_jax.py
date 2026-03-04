@@ -1,3 +1,4 @@
+# pyright: reportArgumentType=false, reportGeneralTypeIssues=false, reportUnusedImport=false
 """Tests for shapix.jax — JAX array types, Like types, and dtype handling."""
 
 from __future__ import annotations
@@ -16,7 +17,7 @@ from beartype.roar import (
 )
 
 import shapix
-from shapix import B, C, N, __, Dimension
+from shapix import B, C, N, __, Dimension  # noqa: F811 — B used in ~B annotations
 from shapix.jax import (
   BF16,
   Bool,

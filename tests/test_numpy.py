@@ -1,3 +1,4 @@
+# pyright: reportArgumentType=false, reportGeneralTypeIssues=false, reportReturnType=false
 """Comprehensive runtime checking tests for NumPy arrays with beartype.
 
 Covers dtype acceptance, shape matching, cross-argument consistency, symbolic

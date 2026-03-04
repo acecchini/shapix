@@ -1,3 +1,4 @@
+# pyright: reportArgumentType=false, reportInvalidTypeArguments=false, reportReturnType=false, reportIndexIssue=false, reportAttributeAccessIssue=false
 """Comprehensive runtime tests for Tree type annotations.
 
 Covers dict/list/tuple trees, nested structures, cross-leaf dimension

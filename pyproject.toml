@@ -74,7 +74,7 @@ skip = "uv.lock,*.ipynb,.venv,.tox,.nox"
 
 [tool.pyright]
 typeCheckingMode = "standard"
-include = ["src", "tests/typing"]
+include = ["src", "tests"]
 reportUnusedImport = "warning"
 reportInvalidTypeForm = false
 pythonVersion = "3.12"

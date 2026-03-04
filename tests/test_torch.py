@@ -1,3 +1,4 @@
+# pyright: reportArgumentType=false, reportGeneralTypeIssues=false, reportUnusedImport=false
 """Tests for shapix.torch — PyTorch tensor types, Like types, and dtype handling."""
 
 from __future__ import annotations
@@ -15,7 +16,7 @@ from beartype.roar import (
 )
 
 import shapix
-from shapix import B, C, N, __, Dimension
+from shapix import B, C, N, __, Dimension  # noqa: F811 — B used in ~B annotations
 from shapix.torch import (
   BF16,
   Bool,
