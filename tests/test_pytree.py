@@ -8,8 +8,10 @@ and decorator integration.
 from collections import namedtuple
 
 import numpy as np
-import optree
 import pytest
+
+optree = pytest.importorskip("optree")
+
 from beartype import beartype
 from beartype.door import is_bearable
 from beartype.roar import BeartypeCallHintParamViolation
