@@ -326,20 +326,18 @@ MixedArray = make_array_type(np.ndarray, BF16_OR_F32)
 
 ## Tree annotations
 
-Tree annotations validate all leaves in a nested structure (dicts, lists, tuples, namedtuples). Requires `optree` or `jax` for tree traversal.
-
-**Three ways to import `Tree`:**
+Tree annotations validate all leaves in a nested structure (dicts, lists, tuples, namedtuples). Import `Tree` from an explicit backend module:
 
 ```python
-from shapix import Tree          # auto-detect: tries optree, falls back to jax
-from shapix.optree import Tree   # explicitly use optree
-from shapix.jax import Tree      # explicitly use jax.tree_util
+from shapix.optree import Tree   # backed by optree
+from shapix.jax import Tree      # backed by jax.tree_util
 ```
 
 ### Basic leaf checking
 
 ```python
-from shapix import Tree, T, S, N, C
+from shapix import T, S, N, C
+from shapix.optree import Tree  # or: from shapix.jax import Tree
 from shapix.numpy import F32
 
 @beartype

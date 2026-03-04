@@ -9,9 +9,15 @@ consistency across arguments, following the same patterns as jaxtyping.
 Requires ``optree`` or ``jax`` for tree traversal. Install with
 ``pip install optree`` or ``pip install jax``.
 
+Import ``Tree`` from an explicit backend module::
+
+    from shapix.optree import Tree  # backed by optree
+    from shapix.jax import Tree  # backed by jax.tree_util
+
 Usage patterns::
 
-    from shapix import Tree, T, S, N, C
+    from shapix import T, S, N, C
+    from shapix.optree import Tree
     from shapix.numpy import F32
 
 
@@ -43,33 +49,7 @@ from typing import Annotated
 
 from beartype.vale import Is
 
-__all__ = ["Tree", "Structure", "T", "S"]
-
-
-_tree_ops_cache: tp.Any = None
-
-
-def _get_tree_ops() -> tp.Any:
-  """Get tree operations module (optree or jax.tree_util), auto-detecting."""
-  global _tree_ops_cache  # noqa: PLW0603
-  if _tree_ops_cache is not None:
-    return _tree_ops_cache
-  try:
-    import optree
-
-    _tree_ops_cache = optree
-    return optree
-  except ImportError:
-    pass
-  try:
-    import jax.tree_util as jtu
-
-    _tree_ops_cache = jtu
-    return jtu
-  except ImportError:
-    pass
-  msg = "Tree requires optree or jax. Install with: pip install optree"
-  raise ImportError(msg)
+__all__ = ["Structure", "T", "S"]
 
 
 # ---------------------------------------------------------------------------
@@ -109,7 +89,8 @@ class _TreeChecker:
     self,
     leaf_type: type,
     structure_spec: str | None = None,
-    get_ops: Callable[[], tp.Any] = _get_tree_ops,
+    *,
+    get_ops: Callable[[], tp.Any],
   ) -> None:
     self._leaf_type = leaf_type
     self._structure_spec = structure_spec
@@ -276,9 +257,7 @@ class _TreeFactory:
 
   __slots__ = ("_get_ops", "_name")
 
-  def __init__(
-    self, get_ops: Callable[[], tp.Any] = _get_tree_ops, *, name: str = "Tree"
-  ) -> None:
+  def __init__(self, get_ops: Callable[[], tp.Any], *, name: str = "Tree") -> None:
     self._get_ops = get_ops
     self._name = name
 
@@ -322,7 +301,7 @@ class _TreeFactory:
     return spec
 
   def _make(self, leaf_type: object, structure_spec: str | None) -> type:
-    checker = _TreeChecker(leaf_type, structure_spec, self._get_ops)  # type: ignore[arg-type]
+    checker = _TreeChecker(leaf_type, structure_spec, get_ops=self._get_ops)  # type: ignore[arg-type]
     return Annotated[tp.Any, Is[checker]]  # type: ignore[return-value]
 
   def __repr__(self) -> str:
@@ -339,17 +318,3 @@ if tp.TYPE_CHECKING:
 else:
   T = Structure("T")
   S = Structure("S")
-
-# ---------------------------------------------------------------------------
-# Tree type alias (auto-detecting backend: optree → jax fallback)
-# ---------------------------------------------------------------------------
-
-if tp.TYPE_CHECKING:
-
-  class Tree[_T]:
-    """Static type stub — ``Tree[LeafType]`` for type checkers."""
-
-    def __class_getitem__(cls, item: object) -> type: ...  # type: ignore[override]
-
-else:
-  Tree = _TreeFactory()

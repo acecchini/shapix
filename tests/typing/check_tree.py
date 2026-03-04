@@ -7,7 +7,8 @@ from __future__ import annotations
 
 import typing as tp
 
-from shapix import Dimension, Structure, Tree
+from shapix import Dimension, Structure
+from shapix.optree import Tree
 
 # ---------------------------------------------------------------------------
 # Import validation

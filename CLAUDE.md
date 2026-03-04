@@ -6,7 +6,7 @@ Runtime shape and dtype checking for NumPy, JAX, and PyTorch arrays, powered by 
 
 ```
 src/shapix/
-├── __init__.py        # Public API: dimensions, check, make_array_type
+├── __init__.py        # Public API: dimensions, check, make_array_type (Tree in backend modules)
 ├── _memo.py           # Frame-based memo management (thread-safe)
 ├── _shape.py          # Shape spec types and matching logic
 ├── _dtypes.py         # Dtype specifications and matching

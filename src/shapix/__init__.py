@@ -37,7 +37,8 @@ Unary operators (apply to any dimension)
 Classes
     :class:`Dimension` — create custom dimension symbols with arithmetic support.
     :class:`DtypeSpec` — describe a set of allowed dtypes by string name.
-    :class:`Tree` — subscriptable tree annotation (requires ``optree`` or ``jax``).
+    ``Tree`` — subscriptable tree annotation, import from ``shapix.optree``
+    or ``shapix.jax``.
 
 Functions
     :func:`make_array_type` — create subscriptable array type factories for
@@ -55,7 +56,6 @@ from ._decorator import check_context as check_context
 from ._tree import S as S
 from ._tree import Structure as Structure
 from ._tree import T as T
-from ._tree import Tree as Tree
 from ._dimensions import __ as __
 from ._dimensions import B as B
 from ._dimensions import C as C

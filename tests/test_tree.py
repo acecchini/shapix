@@ -18,7 +18,8 @@ from beartype.door import is_bearable
 from beartype.roar import BeartypeCallHintParamViolation
 
 import shapix
-from shapix import C, H, N, S, T, Tree, W, __
+from shapix import C, H, N, S, T, W, __
+from shapix.optree import Tree
 from shapix._tree import Structure, _TreeFactory
 from shapix.numpy import F32, F64, I64, Shaped
 
@@ -1264,34 +1265,7 @@ class TestShapeMismatchFailures:
 
 
 class TestJaxBackend:
-  def test_jax_backend_fallback(self, monkeypatch: pytest.MonkeyPatch) -> None:
-    """When optree is unavailable, jax.tree_util should work as fallback."""
-    pytest.importorskip("jax")
-
-    import builtins
-    from unittest.mock import patch
-
-    from shapix import _tree
-
-    # Clear cache and simulate optree being unavailable
-    _tree._tree_ops_cache = None
-    original_import = builtins.__import__
-
-    def mock_import(name: str, *args: object, **kwargs: object) -> object:
-      if name == "optree":
-        raise ImportError("mocked")
-      return original_import(name, *args, **kwargs)
-
-    try:
-      with patch.object(builtins, "__import__", side_effect=mock_import):
-        tree_ops = _tree._get_tree_ops()
-        # Should have fallen back to jax.tree_util
-        assert hasattr(tree_ops, "tree_leaves")
-        assert hasattr(tree_ops, "tree_flatten")
-        assert hasattr(tree_ops, "tree_structure")
-    finally:
-      # Reset cache so other tests aren't affected
-      _tree._tree_ops_cache = None
+  """Tests for jax-backed Tree (via shapix.jax.Tree)."""
 
 
 # =====================================================================
@@ -1310,20 +1284,17 @@ class TestReprAndFactory:
     assert repr(Tree) == "Tree"
 
   def test_parse_spec_args_both_ellipsis_error(self) -> None:
-    factory = _TreeFactory()
     with pytest.raises(TypeError, match="Cannot have"):
-      factory[F32[N], ..., ...]
+      Tree[F32[N], ..., ...]
 
   def test_parse_spec_args_only_ellipsis_error(self) -> None:
-    factory = _TreeFactory()
     # Single Ellipsis hits "both start and end" since args[0] == args[-1]
     with pytest.raises(TypeError, match="Cannot have"):
-      factory._parse_spec_args((...,))
+      _TreeFactory._parse_spec_args((...,))
 
   def test_parse_spec_args_empty_tuple_error(self) -> None:
-    factory = _TreeFactory()
     with pytest.raises(TypeError, match="at least a leaf type"):
-      factory[()]
+      Tree[()]
 
 
 # =====================================================================
