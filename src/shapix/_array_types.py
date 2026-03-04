@@ -56,7 +56,7 @@ class _ShapeChecker:
   def __init__(self, dtype_spec: DtypeSpec, shape_spec: tuple[DimSpec, ...]) -> None:
     self._dtype_spec = dtype_spec
     self._shape_spec = shape_spec
-    self._fail_obj: object = None
+    self._fail_obj: object | None = None
 
     # Pre-compute repr for beartype error messages
     dims = ", ".join(repr(d) for d in shape_spec)

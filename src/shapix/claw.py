@@ -16,6 +16,8 @@ wrapper for discoverability::
 from __future__ import annotations
 
 from beartype import BeartypeConf
+
+__all__ = ["shapix_this_package"]
 from beartype.claw import beartype_this_package as _beartype_this_package
 
 

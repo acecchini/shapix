@@ -1264,10 +1264,6 @@ class TestShapeMismatchFailures:
 # =====================================================================
 
 
-class TestJaxBackend:
-  """Tests for jax-backed Tree (via shapix.jax.Tree)."""
-
-
 # =====================================================================
 # Repr and factory edge cases
 # =====================================================================
