@@ -3,6 +3,7 @@ name: CI
 on:
   push:
     branches: [main]
+    tags: ["v*"]
   pull_request:
 
 concurrency:
@@ -10,6 +11,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # -----------------------------------------------------------------------
+  # Lint — always run
+  # -----------------------------------------------------------------------
+
   ruff:
     runs-on: ubuntu-latest
     steps:
@@ -27,6 +32,10 @@ jobs:
       - uses: actions/checkout@v6
       - uses: codespell-project/actions-codespell@v2
 
+  # -----------------------------------------------------------------------
+  # Typecheck — always run
+  # -----------------------------------------------------------------------
+
   typecheck:
     runs-on: ubuntu-latest
     steps:
@@ -41,83 +50,97 @@ jobs:
       - uses: astral-sh/setup-uv@v7
       - run: uv run pytest tests/test_typecheck.py -v
 
+  # -----------------------------------------------------------------------
+  # Test — always run (single locked env, default Python)
+  # -----------------------------------------------------------------------
+
   test:
     needs: [ruff, codespell, typecheck]
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python: ["3.12", "3.13", "3.14"]
-    name: test (py${{ matrix.python }})
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v7
-      - run: uv run tox -e "py${{ matrix.python }}"
+      - run: uv run tox run
+
+  # -----------------------------------------------------------------------
+  # Full matrix — only on version tags (v*)
+  # -----------------------------------------------------------------------
+
+  test-matrix:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [test]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        env: ["py313", "py314"]
+    name: ${{ matrix.env }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+      - run: uv run tox run -e "${{ matrix.env }}"
+
+  compat:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [test]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
         env:
-          TOX_PYTHON: python${{ matrix.python }}
+          - numpy22
+          - numpy23
+          - numpy24
+          - jax05
+          - jax06
+          - jax07
+          - jax08
+          - jax09
+          - torch26
+          - torch27
+          - torch28
+          - torch29
+          - torch210
+          - bt020
+          - bt021
+          - bt022
+          - bt020-jax
+          - bt021-jax
+          - bt022-jax
+          - bt020-torch
+          - bt021-torch
+          - bt022-torch
+          - optree014
+          - optree015
+          - optree016
+          - optree017
+          - optree018
+          - optree019
+    name: ${{ matrix.env }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+      - run: uv run tox run -e "${{ matrix.env }}"
 
-  numpy-compat:
-    needs: [ruff, codespell, typecheck]
+  typecheck-matrix:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [test]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        version: ["numpy22", "numpy23", "numpy24"]
-    name: ${{ matrix.version }}
+        env:
+          - pyright1392
+          - pyright1400
+          - pyright1408
+          - mypy115
+          - mypy116
+          - mypy117
+          - mypy118
+          - mypy119
+          - ty
+    name: ${{ matrix.env }}
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v7
-      - run: uv run tox -e "${{ matrix.version }}"
-
-  jax-compat:
-    needs: [ruff, codespell, typecheck]
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        version: ["jax05", "jax06", "jax07", "jax08", "jax09"]
-    name: ${{ matrix.version }}
-    steps:
-      - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@v7
-      - run: uv run tox -e "${{ matrix.version }}"
-
-  torch-compat:
-    needs: [ruff, codespell, typecheck]
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        version: ["torch26", "torch27", "torch28", "torch29", "torch210"]
-    name: ${{ matrix.version }}
-    steps:
-      - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@v7
-      - run: uv run tox -e "${{ matrix.version }}"
-
-  beartype-compat:
-    needs: [ruff, codespell, typecheck]
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        version: ["bt020", "bt021", "bt022"]
-        suffix: ["", "-jax", "-torch"]
-    name: ${{ matrix.version }}${{ matrix.suffix }}
-    steps:
-      - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@v7
-      - run: uv run tox -e "${{ matrix.version }}${{ matrix.suffix }}"
-
-  optree-compat:
-    needs: [ruff, codespell, typecheck]
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        version: ["optree014", "optree015", "optree016", "optree017", "optree018", "optree019"]
-    name: ${{ matrix.version }}
-    steps:
-      - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@v7
-      - run: uv run tox -e "${{ matrix.version }}"
+      - run: uv run tox run -e "${{ matrix.env }}"
