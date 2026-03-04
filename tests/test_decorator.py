@@ -1,4 +1,4 @@
-# pyright: reportArgumentType=false
+# pyright: reportArgumentType=false, reportGeneralTypeIssues=false
 """Tests for _decorator.py — @shapix.check and check_context."""
 
 from __future__ import annotations
