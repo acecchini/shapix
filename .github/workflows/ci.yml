@@ -3,7 +3,6 @@ name: CI
 on:
   push:
     branches: [main]
-    tags: ["v*"]
   pull_request:
 
 concurrency:
@@ -41,7 +40,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v7
-      - run: uv run pyright src/
+      - run: uv run pyright src/ tests/typing/
 
   typecheck-compat:
     runs-on: ubuntu-latest
@@ -51,7 +50,7 @@ jobs:
       - run: uv run pytest tests/test_typecheck.py -v
 
   # -----------------------------------------------------------------------
-  # Test — always run (single locked env, default Python)
+  # Test — always run (locked dev env)
   # -----------------------------------------------------------------------
 
   test:
@@ -60,85 +59,84 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v7
-      - run: uv run tox run
+      - run: uv run tox run -e dev
 
   # -----------------------------------------------------------------------
-  # Full matrix — only on version tags (v*)
+  # PR: fast compat matrix
   # -----------------------------------------------------------------------
 
-  test-matrix:
-    if: startsWith(github.ref, 'refs/tags/v')
+  compat-pr:
+    if: github.event_name == 'pull_request'
     needs: [test]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        env: ["py313", "py314"]
+        python: [py312, py314]
+        beartype: [bt022]
+        backend: [numpy24, jax09, torch210, optree019]
+        exclude:
+          - { python: py314, backend: torch210 }
+    name: ${{ matrix.python }}-${{ matrix.beartype }}-${{ matrix.backend }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+      - run: uv run tox run -e "${{ matrix.python }}-${{ matrix.beartype }}-${{ matrix.backend }}"
+
+  typecheck-pr:
+    if: github.event_name == 'pull_request'
+    needs: [test]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { env: py312-bt022-type-pyright1408 }
+          - { env: py312-bt022-type-mypy119 }
+          - { env: py312-bt022-type-ty }
     name: ${{ matrix.env }}
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v7
       - run: uv run tox run -e "${{ matrix.env }}"
 
-  compat:
-    if: startsWith(github.ref, 'refs/tags/v')
+  # -----------------------------------------------------------------------
+  # Push: medium compat matrix
+  # -----------------------------------------------------------------------
+
+  compat-push:
+    if: github.event_name == 'push'
     needs: [test]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        env:
-          - numpy22
-          - numpy23
-          - numpy24
-          - jax05
-          - jax06
-          - jax07
-          - jax08
-          - jax09
-          - torch26
-          - torch27
-          - torch28
-          - torch29
-          - torch210
-          - bt020
-          - bt021
-          - bt022
-          - bt020-jax
-          - bt021-jax
-          - bt022-jax
-          - bt020-torch
-          - bt021-torch
-          - bt022-torch
-          - optree014
-          - optree015
-          - optree016
-          - optree017
-          - optree018
-          - optree019
-    name: ${{ matrix.env }}
+        python: [py312, py313, py314]
+        beartype: [bt022]
+        backend: [numpy24, jax09, torch210, optree019]
+        exclude:
+          - { python: py314, backend: torch210 }
+    name: ${{ matrix.python }}-${{ matrix.beartype }}-${{ matrix.backend }}
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v7
-      - run: uv run tox run -e "${{ matrix.env }}"
+      - run: uv run tox run -e "${{ matrix.python }}-${{ matrix.beartype }}-${{ matrix.backend }}"
 
-  typecheck-matrix:
-    if: startsWith(github.ref, 'refs/tags/v')
+  typecheck-push:
+    if: github.event_name == 'push'
     needs: [test]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        env:
-          - pyright1392
-          - pyright1400
-          - pyright1408
-          - mypy115
-          - mypy116
-          - mypy117
-          - mypy118
-          - mypy119
-          - ty
+        include:
+          - { env: py312-bt022-type-pyright1392 }
+          - { env: py312-bt022-type-pyright1400 }
+          - { env: py312-bt022-type-pyright1408 }
+          - { env: py312-bt022-type-mypy115 }
+          - { env: py312-bt022-type-mypy117 }
+          - { env: py312-bt022-type-mypy119 }
+          - { env: py312-bt022-type-ty }
     name: ${{ matrix.env }}
     steps:
       - uses: actions/checkout@v6

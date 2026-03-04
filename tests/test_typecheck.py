@@ -83,7 +83,7 @@ class TestMypy:
   @pytest.mark.parametrize("filename", COMMON_FILES)
   def test_mypy(self, filename: str) -> None:
     _skip_if_missing("mypy")
-    result = _run(["mypy", str(TYPING_DIR / filename), "--ignore-missing-imports"])
+    result = _run(["mypy", str(TYPING_DIR / filename)])
     assert result.returncode == 0, (
       f"mypy failed on {filename}:\n{result.stdout}\n{result.stderr}"
     )

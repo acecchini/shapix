@@ -39,5 +39,21 @@ src/shapix/
 ## Running tests
 
 ```bash
-uv run pytest tests/
+uv run pytest tests/              # all tests locally
+uv run tox run -e dev             # locked env with all deps
+uv run tox run -e py312-bt022-numpy24   # factor-based compat env
 ```
+
+## Tox factor scheme
+
+Runtime envs: `{python}-{beartype}-{backend}` (e.g. `py312-bt022-numpy24`)
+Typecheck envs: `{python}-{beartype}-type-{checker}` (e.g. `py312-bt022-type-pyright1408`)
+
+Factor deps are merged by tox. `tests/conftest.py` filters tests by backend via `TOX_ENV_NAME`.
+`tools/validate_tox_env.py` validates env names in `commands_pre`.
+
+## Type checking
+
+- pyright: `strict` mode with targeted suppressions for beartype internals
+- mypy: `strict = true` with `ignore_missing_imports = true`
+- ty: defaults only (`ty.toml` sets python-version)

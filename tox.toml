@@ -1,269 +1,108 @@
-requires = ["tox>=4.21", "tox-uv>=1.33"]
-
-# Default: single locked-deps test on Python 3.12 (used on every push)
-env_list = ["py312"]
-
-[labels]
-test = ["py312", "py313", "py314"]
-compat = [
-  "numpy22", "numpy23", "numpy24",
-  "jax05", "jax06", "jax07", "jax08", "jax09",
-  "torch26", "torch27", "torch28", "torch29", "torch210",
-  "bt020", "bt021", "bt022",
-  "bt020-jax", "bt021-jax", "bt022-jax",
-  "bt020-torch", "bt021-torch", "bt022-torch",
-  "optree014", "optree015", "optree016", "optree017", "optree018", "optree019",
-]
-typecheck = [
-  "pyright1392", "pyright1400", "pyright1408",
-  "mypy115", "mypy116", "mypy117", "mypy118", "mypy119",
-  "ty",
+requires = ["tox>=4.40", "tox-uv>=1.33"]
+env_list = [
+  "dev",
+  # Runtime: {python}-{beartype}-{backend}
+  { product = [
+    ["py312", "py313", "py314"],
+    ["bt020", "bt021", "bt022"],
+    ["numpy22", "numpy23", "numpy24",
+     "jax05", "jax06", "jax07", "jax08", "jax09",
+     "torch26", "torch27", "torch28", "torch29", "torch210",
+     "optree014", "optree015", "optree016", "optree017", "optree018", "optree019"],
+  ] },
+  # Typecheck: {python}-{beartype}-type-{checker}
+  { product = [
+    ["py312", "py313", "py314"],
+    ["bt020", "bt021", "bt022"],
+    ["type"],
+    ["pyright1392", "pyright1400", "pyright1408",
+     "mypy115", "mypy116", "mypy117", "mypy118", "mypy119",
+     "ty"],
+  ] },
 ]
 
 # ---------------------------------------------------------------------------
-# Base — shared by all run environments
+# Base — shared by all factor-based environments
 # ---------------------------------------------------------------------------
 
 [env_run_base]
 runner = "uv-venv-runner"
-description = "tests ({env_name})"
+description = "{env_name}"
+deps = [
+  "pytest>=9.0.2",
+  "pytest-xdist>=3.5.0",
+
+  # --- beartype ---
+  { replace = "if", condition = "factor.bt020", then = "beartype>=0.20,<0.21" },
+  { replace = "if", condition = "factor.bt021", then = "beartype>=0.21,<0.22" },
+  { replace = "if", condition = "factor.bt022", then = "beartype>=0.22,<0.23" },
+
+  # --- numpy ---
+  { replace = "if", condition = "factor.numpy22", then = "numpy>=2.2,<2.3" },
+  { replace = "if", condition = "factor.numpy23", then = "numpy>=2.3,<2.4" },
+  { replace = "if", condition = "factor.numpy24", then = "numpy>=2.4,<2.5" },
+
+  # --- jax (needs numpy) ---
+  { replace = "if", condition = "factor.jax05", then = "jax[cpu]>=0.5,<0.6" },
+  { replace = "if", condition = "factor.jax06", then = "jax[cpu]>=0.6,<0.7" },
+  { replace = "if", condition = "factor.jax07", then = "jax[cpu]>=0.7,<0.8" },
+  { replace = "if", condition = "factor.jax08", then = "jax[cpu]>=0.8,<0.9" },
+  { replace = "if", condition = "factor.jax09", then = "jax[cpu]>=0.9,<0.10" },
+  # jax/torch/optree all need numpy at runtime
+  { replace = "if", condition = "factor.jax05 or factor.jax06 or factor.jax07 or factor.jax08 or factor.jax09 or factor.torch26 or factor.torch27 or factor.torch28 or factor.torch29 or factor.torch210 or factor.optree014 or factor.optree015 or factor.optree016 or factor.optree017 or factor.optree018 or factor.optree019", then = "numpy>=2.2" },
+
+  # --- torch ---
+  { replace = "if", condition = "factor.torch26", then = "torch>=2.6,<2.7" },
+  { replace = "if", condition = "factor.torch27", then = "torch>=2.7,<2.8" },
+  { replace = "if", condition = "factor.torch28", then = "torch>=2.8,<2.9" },
+  { replace = "if", condition = "factor.torch29", then = "torch>=2.9,<2.10" },
+  { replace = "if", condition = "factor.torch210", then = "torch>=2.10,<2.11" },
+
+  # --- optree ---
+  { replace = "if", condition = "factor.optree014", then = "optree>=0.14,<0.15" },
+  { replace = "if", condition = "factor.optree015", then = "optree>=0.15,<0.16" },
+  { replace = "if", condition = "factor.optree016", then = "optree>=0.16,<0.17" },
+  { replace = "if", condition = "factor.optree017", then = "optree>=0.17,<0.18" },
+  { replace = "if", condition = "factor.optree018", then = "optree>=0.18,<0.19" },
+  { replace = "if", condition = "factor.optree019", then = "optree>=0.19,<0.20" },
+
+  # --- type factor (installs all backends for type checking) ---
+  { replace = "if", condition = "factor.type", then = "numpy>=2.2" },
+  { replace = "if", condition = "factor.type", then = "jax[cpu]>=0.5" },
+  { replace = "if", condition = "factor.type", then = "torch>=2.6" },
+  { replace = "if", condition = "factor.type", then = "optree>=0.14" },
+
+  # --- typechecker versions ---
+  { replace = "if", condition = "factor.pyright1392", then = "pyright==1.1.392" },
+  { replace = "if", condition = "factor.pyright1400", then = "pyright==1.1.400" },
+  { replace = "if", condition = "factor.pyright1408", then = "pyright==1.1.408" },
+  { replace = "if", condition = "factor.mypy115", then = "mypy>=1.15,<1.16" },
+  { replace = "if", condition = "factor.mypy116", then = "mypy>=1.16,<1.17" },
+  { replace = "if", condition = "factor.mypy117", then = "mypy>=1.17,<1.18" },
+  { replace = "if", condition = "factor.mypy118", then = "mypy>=1.18,<1.19" },
+  { replace = "if", condition = "factor.mypy119", then = "mypy>=1.19,<1.20" },
+  { replace = "if", condition = "factor.ty", then = "ty" },
+]
+commands = [["pytest", "tests/", "-n=auto", { replace = "posargs", default = [], extend = true }]]
+commands_pre = [["python", "tools/validate_tox_env.py", "{env_name}"]]
+
+# ---------------------------------------------------------------------------
+# Locked dev — latest everything from uv.lock
+# ---------------------------------------------------------------------------
+
+[env.dev]
+runner = "uv-venv-lock-runner"
+dependency_groups = ["dev", "optional", "static"]
+commands_pre = []
 commands = [
-  ["pytest", { replace = "posargs", default = ["tests/"], extend = true }, "-k", "not typecheck"],
+  [
+    "pytest",
+    "tests/",
+    "-n=auto",
+    "--cov=shapix",
+    "--cov-branch",
+    "--cov-report=term-missing:skip-covered",
+    "--cov-fail-under=90",
+    { replace = "posargs", default = [], extend = true },
+  ],
 ]
-
-# ---------------------------------------------------------------------------
-# Primary: locked envs (latest everything from uv.lock)
-# ---------------------------------------------------------------------------
-
-[env.py312]
-runner = "uv-venv-lock-runner"
-dependency_groups = ["dev"]
-
-[env.py313]
-runner = "uv-venv-lock-runner"
-dependency_groups = ["dev"]
-
-# Python 3.14 — torch has no 3.14 wheels yet
-[env.py314]
-description = "tests (py3.14, no torch)"
-deps = [
-  "pytest>=9.0.2", "pytest-xdist>=3.5.0",
-  "numpy>=2.2.0", "jax[cpu]>=0.5.0", "optree>=0.14.0", "beartype>=0.22.9",
-]
-
-# ---------------------------------------------------------------------------
-# NumPy version compat
-# ---------------------------------------------------------------------------
-
-[env.numpy22]
-description = "numpy 2.2 compat"
-deps = ["pytest>=9.0.2", "pytest-xdist>=3.5.0", "beartype>=0.22.9", "numpy>=2.2.0,<2.3.0"]
-
-[env.numpy23]
-description = "numpy 2.3 compat"
-deps = ["pytest>=9.0.2", "pytest-xdist>=3.5.0", "beartype>=0.22.9", "numpy>=2.3.0,<2.4.0"]
-
-[env.numpy24]
-description = "numpy 2.4 compat"
-deps = ["pytest>=9.0.2", "pytest-xdist>=3.5.0", "beartype>=0.22.9", "numpy>=2.4.0,<2.5.0"]
-
-# ---------------------------------------------------------------------------
-# JAX version compat
-# ---------------------------------------------------------------------------
-
-[env.jax05]
-description = "jax 0.5 compat"
-deps = ["pytest>=9.0.2", "pytest-xdist>=3.5.0", "numpy>=2.2.0", "beartype>=0.22.9", "jax[cpu]>=0.5.0,<0.6.0"]
-
-[env.jax06]
-description = "jax 0.6 compat"
-deps = ["pytest>=9.0.2", "pytest-xdist>=3.5.0", "numpy>=2.2.0", "beartype>=0.22.9", "jax[cpu]>=0.6.0,<0.7.0"]
-
-[env.jax07]
-description = "jax 0.7 compat"
-deps = ["pytest>=9.0.2", "pytest-xdist>=3.5.0", "numpy>=2.2.0", "beartype>=0.22.9", "jax[cpu]>=0.7.0,<0.8.0"]
-
-[env.jax08]
-description = "jax 0.8 compat"
-deps = ["pytest>=9.0.2", "pytest-xdist>=3.5.0", "numpy>=2.2.0", "beartype>=0.22.9", "jax[cpu]>=0.8.0,<0.9.0"]
-
-[env.jax09]
-description = "jax 0.9 compat"
-deps = ["pytest>=9.0.2", "pytest-xdist>=3.5.0", "numpy>=2.2.0", "beartype>=0.22.9", "jax[cpu]>=0.9.0,<0.10.0"]
-
-# ---------------------------------------------------------------------------
-# PyTorch version compat
-# ---------------------------------------------------------------------------
-
-[env.torch26]
-description = "torch 2.6 compat"
-deps = ["pytest>=9.0.2", "pytest-xdist>=3.5.0", "numpy>=2.2.0", "beartype>=0.22.9", "torch>=2.6.0,<2.7.0"]
-
-[env.torch27]
-description = "torch 2.7 compat"
-deps = ["pytest>=9.0.2", "pytest-xdist>=3.5.0", "numpy>=2.2.0", "beartype>=0.22.9", "torch>=2.7.0,<2.8.0"]
-
-[env.torch28]
-description = "torch 2.8 compat"
-deps = ["pytest>=9.0.2", "pytest-xdist>=3.5.0", "numpy>=2.2.0", "beartype>=0.22.9", "torch>=2.8.0,<2.9.0"]
-
-[env.torch29]
-description = "torch 2.9 compat"
-deps = ["pytest>=9.0.2", "pytest-xdist>=3.5.0", "numpy>=2.2.0", "beartype>=0.22.9", "torch>=2.9.0,<2.10.0"]
-
-[env.torch210]
-description = "torch 2.10 compat"
-deps = ["pytest>=9.0.2", "pytest-xdist>=3.5.0", "numpy>=2.2.0", "beartype>=0.22.9", "torch>=2.10.0,<2.11.0"]
-
-# ---------------------------------------------------------------------------
-# Beartype version compat × backends
-# ---------------------------------------------------------------------------
-
-[env.bt020]
-description = "beartype 0.20 compat"
-deps = ["pytest>=9.0.2", "pytest-xdist>=3.5.0", "numpy>=2.2.0", "beartype>=0.20.0,<0.21.0"]
-
-[env.bt021]
-description = "beartype 0.21 compat"
-deps = ["pytest>=9.0.2", "pytest-xdist>=3.5.0", "numpy>=2.2.0", "beartype>=0.21.0,<0.22.0"]
-
-[env.bt022]
-description = "beartype 0.22 compat"
-deps = ["pytest>=9.0.2", "pytest-xdist>=3.5.0", "numpy>=2.2.0", "beartype>=0.22.0,<0.23.0"]
-
-[env.bt020-jax]
-description = "beartype 0.20 + jax compat"
-deps = ["pytest>=9.0.2", "pytest-xdist>=3.5.0", "numpy>=2.2.0", "beartype>=0.20.0,<0.21.0", "jax[cpu]>=0.5.0"]
-
-[env.bt021-jax]
-description = "beartype 0.21 + jax compat"
-deps = ["pytest>=9.0.2", "pytest-xdist>=3.5.0", "numpy>=2.2.0", "beartype>=0.21.0,<0.22.0", "jax[cpu]>=0.5.0"]
-
-[env.bt022-jax]
-description = "beartype 0.22 + jax compat"
-deps = ["pytest>=9.0.2", "pytest-xdist>=3.5.0", "numpy>=2.2.0", "beartype>=0.22.0,<0.23.0", "jax[cpu]>=0.5.0"]
-
-[env.bt020-torch]
-description = "beartype 0.20 + torch compat"
-deps = ["pytest>=9.0.2", "pytest-xdist>=3.5.0", "numpy>=2.2.0", "beartype>=0.20.0,<0.21.0", "torch>=2.6.0"]
-
-[env.bt021-torch]
-description = "beartype 0.21 + torch compat"
-deps = ["pytest>=9.0.2", "pytest-xdist>=3.5.0", "numpy>=2.2.0", "beartype>=0.21.0,<0.22.0", "torch>=2.6.0"]
-
-[env.bt022-torch]
-description = "beartype 0.22 + torch compat"
-deps = ["pytest>=9.0.2", "pytest-xdist>=3.5.0", "numpy>=2.2.0", "beartype>=0.22.0,<0.23.0", "torch>=2.6.0"]
-
-# ---------------------------------------------------------------------------
-# optree version compat
-# ---------------------------------------------------------------------------
-
-[env.optree014]
-description = "optree 0.14 compat"
-deps = ["pytest>=9.0.2", "pytest-xdist>=3.5.0", "numpy>=2.2.0", "beartype>=0.22.9", "optree>=0.14.0,<0.15.0"]
-
-[env.optree015]
-description = "optree 0.15 compat"
-deps = ["pytest>=9.0.2", "pytest-xdist>=3.5.0", "numpy>=2.2.0", "beartype>=0.22.9", "optree>=0.15.0,<0.16.0"]
-
-[env.optree016]
-description = "optree 0.16 compat"
-deps = ["pytest>=9.0.2", "pytest-xdist>=3.5.0", "numpy>=2.2.0", "beartype>=0.22.9", "optree>=0.16.0,<0.17.0"]
-
-[env.optree017]
-description = "optree 0.17 compat"
-deps = ["pytest>=9.0.2", "pytest-xdist>=3.5.0", "numpy>=2.2.0", "beartype>=0.22.9", "optree>=0.17.0,<0.18.0"]
-
-[env.optree018]
-description = "optree 0.18 compat"
-deps = ["pytest>=9.0.2", "pytest-xdist>=3.5.0", "numpy>=2.2.0", "beartype>=0.22.9", "optree>=0.18.0,<0.19.0"]
-
-[env.optree019]
-description = "optree 0.19 compat"
-deps = ["pytest>=9.0.2", "pytest-xdist>=3.5.0", "numpy>=2.2.0", "beartype>=0.22.9", "optree>=0.19.0,<0.20.0"]
-
-# ---------------------------------------------------------------------------
-# Type checker version compat
-# ---------------------------------------------------------------------------
-
-[env.pyright1392]
-description = "pyright 1.1.392 compat"
-deps = [
-  "pytest>=9.0.2", "pytest-xdist>=3.5.0",
-  "numpy>=2.2.0", "jax[cpu]>=0.5.0", "torch>=2.6.0", "optree>=0.14.0",
-  "beartype>=0.22.9", "pyright==1.1.392",
-]
-commands = [["pytest", "tests/test_typecheck.py", "-k", "TestPyright"]]
-
-[env.pyright1400]
-description = "pyright 1.1.400 compat"
-deps = [
-  "pytest>=9.0.2", "pytest-xdist>=3.5.0",
-  "numpy>=2.2.0", "jax[cpu]>=0.5.0", "torch>=2.6.0", "optree>=0.14.0",
-  "beartype>=0.22.9", "pyright==1.1.400",
-]
-commands = [["pytest", "tests/test_typecheck.py", "-k", "TestPyright"]]
-
-[env.pyright1408]
-description = "pyright 1.1.408 compat"
-deps = [
-  "pytest>=9.0.2", "pytest-xdist>=3.5.0",
-  "numpy>=2.2.0", "jax[cpu]>=0.5.0", "torch>=2.6.0", "optree>=0.14.0",
-  "beartype>=0.22.9", "pyright==1.1.408",
-]
-commands = [["pytest", "tests/test_typecheck.py", "-k", "TestPyright"]]
-
-[env.mypy115]
-description = "mypy 1.15 compat"
-deps = [
-  "pytest>=9.0.2", "pytest-xdist>=3.5.0",
-  "numpy>=2.2.0", "jax[cpu]>=0.5.0", "torch>=2.6.0", "optree>=0.14.0",
-  "beartype>=0.22.9", "mypy>=1.15.0,<1.16.0",
-]
-commands = [["pytest", "tests/test_typecheck.py", "-k", "TestMypy"]]
-
-[env.mypy116]
-description = "mypy 1.16 compat"
-deps = [
-  "pytest>=9.0.2", "pytest-xdist>=3.5.0",
-  "numpy>=2.2.0", "jax[cpu]>=0.5.0", "torch>=2.6.0", "optree>=0.14.0",
-  "beartype>=0.22.9", "mypy>=1.16.0,<1.17.0",
-]
-commands = [["pytest", "tests/test_typecheck.py", "-k", "TestMypy"]]
-
-[env.mypy117]
-description = "mypy 1.17 compat"
-deps = [
-  "pytest>=9.0.2", "pytest-xdist>=3.5.0",
-  "numpy>=2.2.0", "jax[cpu]>=0.5.0", "torch>=2.6.0", "optree>=0.14.0",
-  "beartype>=0.22.9", "mypy>=1.17.0,<1.18.0",
-]
-commands = [["pytest", "tests/test_typecheck.py", "-k", "TestMypy"]]
-
-[env.mypy118]
-description = "mypy 1.18 compat"
-deps = [
-  "pytest>=9.0.2", "pytest-xdist>=3.5.0",
-  "numpy>=2.2.0", "jax[cpu]>=0.5.0", "torch>=2.6.0", "optree>=0.14.0",
-  "beartype>=0.22.9", "mypy>=1.18.0,<1.19.0",
-]
-commands = [["pytest", "tests/test_typecheck.py", "-k", "TestMypy"]]
-
-[env.mypy119]
-description = "mypy 1.19 compat"
-deps = [
-  "pytest>=9.0.2", "pytest-xdist>=3.5.0",
-  "numpy>=2.2.0", "jax[cpu]>=0.5.0", "torch>=2.6.0", "optree>=0.14.0",
-  "beartype>=0.22.9", "mypy>=1.19.0,<1.20.0",
-]
-commands = [["pytest", "tests/test_typecheck.py", "-k", "TestMypy"]]
-
-[env.ty]
-description = "ty (latest) compat"
-deps = [
-  "pytest>=9.0.2", "pytest-xdist>=3.5.0",
-  "numpy>=2.2.0", "jax[cpu]>=0.5.0", "torch>=2.6.0", "optree>=0.14.0",
-  "beartype>=0.22.9", "ty",
-]
-commands = [["pytest", "tests/test_typecheck.py", "-k", "TestTy"]]

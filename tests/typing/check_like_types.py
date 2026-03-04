@@ -70,7 +70,7 @@ _str: StringLike = "hello"
 # Array Like types — nested sequences should be valid
 # ---------------------------------------------------------------------------
 
-_arr_like = ArrayLike  # ArrayLike is a generic type alias
+_arr_like = ArrayLike  # type: ignore[type-arg]  # ArrayLike is a generic type alias
 
 # Float types
 _f16: Float16Like = 1.0
