@@ -48,6 +48,7 @@ dev = [
   "mypy>=1.19.1",
   "ty>=0.0.20",
   "pytest>=9.0.2",
+  "pytest-xdist>=3.5.0",
   "pre-commit>=4.5.1",
   "tox>=4.47.1",
   "tox-uv>=1.33.1",

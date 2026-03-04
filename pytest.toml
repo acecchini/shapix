@@ -6,6 +6,8 @@ addopts = [
   "-ra",
   # Quieter output
   "-q",
+  # Run tests in parallel across available CPUs
+  "-n=auto",
 ]
 markers = [
   "typecheck: type-checker compatibility tests (pyright, mypy, ty)",
