@@ -141,3 +141,18 @@ class TestMemoEdgeCases:
     if orig_len == 0:
       with pytest.raises(IndexError):
         pop_memo()
+
+  def test_get_memo_without_explicit_returns_frame_based(self) -> None:
+    """Without explicit stack, get_memo should use frame detection."""
+    memo = get_memo(_depth=0)
+    assert isinstance(memo, ShapeMemo)
+
+  def test_many_sequential_calls_no_leak(self) -> None:
+    """Rapidly calling the same function many times shouldn't leak memos."""
+
+    @beartype
+    def f(x: F32[N]) -> F32[N]:
+      return x
+
+    for i in range(1, 50):
+      f(np.ones(i, dtype=np.float32))

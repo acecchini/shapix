@@ -1027,3 +1027,190 @@ class TestScalarLikeBoundaries:
     assert is_bearable(255, U8ScalarLike)
     assert not is_bearable(-1, U8ScalarLike)
     assert not is_bearable(256, U8ScalarLike)
+
+  def test_scalar_like_rejects_wrong_type(self) -> None:
+    assert not is_bearable("hello", I8ScalarLike)
+    assert not is_bearable(3.14, U8ScalarLike)
+
+  def test_scalar_like_numpy_integers(self) -> None:
+    assert is_bearable(np.int8(42), I8ScalarLike)
+    assert is_bearable(np.uint8(200), U8ScalarLike)
+
+
+# =====================================================================
+# ArrayLike shape constraint violations
+# =====================================================================
+
+
+class TestArrayLikeShapeViolations:
+  def test_f32like_with_shape_constraint_passes(self) -> None:
+    @beartype
+    def f(x: F32Like[N, C]) -> float:
+      return float(np.asarray(x).sum())
+
+    assert f([[1.0, 2.0], [3.0, 4.0]]) == 10.0
+
+  def test_f32like_wrong_rank_rejected(self) -> None:
+    @beartype
+    def f(x: F32Like[N, C]) -> float:
+      return float(np.asarray(x).sum())
+
+    with pytest.raises(BeartypeCallHintParamViolation):
+      f([1.0, 2.0, 3.0])
+
+  def test_f32like_cross_arg_consistency(self) -> None:
+    @shapix.check
+    @beartype
+    def f(x: F32Like[N, C], y: F32Like[N, C]) -> float:
+      return 0.0
+
+    f([[1.0, 2.0]], [[3.0, 4.0]])  # N=1, C=2 in both
+    with pytest.raises(BeartypeCallHintParamViolation):
+      f([[1.0, 2.0]], [[3.0, 4.0, 5.0]])  # C=2 vs C=3
+
+  def test_f32like_fixed_dim_rejected(self) -> None:
+    @beartype
+    def f(x: F32Like[3]) -> float:
+      return float(np.asarray(x).sum())
+
+    f([1.0, 2.0, 3.0])
+    with pytest.raises(BeartypeCallHintParamViolation):
+      f([1.0, 2.0])
+
+
+class TestArrayLikeDtypeViolations:
+  def test_f32like_rejects_complex_array(self) -> None:
+    assert not is_bearable(np.ones(3, dtype=np.complex128), F32Like[...])
+
+  def test_f32like_rejects_string(self) -> None:
+    assert not is_bearable("hello", F32Like[...])
+
+  def test_i64like_rejects_complex(self) -> None:
+    assert not is_bearable(np.ones(3, dtype=np.complex128), I64Like[...])
+
+  def test_boollike_rejects_float(self) -> None:
+    assert not is_bearable(3.14, BoolLike[...])
+
+
+class TestArrayLikeMemoRestore:
+  def test_failed_like_check_does_not_pollute_memo(self) -> None:
+    """ArrayLike shape failure should restore memo state."""
+    with shapix.check_context():
+      # First check binds N=3
+      assert is_bearable(np.ones(3, dtype=np.float32), F32Like[N])
+      # Second check should fail (wrong dtype), but N=3 should remain
+      assert not is_bearable(np.ones(5, dtype=np.complex128), F32Like[N])
+      # Third check should still see N=3
+      assert is_bearable(np.ones(3, dtype=np.float32), F32Like[N])
+      assert not is_bearable(np.ones(4, dtype=np.float32), F32Like[N])
+
+
+# =====================================================================
+# Endianness integration
+# =====================================================================
+
+
+class TestEndiannessIntegration:
+  def test_f32le_accepts_le(self) -> None:
+    from shapix.numpy import F32LE
+
+    @beartype
+    def f(x: F32LE[N]) -> F32LE[N]:
+      return x
+
+    f(np.ones(3, dtype="<f4"))
+
+  def test_f32le_rejects_be(self) -> None:
+    from shapix.numpy import F32LE
+
+    @beartype
+    def f(x: F32LE[N]) -> F32LE[N]:
+      return x
+
+    with pytest.raises(BeartypeCallHintParamViolation):
+      f(np.ones(3, dtype=">f4"))
+
+  def test_i64be_accepts_be(self) -> None:
+    from shapix.numpy import I64BE
+
+    @beartype
+    def f(x: I64BE[N]) -> I64BE[N]:
+      return x
+
+    f(np.ones(3, dtype=">i8"))
+
+  def test_i64be_rejects_le(self) -> None:
+    from shapix.numpy import I64BE
+
+    @beartype
+    def f(x: I64BE[N]) -> I64BE[N]:
+      return x
+
+    with pytest.raises(BeartypeCallHintParamViolation):
+      f(np.ones(3, dtype="<i8"))
+
+  def test_native_endianness(self) -> None:
+    from shapix.numpy import F32N
+
+    @beartype
+    def f(x: F32N[N]) -> F32N[N]:
+      return x
+
+    f(np.ones(3, dtype=np.float32))
+
+  def test_endianness_cross_arg_consistency(self) -> None:
+    from shapix.numpy import F32LE
+
+    @beartype
+    def f(x: F32LE[N], y: F32LE[N]) -> F32LE[N]:
+      return x + y
+
+    f(np.ones(3, dtype="<f4"), np.ones(3, dtype="<f4"))
+    with pytest.raises(BeartypeCallHintParamViolation):
+      f(np.ones(3, dtype="<f4"), np.ones(5, dtype="<f4"))
+
+
+# =====================================================================
+# Structured dtype integration
+# =====================================================================
+
+
+class TestStructuredDtypeIntegration:
+  def test_structured_with_shape_checking(self) -> None:
+    from shapix.numpy import Structured
+
+    Point = Structured([("x", np.float32), ("y", np.float32)])
+
+    @beartype
+    def f(points: Point[N]) -> Point[N]:  # type: ignore[valid-type]
+      return points
+
+    dt = np.dtype([("x", np.float32), ("y", np.float32)])
+    f(np.zeros(5, dtype=dt))
+
+  def test_structured_rejects_wrong_fields(self) -> None:
+    from shapix.numpy import Structured
+
+    Point = Structured([("x", np.float32), ("y", np.float32)])
+    wrong_dt = np.dtype([("a", np.float32), ("b", np.float32)])
+
+    @beartype
+    def f(points: Point[N]) -> Point[N]:  # type: ignore[valid-type]
+      return points
+
+    with pytest.raises(BeartypeCallHintParamViolation):
+      f(np.zeros(5, dtype=wrong_dt))
+
+  def test_structured_cross_arg(self) -> None:
+    from shapix.numpy import Structured
+
+    Point = Structured([("x", np.float32), ("y", np.float32)])
+    dt = np.dtype([("x", np.float32), ("y", np.float32)])
+
+    @beartype
+    def f(a: Point[N], b: Point[N]) -> Point[N]:  # type: ignore[valid-type]
+      return a
+
+    f(np.zeros(3, dtype=dt), np.zeros(3, dtype=dt))
+    with pytest.raises(BeartypeCallHintParamViolation):
+      f(np.zeros(3, dtype=dt), np.zeros(5, dtype=dt))
