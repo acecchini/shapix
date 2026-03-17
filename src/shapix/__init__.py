@@ -43,7 +43,10 @@ Classes
 Functions
     :func:`make_array_type` — create subscriptable array type factories for
     custom array classes.
+    :func:`make_array_like_type` — create subscriptable array-like type
+    factories with configurable dtype casting.
     :func:`check` — optional decorator for explicit memo management.
+    Also supports combined mode: ``@check(conf=BeartypeConf())``.
 
 Context managers
     :class:`check_context` — shared dimension memo for manual

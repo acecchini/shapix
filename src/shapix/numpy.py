@@ -13,14 +13,35 @@ Endianness variants use ``LE`` / ``BE`` / ``N`` suffixes::
 
     from shapix.numpy import F32LE, I64BE, I32N
 
+Additional dtypes: ``V`` (void), ``Str`` (string), ``Bytes``, ``Obj`` (object),
+``DT64`` (datetime64), ``TD64`` (timedelta64).
+
 ``Like`` types (e.g. ``F32Like``) accept scalars, nested sequences, or arrays
-— use them for function inputs that will be converted to arrays::
+— use them for function inputs that will be converted to arrays.
+Like types **must be subscripted**: ``F32Like[N, C]`` or ``F32Like[...]``::
 
     from shapix.numpy import F32Like
 
 
     @beartype
     def f(x: F32Like[N, C]) -> F32[N, C]: ...
+
+``ScalarLike`` types (e.g. ``I8ScalarLike``, ``U8ScalarLike``) validate individual
+scalar values with range checking — no shape, just value::
+
+    from shapix.numpy import U8ScalarLike
+
+
+    @beartype
+    def pixel(value: U8ScalarLike) -> int: ...  # [0, 255]
+
+``Structured()`` creates array types for NumPy structured (record) dtypes::
+
+    from shapix.numpy import Structured
+
+    Point = Structured([("x", np.float32), ("y", np.float32)])
+
+``ArrayLike`` is a public recursive type template for static type checking.
 """
 
 from __future__ import annotations
