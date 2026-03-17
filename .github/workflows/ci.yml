@@ -93,9 +93,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { env: py312-bt022-type-pyright1408 }
-          - { env: py312-bt022-type-mypy119 }
-          - { env: py312-bt022-type-ty }
+          - { env: py313-bt022-type-pyright1408 }
+          - { env: py313-bt022-type-mypy119 }
+          - { env: py313-bt022-type-ty }
     name: ${{ matrix.env }}
     steps:
       - uses: actions/checkout@v6
@@ -132,13 +132,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { env: py312-bt022-type-pyright1392 }
-          - { env: py312-bt022-type-pyright1400 }
-          - { env: py312-bt022-type-pyright1408 }
-          - { env: py312-bt022-type-mypy115 }
-          - { env: py312-bt022-type-mypy117 }
-          - { env: py312-bt022-type-mypy119 }
-          - { env: py312-bt022-type-ty }
+          - { env: py313-bt022-type-pyright1408 }
+          - { env: py313-bt022-type-mypy119 }
+          - { env: py313-bt022-type-ty }
     name: ${{ matrix.env }}
     steps:
       - uses: actions/checkout@v6

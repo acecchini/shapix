@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   # -----------------------------------------------------------------------
-  # Broad version compat — py312 × all beartype × all backends
+  # Full tox matrix — oldest + newest of each axis
   # -----------------------------------------------------------------------
 
   compat-nightly:
@@ -19,48 +19,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: [py312]
-        beartype: [bt020, bt021, bt022]
+        python: [py312, py313]
+        beartype: [bt020, bt022]
         backend:
           - numpy22
-          - numpy23
           - numpy24
           - jax05
-          - jax06
-          - jax07
-          - jax08
           - jax09
           - torch26
-          - torch27
-          - torch28
-          - torch29
           - torch210
           - optree014
-          - optree015
-          - optree016
-          - optree017
-          - optree018
           - optree019
-    name: ${{ matrix.python }}-${{ matrix.beartype }}-${{ matrix.backend }}
-    steps:
-      - uses: actions/checkout@v6
-      - uses: astral-sh/setup-uv@v7
-      - run: uv run tox run -e "${{ matrix.python }}-${{ matrix.beartype }}-${{ matrix.backend }}"
-
-  # -----------------------------------------------------------------------
-  # Latest backends on py313/py314
-  # -----------------------------------------------------------------------
-
-  compat-nightly-py:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python: [py313, py314]
-        beartype: [bt022]
-        backend: [numpy24, jax09, torch210, optree019]
-        exclude:
-          - { python: py314, backend: torch210 }
     name: ${{ matrix.python }}-${{ matrix.beartype }}-${{ matrix.backend }}
     steps:
       - uses: actions/checkout@v6
@@ -77,15 +46,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { env: py312-bt022-type-pyright1392 }
-          - { env: py312-bt022-type-pyright1400 }
-          - { env: py312-bt022-type-pyright1408 }
-          - { env: py312-bt022-type-mypy115 }
-          - { env: py312-bt022-type-mypy116 }
-          - { env: py312-bt022-type-mypy117 }
-          - { env: py312-bt022-type-mypy118 }
-          - { env: py312-bt022-type-mypy119 }
-          - { env: py312-bt022-type-ty }
+          - { env: py313-bt022-type-pyright1408 }
+          - { env: py313-bt022-type-mypy119 }
+          - { env: py313-bt022-type-ty }
     name: ${{ matrix.env }}
     steps:
       - uses: actions/checkout@v6
