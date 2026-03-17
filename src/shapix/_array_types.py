@@ -174,13 +174,25 @@ class _ArrayLikeChecker:
 
   Handles arrays (objects with ``.shape`` + ``.dtype``), scalars, nested
   sequences, ``__array__`` protocol objects, and buffer protocol objects
-  by converting to a numpy array and checking dtype + shape.
+  by converting to an array and checking dtype + shape.
 
   The *casting* parameter controls dtype strictness using numpy casting rules:
   ``no < equiv < safe < same_kind < unsafe``.
+
+  The optional *asarray* callable allows backends to provide their own
+  conversion function (e.g. ``jnp.asarray``, ``torch.as_tensor``) so that
+  objects implementing backend-specific protocols (``__jax_array__``,
+  ``__torch_function__``) are accepted.
   """
 
-  __slots__ = ("_dtype_spec", "_shape_spec", "_casting", "_repr", "_fail_obj")
+  __slots__ = (
+    "_dtype_spec",
+    "_shape_spec",
+    "_casting",
+    "_asarray",
+    "_repr",
+    "_fail_obj",
+  )
 
   def __init__(
     self,
@@ -189,10 +201,12 @@ class _ArrayLikeChecker:
     *,
     casting: str,
     name: str,
+    asarray: object | None = None,
   ) -> None:
     self._dtype_spec = dtype_spec
     self._shape_spec = shape_spec
     self._casting = casting
+    self._asarray = asarray
     self._fail_obj: object | None = None
 
     dims = ", ".join(repr(d) for d in shape_spec)
@@ -215,19 +229,33 @@ class _ArrayLikeChecker:
         self._fail_obj = obj
       return result
 
-    # Slow path: convert scalar / sequence / __array__ / buffer to numpy array
-    try:
-      import numpy as np
-
-      arr = np.asarray(obj)
-    except (TypeError, ValueError):
+    # Slow path: convert scalar / sequence / protocol object to array.
+    # Try the backend-specific converter first (jnp.asarray, torch.as_tensor),
+    # then fall back to np.asarray for scalars and nested sequences.
+    arr = self._convert(obj)
+    if arr is None:
       self._fail_obj = obj
       return False
 
-    result = self._check(arr, tuple(arr.shape), memo)
+    result = self._check(arr, tuple(arr.shape), memo)  # type: ignore[union-attr]
     if not result:
       self._fail_obj = obj
     return result
+
+  def _convert(self, obj: object) -> object | None:
+    """Convert *obj* to an array with ``.shape`` and ``.dtype``, or None."""
+    if self._asarray is not None:
+      try:
+        return self._asarray(obj)  # type: ignore[operator]
+      except Exception:  # noqa: BLE001
+        pass  # fall through to numpy
+
+    try:
+      import numpy as np
+
+      return np.asarray(obj)
+    except (TypeError, ValueError):
+      return None
 
   def _check(self, obj: object, shape: tuple[int, ...], memo: ShapeMemo) -> bool:
     """Validate dtype (with casting rules) then shape (with memo)."""
@@ -252,6 +280,11 @@ class _ArrayLikeChecker:
 
     # Wildcard ("*") accepts any dtype (used by SHAPED)
     if "*" in self._dtype_spec.allowed:
+      return self._dtype_spec._check_byteorder(obj)
+
+    # Exact string match always passes (handles non-numpy dtypes like bfloat16
+    # where np.can_cast would raise TypeError for an unknown dtype string).
+    if source in self._dtype_spec.allowed:
       return self._dtype_spec._check_byteorder(obj)
 
     import numpy as np
@@ -281,11 +314,19 @@ class _ArrayLikeFactory:
   sequences, arrays) with dtype casting awareness.
   """
 
-  __slots__ = ("_dtype_spec", "_casting", "__name__")
+  __slots__ = ("_dtype_spec", "_casting", "_asarray", "__name__")
 
-  def __init__(self, dtype_spec: DtypeSpec, *, casting: str, name: str) -> None:
+  def __init__(
+    self,
+    dtype_spec: DtypeSpec,
+    *,
+    casting: str,
+    name: str,
+    asarray: object | None = None,
+  ) -> None:
     self._dtype_spec = dtype_spec
     self._casting = casting
+    self._asarray = asarray
     self.__name__ = name
 
   def __getitem__(self, dims: object) -> type:
@@ -294,7 +335,11 @@ class _ArrayLikeFactory:
 
     shape_spec = _to_shape_spec(dims)
     checker = _ArrayLikeChecker(
-      self._dtype_spec, shape_spec, casting=self._casting, name=self.__name__
+      self._dtype_spec,
+      shape_spec,
+      casting=self._casting,
+      name=self.__name__,
+      asarray=self._asarray,
     )
     return Annotated[object, Is[checker]]  # type: ignore[return-value]
 
@@ -303,7 +348,11 @@ class _ArrayLikeFactory:
 
 
 def make_array_like_type(
-  dtype_spec: DtypeSpec, *, casting: str = "same_kind", name: str = "ArrayLike"
+  dtype_spec: DtypeSpec,
+  *,
+  casting: str = "same_kind",
+  name: str = "ArrayLike",
+  asarray: object | None = None,
 ) -> _ArrayLikeFactory:
   """Create a subscriptable array-like type factory.
 
@@ -317,6 +366,11 @@ def make_array_like_type(
       compatibility is checked.  Default ``"same_kind"``.
   name:
       Human-readable name for error messages.
+  asarray:
+      Optional callable ``(obj) -> array`` for backend-specific conversion.
+      When provided, it is tried before ``np.asarray`` on the slow path
+      (objects without ``.shape`` / ``.dtype``).  Use this to support
+      protocols like ``__jax_array__`` or ``__torch_function__``.
 
   Returns
   -------
@@ -334,7 +388,7 @@ def make_array_like_type(
   if casting not in _VALID_CASTINGS:
     msg = f"Invalid casting {casting!r}, must be one of {sorted(_VALID_CASTINGS)}"
     raise ValueError(msg)
-  return _ArrayLikeFactory(dtype_spec, casting=casting, name=name)
+  return _ArrayLikeFactory(dtype_spec, casting=casting, name=name, asarray=asarray)
 
 
 # ---------------------------------------------------------------------------

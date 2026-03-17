@@ -234,7 +234,7 @@ def _check_one(dim: DimSpec, size: int, memo: ShapeMemo) -> str:
       return f"dimension '{dim.expr}' evaluated to {expected} but got {size}"
     return ""
 
-  return ""
+  return f"internal error: unrecognized dim spec {dim!r}"
 
 
 def _check_variadic(dim: VariadicDim, shape: tuple[int, ...], memo: ShapeMemo) -> str:

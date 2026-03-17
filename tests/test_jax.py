@@ -20,6 +20,7 @@ import shapix
 from shapix import B, C, N, __, Dimension  # noqa: F811 — B used in ~B annotations
 from shapix.jax import (
   BF16,
+  BF16Like,
   Bool,
   F16,
   F32,
@@ -339,6 +340,59 @@ class TestJaxLikeTypes:
   def test_boollike(self) -> None:
     assert is_bearable(True, BoolLike[...])
     assert is_bearable([True, False], BoolLike[...])
+
+  def test_bf16like_accepts_jax_bfloat16(self) -> None:
+    arr = jnp.ones(3, dtype=jnp.bfloat16)
+    assert is_bearable(arr, BF16Like[...])
+
+  def test_bf16like_rejects_non_numeric_dtype(self) -> None:
+    # Under same_kind casting (default), all numeric types can cast to bfloat16
+    # when JAX is loaded, so we use a string array for rejection
+    arr = np.array(["a", "b"], dtype=np.str_)
+    assert not is_bearable(arr, BF16Like[...])
+
+  def test_bf16like_shape_checking(self) -> None:
+    @beartype
+    def f(x: BF16Like[N]) -> None:  # type: ignore[valid-type]
+      pass
+
+    f(jnp.ones(5, dtype=jnp.bfloat16))
+    with pytest.raises(Exception):
+      f(jnp.ones((3, 4), dtype=jnp.bfloat16))
+
+
+class TestJaxArrayProtocol:
+  def test_jax_array_protocol_accepted(self) -> None:
+    """Objects implementing __jax_array__ should be accepted by JAX Like types."""
+
+    class MyArray:
+      """Custom type that JAX can convert via __jax_array__."""
+
+      def __init__(self, data: object) -> None:
+        self._data = data
+
+      def __jax_array__(self) -> jax.Array:  # noqa: PLW3201
+        return jnp.asarray(self._data, dtype=jnp.float32)
+
+    wrapper = MyArray([1.0, 2.0, 3.0])
+    # Should NOT have .shape/.dtype, forcing the slow path
+    assert not hasattr(wrapper, "shape")
+    assert is_bearable(wrapper, F32Like[...])
+
+  def test_jax_array_protocol_wrong_dtype_rejected(self) -> None:
+    """__jax_array__ object with wrong dtype should be rejected."""
+    from shapix.jax import I64Like
+
+    class MyArray:
+      def __init__(self, data: object) -> None:
+        self._data = data
+
+      def __jax_array__(self) -> jax.Array:  # noqa: PLW3201
+        return jnp.asarray(self._data, dtype=jnp.float32)
+
+    wrapper = MyArray([1.0, 2.0])
+    # I64Like expects integer, but __jax_array__ returns float32
+    assert not is_bearable(wrapper, I64Like[...])
 
 
 class TestJaxLikeEdgeCases:

@@ -51,6 +51,8 @@ __all__ = [
   "P",
   "L",
   "C",
+  "D",
+  "K",
   "H",
   "W",
   # Anonymous
@@ -195,6 +197,8 @@ if tp.TYPE_CHECKING:
   P: Dimension
   L: Dimension
   C: Dimension
+  D: Dimension
+  K: Dimension
   H: Dimension
   W: Dimension
   __: Dimension
@@ -206,6 +210,8 @@ else:
   P = Dimension("P")
   L = Dimension("L")
   C = Dimension("C")
+  D = Dimension("D")
+  K = Dimension("K")
   H = Dimension("H")
   W = Dimension("W")
 

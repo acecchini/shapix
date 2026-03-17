@@ -38,6 +38,35 @@ class TestArrayFactoryEdges:
     assert spec == (NamedDim("Token"),)
 
 
+class TestByteorderEdgePaths:
+  def test_single_byte_with_endianness_spec_passes(self) -> None:
+    """Single-byte dtype with non-'any' byteorder spec should always pass (bo='|')."""
+    from shapix._dtypes import DtypeSpec
+
+    # Create a little-endian int8 spec — unusual but valid
+    spec = DtypeSpec("I8LE", frozenset({"int8"}), byteorder="little")
+    arr = np.zeros(2, dtype=np.int8)
+    # int8 has "|" byte order, so _check_byteorder returns True
+    assert spec.matches(arr)
+
+  def test_extract_dtype_str_dtype_type_without_name(self) -> None:
+    """dtype.type exists but __name__ is None should fall through."""
+    from shapix._dtypes import extract_dtype_str
+
+    class FakeDtypeType:
+      __name__ = None  # type: ignore[assignment]
+
+    class FakeDtype:
+      type = FakeDtypeType
+
+    class FakeArr:
+      dtype = FakeDtype()
+
+    # Should fall through to PyTorch/fallback path
+    result = extract_dtype_str(FakeArr())
+    assert isinstance(result, str)
+
+
 class TestShapeEdgeBranches:
   def test_variadic_prefix_error_is_returned(self) -> None:
     memo = ShapeMemo()
@@ -328,6 +357,60 @@ class TestInputValidation:
     assert memo.single == {"N": 5}
     assert memo.variadic == {"B": (False, (2, 3))}
     assert memo.structures == {"T": "spec"}
+
+
+class TestScalarLikeFactory:
+  def test_make_scalar_like_type_exception_path(self) -> None:
+    """Objects where np.asarray or np.can_cast raises should return False."""
+    from shapix.numpy import make_scalar_like_type
+
+    T = make_scalar_like_type(np.float32, casting="same_kind")
+
+    class Unconvertible:
+      def __array__(self, *_a: object, **_kw: object) -> None:  # noqa: PLW3201
+        raise TypeError("nope")
+
+    from beartype.door import is_bearable
+
+    assert not is_bearable(Unconvertible(), T)
+
+  def test_make_scalar_like_type_exact_match(self) -> None:
+    from shapix.numpy import make_scalar_like_type
+    from beartype.door import is_bearable
+
+    T = make_scalar_like_type(np.float32, casting="no")
+    assert is_bearable(np.float32(1.0), T)
+    assert not is_bearable(1.0, T)  # Python float != np.float32 under "no"
+
+
+class TestVersionExport:
+  def test_shapix_has_version(self) -> None:
+    import shapix
+
+    assert hasattr(shapix, "__version__")
+    assert isinstance(shapix.__version__, str)
+    assert len(shapix.__version__) > 0
+
+
+class TestNewDimensionSymbols:
+  def test_d_and_k_available(self) -> None:
+    from shapix import D, K
+
+    assert str(D) == "D"
+    assert str(K) == "K"
+
+  def test_d_and_k_in_annotations(self) -> None:
+    from beartype import beartype
+    from shapix import D, K
+    from shapix.numpy import F32  # noqa: F401
+
+    @beartype
+    def f(x: F32[D, K]) -> F32[D, K]:  # type: ignore[valid-type]
+      return x
+
+    arr = np.ones((8, 4), dtype=np.float32)
+    result = f(arr)
+    assert result.shape == (8, 4)
 
 
 class TestClawWrapper:

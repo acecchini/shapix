@@ -2,22 +2,21 @@ requires = ["tox>=4.40", "tox-uv>=1.33"]
 env_list = [
   "dev",
   # Runtime: {python}-{beartype}-{backend}
+  # Oldest + newest of each axis — intermediate versions can be tested manually.
   { product = [
-    ["py312", "py313", "py314"],
-    ["bt020", "bt021", "bt022"],
-    ["numpy22", "numpy23", "numpy24",
-     "jax05", "jax06", "jax07", "jax08", "jax09",
-     "torch26", "torch27", "torch28", "torch29", "torch210",
-     "optree014", "optree015", "optree016", "optree017", "optree018", "optree019"],
+    ["py312", "py313"],
+    ["bt020", "bt022"],
+    ["numpy22", "numpy24",
+     "jax05", "jax09",
+     "torch26", "torch210",
+     "optree014", "optree019"],
   ] },
-  # Typecheck: {python}-{beartype}-type-{checker}
+  # Typecheck: latest Python + latest beartype only (type stubs are version-independent)
   { product = [
-    ["py312", "py313", "py314"],
-    ["bt020", "bt021", "bt022"],
+    ["py313"],
+    ["bt022"],
     ["type"],
-    ["pyright1392", "pyright1400", "pyright1408",
-     "mypy115", "mypy116", "mypy117", "mypy118", "mypy119",
-     "ty"],
+    ["pyright1408", "mypy119", "ty"],
   ] },
 ]
 

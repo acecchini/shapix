@@ -20,7 +20,7 @@ automatic cross-argument shape consistency with no extra boilerplate.
 Exports
 -------
 Dimension symbols
-    ``B``, ``N``, ``P``, ``L``, ``C``, ``H``, ``W`` — named dimensions.
+    ``B``, ``N``, ``P``, ``L``, ``C``, ``D``, ``K``, ``H``, ``W`` — named dimensions.
     ``__`` — anonymous (match any single dim, no binding).
     ``Scalar`` — scalar (no dimensions).
 
@@ -55,6 +55,10 @@ Context managers
     ``is_bearable()`` checks.
 """
 
+from importlib.metadata import version
+
+__version__ = version("shapix")
+
 from ._array_types import make_array_like_type as make_array_like_type
 from ._array_types import make_array_type as make_array_type
 from ._decorator import check as check
@@ -65,8 +69,10 @@ from ._tree import T as T
 from ._dimensions import __ as __
 from ._dimensions import B as B
 from ._dimensions import C as C
+from ._dimensions import D as D
 from ._dimensions import Dimension as Dimension
 from ._dimensions import H as H
+from ._dimensions import K as K
 from ._dimensions import L as L
 from ._dimensions import N as N
 from ._dimensions import P as P

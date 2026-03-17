@@ -56,6 +56,7 @@ __all__ = [
   "Num",
   "Shaped",
   # Like types
+  "BF16Like",
   "BoolLike",
   "I8Like",
   "I16Like",
@@ -111,7 +112,8 @@ __all__ = [
   "Structure",
 ]
 
-from ._array_types import make_array_like_type, make_array_type
+from ._array_types import make_array_like_type as _make_array_like_type
+from ._array_types import make_array_type
 from ._tree import Structure as Structure
 from ._tree import _TreeFactory
 from ._dtypes import (
@@ -140,6 +142,59 @@ from ._dtypes import (
   UINT32,
   UINT64,
 )
+
+# ScalarLike types + factory (re-exported from numpy — no shape, just value)
+from .numpy import BoolScalarLike as BoolScalarLike
+from .numpy import C64ScalarLike as C64ScalarLike
+from .numpy import C128ScalarLike as C128ScalarLike
+from .numpy import ComplexScalarLike as ComplexScalarLike
+from .numpy import F16ScalarLike as F16ScalarLike
+from .numpy import F32ScalarLike as F32ScalarLike
+from .numpy import F64ScalarLike as F64ScalarLike
+from .numpy import FloatScalarLike as FloatScalarLike
+from .numpy import I8ScalarLike as I8ScalarLike
+from .numpy import I16ScalarLike as I16ScalarLike
+from .numpy import I32ScalarLike as I32ScalarLike
+from .numpy import I64ScalarLike as I64ScalarLike
+from .numpy import InexactScalarLike as InexactScalarLike
+from .numpy import IntegerScalarLike as IntegerScalarLike
+from .numpy import IntScalarLike as IntScalarLike
+from .numpy import NumScalarLike as NumScalarLike
+from .numpy import RealScalarLike as RealScalarLike
+from .numpy import ShapedScalarLike as ShapedScalarLike
+from .numpy import StringLike as StringLike
+from .numpy import U8ScalarLike as U8ScalarLike
+from .numpy import U16ScalarLike as U16ScalarLike
+from .numpy import U32ScalarLike as U32ScalarLike
+from .numpy import U64ScalarLike as U64ScalarLike
+from .numpy import UIntScalarLike as UIntScalarLike
+from .numpy import make_scalar_like_type as make_scalar_like_type
+
+# ---------------------------------------------------------------------------
+# Backend-specific conversion (supports __jax_array__ protocol)
+# ---------------------------------------------------------------------------
+
+
+def _jax_asarray(obj: object) -> tp.Any:
+  import jax.numpy as jnp
+
+  return jnp.asarray(obj)
+
+
+def make_array_like_type(
+  dtype_spec: object,
+  *,
+  casting: str = "same_kind",
+  name: str = "ArrayLike",
+  asarray: object | None = _jax_asarray,
+) -> tp.Any:
+  """JAX-aware version of :func:`shapix.make_array_like_type`.
+
+  Defaults to ``jnp.asarray`` for the slow path, so objects implementing
+  ``__jax_array__`` are accepted in addition to standard array-likes.
+  """
+  return _make_array_like_type(dtype_spec, casting=casting, name=name, asarray=asarray)  # type: ignore[arg-type]
+
 
 # ---------------------------------------------------------------------------
 # Array types (shape-checked via beartype Is[])
@@ -211,33 +266,6 @@ else:
 # Like types (scalar | array | nested sequences — for input validation)
 # ---------------------------------------------------------------------------
 
-# ScalarLike types + factory (re-exported from numpy — no shape, just value)
-from .numpy import BoolScalarLike as BoolScalarLike
-from .numpy import C64ScalarLike as C64ScalarLike
-from .numpy import C128ScalarLike as C128ScalarLike
-from .numpy import ComplexScalarLike as ComplexScalarLike
-from .numpy import F16ScalarLike as F16ScalarLike
-from .numpy import F32ScalarLike as F32ScalarLike
-from .numpy import F64ScalarLike as F64ScalarLike
-from .numpy import FloatScalarLike as FloatScalarLike
-from .numpy import I8ScalarLike as I8ScalarLike
-from .numpy import I16ScalarLike as I16ScalarLike
-from .numpy import I32ScalarLike as I32ScalarLike
-from .numpy import I64ScalarLike as I64ScalarLike
-from .numpy import InexactScalarLike as InexactScalarLike
-from .numpy import IntegerScalarLike as IntegerScalarLike
-from .numpy import IntScalarLike as IntScalarLike
-from .numpy import NumScalarLike as NumScalarLike
-from .numpy import RealScalarLike as RealScalarLike
-from .numpy import ShapedScalarLike as ShapedScalarLike
-from .numpy import StringLike as StringLike
-from .numpy import U8ScalarLike as U8ScalarLike
-from .numpy import U16ScalarLike as U16ScalarLike
-from .numpy import U32ScalarLike as U32ScalarLike
-from .numpy import U64ScalarLike as U64ScalarLike
-from .numpy import UIntScalarLike as UIntScalarLike
-from .numpy import make_scalar_like_type as make_scalar_like_type
-
 if tp.TYPE_CHECKING:
   from .numpy import (
     BoolLike as BoolLikeNumpy,
@@ -265,6 +293,7 @@ if tp.TYPE_CHECKING:
     UIntLike as UIntLikeNumpy,
   )
 
+  type BF16Like[*Dims] = BF16[*Dims] | NumLikeNumpy[*Dims]
   type BoolLike[*Dims] = Bool[*Dims] | BoolLikeNumpy[*Dims]
 
   type I8Like[*Dims] = I8[*Dims] | I8LikeNumpy[*Dims]
@@ -295,6 +324,7 @@ if tp.TYPE_CHECKING:
   type ShapedLike[*Dims] = Shaped[*Dims] | ShapedLikeNumpy[*Dims]
 
 else:
+  BF16Like = make_array_like_type(BFLOAT16, name="BF16Like")
   BoolLike = make_array_like_type(BOOL, name="BoolLike")
 
   I8Like = make_array_like_type(INT8, name="I8Like")

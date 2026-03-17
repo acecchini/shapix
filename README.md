@@ -110,6 +110,8 @@ Bind to a size on first occurrence and enforce consistency on subsequent ones.
 | `N` | Batch size, count |
 | `B` | Batch |
 | `C` | Channels |
+| `D` | Embedding dimension |
+| `K` | Number of heads |
 | `H` | Height |
 | `W` | Width |
 | `L` | Sequence length |
@@ -299,7 +301,7 @@ from shapix.numpy import F32, I64, Shaped  # and many more
 from shapix.jax import F32, BF16
 ```
 
-Same type names as NumPy, plus `BF16`. Base type is `jax.Array`. Also exports `Like` types and `Tree`.
+Same type names as NumPy, plus `BF16` and `BF16Like`. Base type is `jax.Array`. Also exports `Like` types and `Tree`.
 
 ### PyTorch
 
@@ -307,7 +309,7 @@ Same type names as NumPy, plus `BF16`. Base type is `jax.Array`. Also exports `L
 from shapix.torch import F32, BF16
 ```
 
-Same type names as NumPy, plus `BF16`. Base type is `torch.Tensor`. Also exports `Like` types.
+Same type names as NumPy, plus `BF16` and `BF16Like`. Base type is `torch.Tensor`. Also exports `Like` types.
 
 ### Endianness variants
 
@@ -564,6 +566,29 @@ def train(params: Tree[F32[N], Params], state: Tree[I64[N], State]): ...
 
 ## Advanced usage
 
+### `from __future__ import annotations` (PEP 563)
+
+Shapix is fully compatible with `from __future__ import annotations`. The library itself uses it in every source file.
+
+The one rule: **every dimension symbol used in an annotation must be imported in the module scope.** This is true with or without the future import — the difference is only the error you get if you forget:
+
+```python
+from __future__ import annotations
+from shapix import C           # B is NOT imported
+from shapix.numpy import F32
+
+@beartype
+def f(x: F32[~B, C]): ...     # BeartypeDecorHintForwardRefException — B is not in scope
+```
+
+Fix: import `B`:
+
+```python
+from shapix import B, C
+```
+
+This applies to all dimension symbols — named (`N`, `B`), custom (`Vocab = Dimension("Vocab")`), and any symbol used with operators (`~B`, `+N`). The operators (`~`, `+`) are evaluated on the imported object, so the base symbol must be available.
+
 ### Package-wide instrumentation with `beartype.claw`
 
 Instead of decorating each function with `@beartype`, you can instrument an entire package:
@@ -753,7 +778,7 @@ def f(x: F32[~B, C]) -> F32[~B, C]:  # type: ignore[reportInvalidTypeForm]
 
 ### Dimension symbols (`shapix`)
 
-`N`, `B`, `C`, `H`, `W`, `L`, `P` — named dimensions
+`N`, `B`, `C`, `D`, `K`, `H`, `W`, `L`, `P` — named dimensions
 `__` — anonymous dimension
 `Scalar` — scalar (zero dimensions)
 `T`, `S` — tree structure symbols
@@ -775,7 +800,7 @@ def f(x: F32[~B, C]) -> F32[~B, C]:  # type: ignore[reportInvalidTypeForm]
 
 ### JAX/PyTorch (`shapix.jax`, `shapix.torch`)
 
-Same array types as NumPy, plus `BF16`. Both export `Like` types, `ScalarLike` types (re-exported from numpy), and `make_scalar_like_type`. JAX also exports `Tree`.
+Same array types as NumPy, plus `BF16` and `BF16Like`. Both export `Like` types, `ScalarLike` types (re-exported from numpy), and `make_scalar_like_type`. JAX also exports `Tree`.
 
 ### Factories (`shapix`)
 

@@ -19,6 +19,7 @@ import shapix
 from shapix import B, C, N, __, Dimension  # noqa: F811 — B used in ~B annotations
 from shapix.torch import (
   BF16,
+  BF16Like,
   Bool,
   F16,
   F32,
@@ -322,6 +323,41 @@ class TestTorchLikeTypes:
   def test_boollike(self) -> None:
     assert is_bearable(True, BoolLike[...])
     assert is_bearable([True, False], BoolLike[...])
+
+  def test_bf16like_accepts_torch_bfloat16(self) -> None:
+    arr = torch.ones(3, dtype=torch.bfloat16)
+    assert is_bearable(arr, BF16Like[...])
+
+  def test_bf16like_rejects_non_numeric_dtype(self) -> None:
+    # String arrays are not castable to bfloat16 under any casting rule
+    arr = np.array(["a", "b"], dtype=np.str_)
+    assert not is_bearable(arr, BF16Like[...])
+
+  def test_bf16like_shape_checking(self) -> None:
+    @beartype
+    def f(x: BF16Like[N]) -> None:  # type: ignore[valid-type]
+      pass
+
+    f(torch.ones(5, dtype=torch.bfloat16))
+    with pytest.raises(Exception):
+      f(torch.ones((3, 4), dtype=torch.bfloat16))
+
+
+class TestTorchAsarrayFallback:
+  def test_torch_like_uses_torch_as_tensor(self) -> None:
+    """Verify the slow path uses torch.as_tensor (not just np.asarray)."""
+    # A plain list should be convertible via both np.asarray and torch.as_tensor.
+    # This test verifies the backend converter is wired correctly.
+    assert is_bearable([1.0, 2.0, 3.0], F32Like[...])
+
+  def test_unconvertible_object_rejected(self) -> None:
+    """Object that neither torch nor numpy can convert should be rejected."""
+
+    class Unconvertible:
+      def __array__(self, *_a: object, **_kw: object) -> None:  # noqa: PLW3201
+        raise TypeError("nope")
+
+    assert not is_bearable(Unconvertible(), F32Like[...])
 
 
 class TestTorchLikeEdgeCases:
