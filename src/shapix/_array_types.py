@@ -24,6 +24,7 @@ factories for custom array classes or dtype combinations.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Annotated
 
 from beartype.vale import Is
@@ -205,7 +206,7 @@ class _ArrayLikeChecker:
     *,
     casting: str,
     name: str,
-    asarray: object | None = None,
+    asarray: Callable[[object], object] | None = None,
   ) -> None:
     self._dtype_spec = dtype_spec
     self._shape_spec = shape_spec
@@ -329,7 +330,7 @@ class _ArrayLikeFactory:
     *,
     casting: str,
     name: str,
-    asarray: object | None = None,
+    asarray: Callable[[object], object] | None = None,
   ) -> None:
     self._dtype_spec = dtype_spec
     self._casting = casting
@@ -359,7 +360,7 @@ def make_array_like_type(
   *,
   casting: str = "same_kind",
   name: str = "ArrayLike",
-  asarray: object | None = None,
+  asarray: Callable[[object], object] | None = None,
 ) -> _ArrayLikeFactory:
   """Create a subscriptable array-like type factory.
 

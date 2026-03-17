@@ -249,6 +249,67 @@ class TestValueDim:
     err = check_shape((5,), (ValueDim("size"),), memo, {})
     assert "unknown name 'size'" in err
 
+  def test_value_dim_mismatch(self) -> None:
+    memo = ShapeMemo()
+    scope = {"size": 6}
+    err = check_shape((99,), (ValueDim("size"),), memo, scope)
+    assert "evaluated to 6 but got 99" in err
+
+  def test_value_dim_broadcastable_size_1(self) -> None:
+    memo = ShapeMemo()
+    scope = {"size": 100}
+    assert check_shape((1,), (ValueDim("size", broadcastable=True),), memo, scope) == ""
+
+  def test_value_dim_broadcastable_non_1_requires_match(self) -> None:
+    memo = ShapeMemo()
+    scope = {"size": 6}
+    err = check_shape((3,), (ValueDim("size", broadcastable=True),), memo, scope)
+    assert "evaluated to 6 but got 3" in err
+
+  def test_value_dim_arithmetic_expression(self) -> None:
+    memo = ShapeMemo()
+    scope = {"a": 3, "b": 4}
+    assert check_shape((7,), (ValueDim("a + b"),), memo, scope) == ""
+
+  def test_value_dim_attribute_missing(self) -> None:
+    class Obj:
+      pass
+
+    memo = ShapeMemo()
+    scope = {"self": Obj()}
+    err = check_shape((5,), (ValueDim("self.missing"),), memo, scope)
+    assert "no attribute" in err
+
+  def test_value_dim_dunder_attribute_blocked(self) -> None:
+    class Obj:
+      __secret__ = 42  # noqa: N815
+
+    memo = ShapeMemo()
+    scope = {"self": Obj()}
+    err = check_shape((42,), (ValueDim("self.__secret__"),), memo, scope)
+    assert "dunder" in err
+
+  def test_value_dim_non_real_result(self) -> None:
+    memo = ShapeMemo()
+    scope = {"x": "hello"}
+    err = check_shape((5,), (ValueDim("x"),), memo, scope)
+    assert "non-real value" in err
+
+  def test_value_dim_scope_overrides_bound(self) -> None:
+    """When a name exists in both memo.single and scope, scope wins."""
+    memo = ShapeMemo(single={"N": 5})
+    scope = {"N": 10}
+    assert check_shape((10,), (ValueDim("N"),), memo, scope) == ""
+
+  def test_value_dim_without_scope(self) -> None:
+    """ValueDim with no scope falls back to memo only."""
+    memo = ShapeMemo(single={"N": 5})
+    assert check_shape((5,), (ValueDim("N"),), memo) == ""
+
+  def test_value_dim_repr(self) -> None:
+    assert repr(ValueDim("size")) == 'Value("size")'
+    assert repr(ValueDim("size", broadcastable=True)) == '+Value("size")'
+
 
 class TestVariadicEdgeCases:
   def test_variadic_empty_suffix(self) -> None:

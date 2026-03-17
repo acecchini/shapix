@@ -32,25 +32,35 @@ deps = [
   "pytest-xdist>=3.5.0",
 
   # --- beartype ---
+  # env_list uses bt020 and bt022; intermediate versions available for manual testing
+  # e.g. `tox run -e py312-bt021-numpy23`
   { replace = "if", condition = "factor.bt020", then = "beartype>=0.20,<0.21" },
   { replace = "if", condition = "factor.bt021", then = "beartype>=0.21,<0.22" },
   { replace = "if", condition = "factor.bt022", then = "beartype>=0.22,<0.23" },
 
   # --- numpy ---
+  # env_list uses numpy22 and numpy24; intermediate versions available for manual testing
   { replace = "if", condition = "factor.numpy22", then = "numpy>=2.2,<2.3" },
   { replace = "if", condition = "factor.numpy23", then = "numpy>=2.3,<2.4" },
   { replace = "if", condition = "factor.numpy24", then = "numpy>=2.4,<2.5" },
 
   # --- jax (needs numpy) ---
+  # env_list uses jax05 and jax09; intermediate versions available for manual testing
   { replace = "if", condition = "factor.jax05", then = "jax[cpu]>=0.5,<0.6" },
   { replace = "if", condition = "factor.jax06", then = "jax[cpu]>=0.6,<0.7" },
   { replace = "if", condition = "factor.jax07", then = "jax[cpu]>=0.7,<0.8" },
   { replace = "if", condition = "factor.jax08", then = "jax[cpu]>=0.8,<0.9" },
   { replace = "if", condition = "factor.jax09", then = "jax[cpu]>=0.9,<0.10" },
-  # jax/torch/optree all need numpy at runtime
-  { replace = "if", condition = "factor.jax05 or factor.jax06 or factor.jax07 or factor.jax08 or factor.jax09 or factor.torch26 or factor.torch27 or factor.torch28 or factor.torch29 or factor.torch210 or factor.optree014 or factor.optree015 or factor.optree016 or factor.optree017 or factor.optree018 or factor.optree019", then = "numpy>=2.2" },
+  # jax/torch/optree all need numpy at runtime — any non-numpy backend factor
+  { replace = "if", condition = """factor.jax05 or factor.jax06 or factor.jax07 \
+    or factor.jax08 or factor.jax09 \
+    or factor.torch26 or factor.torch27 or factor.torch28 \
+    or factor.torch29 or factor.torch210 \
+    or factor.optree014 or factor.optree015 or factor.optree016 \
+    or factor.optree017 or factor.optree018 or factor.optree019""", then = "numpy>=2.2" },
 
   # --- torch ---
+  # env_list uses torch26 and torch210; intermediate versions available for manual testing
   { replace = "if", condition = "factor.torch26", then = "torch>=2.6,<2.7" },
   { replace = "if", condition = "factor.torch27", then = "torch>=2.7,<2.8" },
   { replace = "if", condition = "factor.torch28", then = "torch>=2.8,<2.9" },
@@ -58,6 +68,7 @@ deps = [
   { replace = "if", condition = "factor.torch210", then = "torch>=2.10,<2.11" },
 
   # --- optree ---
+  # env_list uses optree014 and optree019; intermediate versions available for manual testing
   { replace = "if", condition = "factor.optree014", then = "optree>=0.14,<0.15" },
   { replace = "if", condition = "factor.optree015", then = "optree>=0.15,<0.16" },
   { replace = "if", condition = "factor.optree016", then = "optree>=0.16,<0.17" },
@@ -72,6 +83,7 @@ deps = [
   { replace = "if", condition = "factor.type", then = "optree>=0.14" },
 
   # --- typechecker versions ---
+  # env_list uses pyright1408, mypy119, ty; older versions available for manual testing
   { replace = "if", condition = "factor.pyright1392", then = "pyright==1.1.392" },
   { replace = "if", condition = "factor.pyright1400", then = "pyright==1.1.400" },
   { replace = "if", condition = "factor.pyright1408", then = "pyright==1.1.408" },

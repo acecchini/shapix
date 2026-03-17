@@ -280,7 +280,7 @@ def extract_dtype_str(obj: object) -> str:
     return getattr(as_numpy, "__name__", str(dtype))
 
   # PyTorch / fallback: repr(dtype) → "torch.float32" → "float32"
-  s = str(dtype) if isinstance(dtype, str) else repr(dtype)
+  s = dtype if isinstance(dtype, str) else repr(dtype)
   _, _, tail = s.rpartition(".")
   return tail or s
 

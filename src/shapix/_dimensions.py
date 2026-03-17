@@ -67,6 +67,18 @@ __all__ = [
 ]
 
 
+# ---------------------------------------------------------------------------
+# Arithmetic helper
+# ---------------------------------------------------------------------------
+
+
+def _binop(left: object, op: str, right: object) -> Dimension:
+  """Build a binary expression.  Returns ``_ValueExpr`` if either operand is one."""
+  if isinstance(left, _ValueExpr) or isinstance(right, _ValueExpr):
+    return _ValueExpr(f"({left}{op}{right})")  # type: ignore[return-value]
+  return Dimension(f"({left}{op}{right})")
+
+
 class Dimension(str):
   """A named dimension symbol that doubles as a shape spec element.
 
@@ -86,63 +98,63 @@ class Dimension(str):
   # ------------------------------------------------------------------
 
   def __add__(self, other: object) -> Dimension:
-    return self.__class__(f"({self}+{other})")
+    return _binop(self, "+", other)
 
   def __radd__(self, other: object) -> Dimension:
-    return self.__class__(f"({other}+{self})")
+    return _binop(other, "+", self)
 
   def __sub__(self, other: object) -> Dimension:
-    return self.__class__(f"({self}-{other})")
+    return _binop(self, "-", other)
 
   def __rsub__(self, other: object) -> Dimension:
-    return self.__class__(f"({other}-{self})")
+    return _binop(other, "-", self)
 
   def __mul__(self, other: object) -> Dimension:
-    return self.__class__(f"({self}*{other})")
+    return _binop(self, "*", other)
 
   def __rmul__(self, other: object) -> Dimension:
-    return self.__class__(f"({other}*{self})")
+    return _binop(other, "*", self)
 
   def __truediv__(self, other: object) -> Dimension:
-    return self.__class__(f"({self}/{other})")
+    return _binop(self, "/", other)
 
   def __rtruediv__(self, other: object) -> Dimension:
-    return self.__class__(f"({other}/{self})")
+    return _binop(other, "/", self)
 
   def __floordiv__(self, other: object) -> Dimension:
-    return self.__class__(f"({self}//{other})")
+    return _binop(self, "//", other)
 
   def __rfloordiv__(self, other: object) -> Dimension:
-    return self.__class__(f"({other}//{self})")
+    return _binop(other, "//", self)
 
   def __pow__(self, other: object) -> Dimension:
-    return self.__class__(f"({self}**{other})")
+    return _binop(self, "**", other)
 
   def __rpow__(self, other: object) -> Dimension:
-    return self.__class__(f"({other}**{self})")
+    return _binop(other, "**", self)
 
   def __mod__(self, other: object) -> Dimension:
-    return self.__class__(f"({self}%{other})")
+    return _binop(self, "%", other)
 
   def __rmod__(self, other: object) -> Dimension:
-    return self.__class__(f"({other}%{self})")
+    return _binop(other, "%", self)
 
   def __neg__(self) -> Dimension:
-    return self.__class__(f"-{self}")
+    return Dimension(f"-{self}")
 
   def __invert__(self) -> Dimension:
     """``~N`` → variadic dimension (matches zero or more contiguous dims)."""
     raw = str(self)
     if raw.startswith("~"):
       return self
-    return self.__class__(f"~{raw}")
+    return Dimension(f"~{raw}")
 
   def __pos__(self) -> Dimension:
     """``+N`` → broadcastable dimension (size 1 always matches)."""
     raw = str(self)
     if raw.startswith("+"):
       return self
-    return self.__class__(f"+{raw}")
+    return Dimension(f"+{raw}")
 
   # ------------------------------------------------------------------
   # Conversion to internal dim spec
@@ -189,30 +201,103 @@ class Dimension(str):
     return SymbolicDim(raw)
 
 
-class _ValueExpr:
-  """Runtime value expression used by ``Value("...")`` in shape subscripts."""
+class _ValueExpr(str):
+  """Runtime value expression used by ``Value("...")`` in shape subscripts.
 
-  __slots__ = ("expr", "broadcastable")
+  Subclasses :class:`str` (like :class:`Dimension`) with the raw expression as
+  its string value.  This keeps ``Dimension`` arithmetic return types compatible
+  with the ``str`` base class and makes ``str(value_expr)`` produce the raw
+  expression.
 
-  def __init__(self, expr: object, *, broadcastable: bool = False) -> None:
+  Any arithmetic involving a ``_ValueExpr`` produces another ``_ValueExpr``,
+  since the result still needs runtime scope access.
+  """
+
+  broadcastable: bool
+
+  def __new__(cls, expr: object, *, broadcastable: bool = False) -> _ValueExpr:
     if not isinstance(expr, str):
       msg = "Value(...) expects a string expression"
       raise TypeError(msg)
-    self.expr = expr
-    self.broadcastable = broadcastable
+    obj = str.__new__(cls, expr)
+    obj.broadcastable = broadcastable
+    return obj
+
+  # ------------------------------------------------------------------
+  # Unary
+  # ------------------------------------------------------------------
 
   def __pos__(self) -> _ValueExpr:
+    """``+Value("x")`` → broadcastable value dim (size 1 always matches)."""
     if self.broadcastable:
       return self
-    return self.__class__(self.expr, broadcastable=True)
+    return _ValueExpr(str(self), broadcastable=True)
+
+  def __neg__(self) -> _ValueExpr:
+    return _ValueExpr(f"(-{self})")
+
+  def __invert__(self) -> tp.Never:
+    """``~Value(...)`` is not supported — variadic requires a name."""
+    msg = "Value expressions cannot be variadic (~); use a named Dimension instead"
+    raise TypeError(msg)
+
+  # ------------------------------------------------------------------
+  # Arithmetic → _ValueExpr (always, since scope is needed)
+  # ------------------------------------------------------------------
+
+  def __add__(self, other: object) -> _ValueExpr:  # type: ignore[override]
+    return _ValueExpr(f"({self}+{other})")
+
+  def __radd__(self, other: object) -> _ValueExpr:
+    return _ValueExpr(f"({other}+{self})")
+
+  def __sub__(self, other: object) -> _ValueExpr:
+    return _ValueExpr(f"({self}-{other})")
+
+  def __rsub__(self, other: object) -> _ValueExpr:
+    return _ValueExpr(f"({other}-{self})")
+
+  def __mul__(self, other: object) -> _ValueExpr:  # type: ignore[override]
+    return _ValueExpr(f"({self}*{other})")
+
+  def __rmul__(self, other: object) -> _ValueExpr:  # type: ignore[override]
+    return _ValueExpr(f"({other}*{self})")
+
+  def __truediv__(self, other: object) -> _ValueExpr:  # type: ignore[override]
+    return _ValueExpr(f"({self}/{other})")
+
+  def __rtruediv__(self, other: object) -> _ValueExpr:
+    return _ValueExpr(f"({other}/{self})")
+
+  def __floordiv__(self, other: object) -> _ValueExpr:
+    return _ValueExpr(f"({self}//{other})")
+
+  def __rfloordiv__(self, other: object) -> _ValueExpr:
+    return _ValueExpr(f"({other}//{self})")
+
+  def __pow__(self, other: object) -> _ValueExpr:
+    return _ValueExpr(f"({self}**{other})")
+
+  def __rpow__(self, other: object) -> _ValueExpr:
+    return _ValueExpr(f"({other}**{self})")
+
+  def __mod__(self, other: object) -> _ValueExpr:  # type: ignore[override]
+    return _ValueExpr(f"({self}%{other})")
+
+  def __rmod__(self, other: object) -> _ValueExpr:  # type: ignore[override]
+    return _ValueExpr(f"({other}%{self})")
+
+  # ------------------------------------------------------------------
+  # Dim spec + repr
+  # ------------------------------------------------------------------
 
   @property
   def _dim_spec(self) -> ValueDim:
-    return ValueDim(self.expr, broadcastable=self.broadcastable)
+    return ValueDim(str(self), broadcastable=self.broadcastable)
 
   def __repr__(self) -> str:
     prefix = "+" if self.broadcastable else ""
-    return f'{prefix}Value("{self.expr}")'
+    return f'{prefix}Value("{self}")'
 
 
 # ---------------------------------------------------------------------------
@@ -225,9 +310,6 @@ if tp.TYPE_CHECKING:
     def __new__(cls, expr: str) -> Dimension: ...
 
     def __pos__(self) -> Dimension: ...
-
-    @classmethod
-    def __class_getitem__(cls, expr: str) -> Dimension: ...
 
   Scalar: Dimension
   B: Dimension
@@ -250,9 +332,6 @@ else:
     """
 
     __slots__ = ()
-
-    def __class_getitem__(cls, expr: object) -> Value:  # type: ignore[misc]
-      return cls(expr)
 
   # Common named dimensions
   Scalar = Dimension("")

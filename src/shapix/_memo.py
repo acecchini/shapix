@@ -22,6 +22,8 @@ from dataclasses import dataclass, field
 
 __all__ = ["ShapeMemo", "get_memo", "get_scope", "push_memo", "pop_memo"]
 
+_FRAME_STACK_GC_THRESHOLD = 8
+
 
 @dataclass
 class ShapeMemo:
@@ -173,7 +175,7 @@ def get_memo(_depth: int = 2) -> ShapeMemo:
       break
 
   # New call context — clean stale entries when stack grows large
-  if len(stack) > 8:
+  if len(stack) > _FRAME_STACK_GC_THRESHOLD:
     active: set[int] = set()
     f = sys._getframe(0)
     while f is not None:

@@ -417,6 +417,8 @@ class TestSymbolicDims:
 
 
 class TestValueExpressions:
+  # ----- Assertions (correct usage) -----
+
   def test_value_expr_from_argument(self) -> None:
     Size = Value("size")
 
@@ -426,8 +428,6 @@ class TestValueExpressions:
 
     arr = np.ones(4, dtype=np.float32)
     assert f(4, arr).shape == (4,)
-    with pytest.raises(BeartypeCallHintParamViolation):
-      f(5, arr)
 
   def test_value_expr_from_self_attribute(self) -> None:
     class SomeClass:
@@ -448,6 +448,129 @@ class TestValueExpressions:
       return np.ones(x.shape[0] + pad, dtype=np.float32)
 
     assert f(np.ones(4, dtype=np.float32), 2).shape == (6,)
+
+  def test_value_add_dimension_in_annotation(self) -> None:
+    """Value + Dimension arithmetic works in type annotations."""
+
+    @beartype
+    def f(x: F32[N], pad: int) -> F32[N + Value("pad")]:  # type: ignore[valid-type]
+      return np.ones(x.shape[0] + pad, dtype=np.float32)
+
+    assert f(np.ones(4, dtype=np.float32), 2).shape == (6,)
+
+  def test_dimension_add_value_in_annotation(self) -> None:
+    """Dimension + Value arithmetic works in type annotations."""
+
+    @beartype
+    def f(x: F32[N], pad: int) -> F32[Value("pad") + N]:  # type: ignore[valid-type]
+      return np.ones(pad + x.shape[0], dtype=np.float32)
+
+    assert f(np.ones(3, dtype=np.float32), 5).shape == (8,)
+
+  def test_value_mul_dimension_in_annotation(self) -> None:
+    """Value * Dimension arithmetic works in type annotations."""
+
+    @beartype
+    def f(x: F32[N], factor: int) -> F32[Value("factor") * N]:  # type: ignore[valid-type]
+      return np.ones(factor * x.shape[0], dtype=np.float32)
+
+    assert f(np.ones(3, dtype=np.float32), 4).shape == (12,)
+
+  def test_value_add_value_in_annotation(self) -> None:
+    """Value + Value arithmetic works in type annotations."""
+
+    @beartype
+    def f(a: int, b: int) -> F32[Value("a") + Value("b")]:  # type: ignore[valid-type]
+      return np.ones(a + b, dtype=np.float32)
+
+    assert f(3, 5).shape == (8,)
+
+  def test_int_add_value_in_annotation(self) -> None:
+    """int + Value arithmetic works in type annotations."""
+
+    @beartype
+    def f(x: F32[N]) -> F32[3 + Value("N")]:  # type: ignore[valid-type]
+      return np.ones(x.shape[0] + 3, dtype=np.float32)
+
+    assert f(np.ones(4, dtype=np.float32)).shape == (7,)
+
+  def test_chained_value_arithmetic(self) -> None:
+    """Chained (N + Value) * int works end-to-end."""
+
+    @beartype
+    def f(x: F32[N], pad: int) -> F32[(N + Value("pad")) * 2]:  # type: ignore[valid-type]
+      return np.ones((x.shape[0] + pad) * 2, dtype=np.float32)
+
+    assert f(np.ones(4, dtype=np.float32), 1).shape == (10,)
+
+  def test_broadcastable_value(self) -> None:
+    """Broadcastable Value(+) accepts size 1."""
+
+    @beartype
+    def f(size: int, x: F32[+Value("size")]) -> None:  # type: ignore[valid-type]
+      pass
+
+    f(10, np.ones(10, dtype=np.float32))
+    f(10, np.ones(1, dtype=np.float32))
+
+  # ----- Violations (incorrect usage → beartype raises) -----
+
+  def test_value_wrong_param_shape_rejected(self) -> None:
+    Size = Value("size")
+
+    @beartype
+    def f(size: int, x: F32[Size]) -> F32[Size]:
+      return x
+
+    arr = np.ones(4, dtype=np.float32)
+    with pytest.raises(BeartypeCallHintParamViolation):
+      f(5, arr)
+
+  def test_value_wrong_return_shape_rejected(self) -> None:
+    @beartype
+    def f(size: int) -> F32[Value("size")]:  # type: ignore[valid-type]
+      return np.ones(999, dtype=np.float32)
+
+    with pytest.raises(BeartypeCallHintReturnViolation):
+      f(4)
+
+  def test_value_add_dim_wrong_return_rejected(self) -> None:
+    @beartype
+    def f(x: F32[N], pad: int) -> F32[N + Value("pad")]:  # type: ignore[valid-type]
+      return np.ones(999, dtype=np.float32)
+
+    with pytest.raises(BeartypeCallHintReturnViolation):
+      f(np.ones(4, dtype=np.float32), 2)
+
+  def test_value_mul_dim_wrong_return_rejected(self) -> None:
+    @beartype
+    def f(x: F32[N], factor: int) -> F32[Value("factor") * N]:  # type: ignore[valid-type]
+      return np.ones(999, dtype=np.float32)
+
+    with pytest.raises(BeartypeCallHintReturnViolation):
+      f(np.ones(3, dtype=np.float32), 4)
+
+  def test_value_self_attr_wrong_return_rejected(self) -> None:
+    class Broken:
+      size = 5
+      FullSize = Value("self.size + 3")
+
+      @beartype
+      def full(self) -> F32[FullSize]:
+        return np.ones(999, dtype=np.float32)
+
+    with pytest.raises(BeartypeCallHintReturnViolation):
+      Broken().full()
+
+  def test_broadcastable_value_non_1_wrong_size_rejected(self) -> None:
+    """Broadcastable Value(+) with non-1 wrong size is rejected."""
+
+    @beartype
+    def f(size: int, x: F32[+Value("size")]) -> None:  # type: ignore[valid-type]
+      pass
+
+    with pytest.raises(BeartypeCallHintParamViolation):
+      f(10, np.ones(5, dtype=np.float32))
 
 
 # =====================================================================

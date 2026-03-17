@@ -95,7 +95,7 @@ class _TreeChecker:
     self._leaf_type = leaf_type
     self._structure_spec = structure_spec
     self._get_ops = get_ops
-    spec_str = f", {structure_spec!r}" if structure_spec else ""
+    spec_str = f", {structure_spec}" if structure_spec else ""
     self._repr = f"Tree[{leaf_type!r}{spec_str}]"
 
   def __call__(self, obj: object) -> bool:

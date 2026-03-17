@@ -9,7 +9,7 @@ from beartype import beartype
 from beartype.roar import BeartypeCallHintParamViolation
 
 import shapix
-from shapix import N, C
+from shapix import N, C, Value  # noqa: F401
 from shapix.numpy import F32
 
 
@@ -139,3 +139,70 @@ class TestDecoratorEdgeCases:
     """Enter/exit with no checks should not raise."""
     with shapix.check_context():
       pass
+
+
+class TestValueWithCheckDecorator:
+  def test_value_with_shapix_check(self) -> None:
+    """Value expressions work with @shapix.check (explicit scope)."""
+
+    @shapix.check
+    @beartype
+    def f(size: int) -> F32[Value("size")]:  # type: ignore[valid-type]
+      return np.ones(size, dtype=np.float32)
+
+    assert f(4).shape == (4,)
+
+  def test_value_with_shapix_check_violation(self) -> None:
+    from beartype.roar import BeartypeCallHintReturnViolation
+
+    @shapix.check
+    @beartype
+    def f(size: int) -> F32[Value("size")]:  # type: ignore[valid-type]
+      return np.ones(999, dtype=np.float32)
+
+    with pytest.raises(BeartypeCallHintReturnViolation):
+      f(4)
+
+  def test_value_add_dim_with_shapix_check(self) -> None:
+    """Value + Dimension arithmetic works under @shapix.check."""
+
+    @shapix.check
+    @beartype
+    def f(x: F32[N], pad: int) -> F32[N + Value("pad")]:  # type: ignore[valid-type]
+      return np.ones(x.shape[0] + pad, dtype=np.float32)
+
+    assert f(np.ones(4, dtype=np.float32), 2).shape == (6,)
+
+  def test_value_add_dim_with_shapix_check_violation(self) -> None:
+    from beartype.roar import BeartypeCallHintReturnViolation
+
+    @shapix.check
+    @beartype
+    def f(x: F32[N], pad: int) -> F32[N + Value("pad")]:  # type: ignore[valid-type]
+      return np.ones(999, dtype=np.float32)
+
+    with pytest.raises(BeartypeCallHintReturnViolation):
+      f(np.ones(4, dtype=np.float32), 2)
+
+  def test_value_self_attr_with_shapix_check(self) -> None:
+    """Value("self.x") works with @shapix.check."""
+
+    class Obj:
+      size = 5
+
+      @shapix.check
+      @beartype
+      def f(self) -> F32[Value("self.size")]:  # type: ignore[valid-type]
+        return np.ones(self.size, dtype=np.float32)
+
+    assert Obj().f().shape == (5,)
+
+  def test_value_with_conf(self) -> None:
+    """Value works with @shapix.check(conf=...)."""
+    from beartype import BeartypeConf
+
+    @shapix.check(conf=BeartypeConf())
+    def f(size: int) -> F32[Value("size")]:  # type: ignore[valid-type]
+      return np.ones(size, dtype=np.float32)
+
+    assert f(7).shape == (7,)

@@ -240,7 +240,126 @@ class TestValueExpressions:
     assert spec.expr == "size"
     assert spec.broadcastable is True
 
-  def test_value_getitem_alias(self) -> None:
-    spec = Value["size"]._dim_spec  # noqa: SLF001
-    assert isinstance(spec, ValueDim)
-    assert spec.expr == "size"
+  def test_broadcastable_idempotent(self) -> None:
+    v = +Value("size")
+    assert (+v) is v
+
+  def test_value_is_str(self) -> None:
+    v = Value("size")
+    assert isinstance(v, str)
+    assert str(v) == "size"
+
+  def test_value_repr(self) -> None:
+    assert repr(Value("size")) == 'Value("size")'
+    assert repr(+Value("size")) == '+Value("size")'
+
+  def test_value_not_dimension(self) -> None:
+    v = Value("size")
+    assert not isinstance(v, Dimension)
+
+  def test_invert_raises(self) -> None:
+    with pytest.raises(TypeError, match="variadic"):
+      ~Value("size")  # type: ignore[misc]
+
+
+class TestValueArithmetic:
+  """Value + Dimension / int / Value arithmetic."""
+
+  def test_value_add_int(self) -> None:
+    r = Value("x") + 3
+    assert str(r) == "(x+3)"
+    assert isinstance(r._dim_spec, ValueDim)  # noqa: SLF001
+
+  def test_int_add_value(self) -> None:
+    r = 3 + Value("x")
+    assert str(r) == "(3+x)"
+
+  def test_value_sub_int(self) -> None:
+    r = Value("x") - 1
+    assert str(r) == "(x-1)"
+
+  def test_int_sub_value(self) -> None:
+    r = 10 - Value("x")
+    assert str(r) == "(10-x)"
+
+  def test_value_mul_int(self) -> None:
+    r = Value("x") * 2
+    assert str(r) == "(x*2)"
+
+  def test_int_mul_value(self) -> None:
+    r = 2 * Value("x")
+    assert str(r) == "(2*x)"
+
+  def test_value_truediv_int(self) -> None:
+    r = Value("x") / 2
+    assert str(r) == "(x/2)"
+
+  def test_int_truediv_value(self) -> None:
+    r = 10 / Value("x")
+    assert str(r) == "(10/x)"
+
+  def test_value_floordiv_int(self) -> None:
+    r = Value("x") // 2
+    assert str(r) == "(x//2)"
+
+  def test_int_floordiv_value(self) -> None:
+    r = 10 // Value("x")
+    assert str(r) == "(10//x)"
+
+  def test_value_pow_int(self) -> None:
+    r = Value("x") ** 2
+    assert str(r) == "(x**2)"
+
+  def test_int_pow_value(self) -> None:
+    r = 2 ** Value("x")
+    assert str(r) == "(2**x)"
+
+  def test_value_mod_int(self) -> None:
+    r = Value("x") % 3
+    assert str(r) == "(x%3)"
+
+  def test_int_mod_value(self) -> None:
+    r = 10 % Value("x")
+    assert str(r) == "(10%x)"
+
+  def test_value_neg(self) -> None:
+    r = -Value("x")
+    assert str(r) == "(-x)"
+
+  def test_value_add_dimension(self) -> None:
+    N = Dimension("N")
+    r = Value("x") + N
+    assert str(r) == "(x+N)"
+    assert isinstance(r._dim_spec, ValueDim)  # noqa: SLF001
+
+  def test_dimension_add_value(self) -> None:
+    N = Dimension("N")
+    r = N + Value("x")
+    assert str(r) == "(N+x)"
+    assert isinstance(r._dim_spec, ValueDim)  # noqa: SLF001
+
+  def test_value_add_value(self) -> None:
+    r = Value("a") + Value("b")
+    assert str(r) == "(a+b)"
+    assert isinstance(r._dim_spec, ValueDim)  # noqa: SLF001
+
+  def test_dimension_mul_value(self) -> None:
+    N = Dimension("N")
+    r = N * Value("x")
+    assert str(r) == "(N*x)"
+    assert isinstance(r._dim_spec, ValueDim)  # noqa: SLF001
+
+  def test_chained_dim_value_int(self) -> None:
+    N = Dimension("N")
+    r = (N + Value("pad")) * 2
+    assert str(r) == "((N+pad)*2)"
+
+  def test_dim_dim_still_dimension(self) -> None:
+    """Arithmetic between Dimensions (no Value) should stay Dimension."""
+    N = Dimension("N")
+    C = Dimension("C")
+    r = N + C
+    assert isinstance(r, Dimension)
+    from shapix._dimensions import _ValueExpr
+
+    assert not isinstance(r, _ValueExpr)

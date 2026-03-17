@@ -29,6 +29,9 @@ except ModuleNotFoundError as exc:
   )
   raise ModuleNotFoundError(msg) from exc
 
+# PyTorch does not support float128, complex256, void, string, bytes, object,
+# datetime64, or timedelta64 dtypes.  Those types are NumPy-only (see numpy.py).
+# BF16 is available here but not in numpy.py (NumPy has no native bfloat16).
 __all__ = [
   # Array types
   "Bool",

@@ -58,6 +58,34 @@ from importlib.metadata import version
 
 __version__ = version("shapix")
 
+__all__ = [
+  # Dimension symbols
+  "B",
+  "N",
+  "P",
+  "L",
+  "C",
+  "D",
+  "K",
+  "H",
+  "W",
+  "__",
+  "Scalar",
+  "Value",
+  "Dimension",
+  # Tree structure symbols
+  "T",
+  "S",
+  "Structure",
+  # Classes
+  "DtypeSpec",
+  # Functions
+  "make_array_type",
+  "make_array_like_type",
+  "check",
+  "check_context",
+]
+
 from ._array_types import make_array_like_type as make_array_like_type
 from ._array_types import make_array_type as make_array_type
 from ._decorator import check as check
