@@ -426,7 +426,7 @@ def _to_shape_spec(dims: tuple[object, ...]) -> tuple[DimSpec, ...]:
     else:
       msg = (
         "Invalid shape token "
-        f"{d!r}; expected int, Ellipsis, Dimension, Value[...], or a DimSpec"
+        f"{d!r}; expected int, Ellipsis, Dimension, Value(...), or a DimSpec"
       )
       raise TypeError(msg)
 

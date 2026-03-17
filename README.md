@@ -159,7 +159,7 @@ and numeric literals. Attribute access and function calls are rejected.
 
 ### Runtime value dimensions
 
-Use `Value["expr"]` when a shape depends on a runtime parameter or `self`
+Use `Value("expr")` when a shape depends on a runtime parameter or `self`
 attribute rather than a previously bound dimension:
 
 ```python
@@ -168,19 +168,22 @@ from shapix import Value
 from shapix.numpy import F32
 import numpy as np
 
+Size = Value("size")
+WidthPlus3 = Value("self.width + 3")
+
 @beartype
-def full(size: int) -> F32[Value["size"]]:
+def full(size: int) -> F32[Size]:
     return np.full((size,), 1.0, dtype=np.float32)
 
 class SomeClass:
     width = 5
 
     @beartype
-    def full(self) -> F32[Value["self.width + 3"]]:
+    def full(self) -> F32[WidthPlus3]:
         return np.full((self.width + 3,), 1.0, dtype=np.float32)
 ```
 
-`Value[...]` uses a restricted arithmetic grammar as well. It allows names,
+`Value(...)` uses a restricted arithmetic grammar as well. It allows names,
 attribute access, numeric literals, and arithmetic operators, but rejects calls,
 indexing, and other arbitrary Python expressions.
 

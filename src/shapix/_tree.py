@@ -105,7 +105,7 @@ class _TreeChecker:
     from ._memo import get_memo, get_scope, pop_memo, push_memo
 
     # Bridge memo + runtime scope so leaf checks reuse the caller's bindings
-    # and can resolve ``Value[...]`` expressions against the same parameters.
+    # and can resolve ``Value(...)`` expressions against the same parameters.
     memo = get_memo(_depth=3)
     scope = get_scope(_depth=3)
     push_memo(memo, scope=scope)

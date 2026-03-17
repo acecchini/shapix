@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from shapix._dimensions import Dimension, Value
 from shapix._shape import (
   ANONYMOUS,
@@ -222,14 +224,23 @@ class TestDimSpecEdgeCases:
 
 
 class TestValueExpressions:
+  def test_value_expr_requires_string(self) -> None:
+    with pytest.raises(TypeError, match=r"Value\(\.\.\.\) expects a string expression"):
+      Value(1)  # type: ignore[arg-type]
+
   def test_value_expr(self) -> None:
-    spec = Value["size"]._dim_spec  # noqa: SLF001
+    spec = Value("size")._dim_spec  # noqa: SLF001
     assert isinstance(spec, ValueDim)
     assert spec.expr == "size"
     assert spec.broadcastable is False
 
   def test_broadcastable_value_expr(self) -> None:
-    spec = (+Value["size"])._dim_spec  # noqa: SLF001
+    spec = (+Value("size"))._dim_spec  # noqa: SLF001
     assert isinstance(spec, ValueDim)
     assert spec.expr == "size"
     assert spec.broadcastable is True
+
+  def test_value_getitem_alias(self) -> None:
+    spec = Value["size"]._dim_spec  # noqa: SLF001
+    assert isinstance(spec, ValueDim)
+    assert spec.expr == "size"

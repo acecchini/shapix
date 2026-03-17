@@ -13,7 +13,7 @@ Dimension spec types:
 - :class:`SymbolicDim` — arithmetic expression evaluated against bound
   dimensions (``N+1``, ``H*W``). Optionally broadcastable.
 - :class:`ValueDim` — arithmetic expression evaluated against runtime call
-  scope (``Value["size"]``, ``Value["self.width + 3"]``). Optionally
+  scope (``Value("size")``, ``Value("self.width + 3")``). Optionally
   broadcastable.
 - :class:`VariadicDim` — matches zero or more contiguous dims and binds the
   matched sub-shape (``~spatial``). Optionally broadcastable.
@@ -96,7 +96,7 @@ class ValueDim:
 
   def __repr__(self) -> str:
     prefix = "+" if self.broadcastable else ""
-    return f'{prefix}Value["{self.expr}"]'
+    return f'{prefix}Value("{self.expr}")'
 
 
 @dataclass(frozen=True, slots=True)

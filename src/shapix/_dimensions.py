@@ -28,7 +28,7 @@ Unary operators control matching behaviour:
 Plain ``int`` values (e.g. ``3``) are also accepted as fixed dimension sizes
 when subscripting array types.
 
-Use ``Value["expr"]`` for dimensions that depend on runtime parameters or
+Use ``Value("expr")`` for dimensions that depend on runtime parameters or
 ``self`` attributes rather than previously bound shape names.
 """
 
@@ -190,11 +190,14 @@ class Dimension(str):
 
 
 class _ValueExpr:
-  """Runtime value expression used by ``Value[...]`` in shape subscripts."""
+  """Runtime value expression used by ``Value("...")`` in shape subscripts."""
 
   __slots__ = ("expr", "broadcastable")
 
-  def __init__(self, expr: str, *, broadcastable: bool = False) -> None:
+  def __init__(self, expr: object, *, broadcastable: bool = False) -> None:
+    if not isinstance(expr, str):
+      msg = "Value(...) expects a string expression"
+      raise TypeError(msg)
     self.expr = expr
     self.broadcastable = broadcastable
 
@@ -209,7 +212,7 @@ class _ValueExpr:
 
   def __repr__(self) -> str:
     prefix = "+" if self.broadcastable else ""
-    return f'{prefix}Value["{self.expr}"]'
+    return f'{prefix}Value("{self.expr}")'
 
 
 # ---------------------------------------------------------------------------
@@ -217,9 +220,12 @@ class _ValueExpr:
 # ---------------------------------------------------------------------------
 
 if tp.TYPE_CHECKING:
-  # Declared as ``Dimension`` so type checkers see the full operator set
-  # (``__add__``, ``__invert__``, ``__pos__``, …) and ``F32[N, C]`` subscripts.
+
   class Value:
+    def __new__(cls, expr: str) -> Dimension: ...
+
+    def __pos__(self) -> Dimension: ...
+
     @classmethod
     def __class_getitem__(cls, expr: str) -> Dimension: ...
 
@@ -236,20 +242,17 @@ if tp.TYPE_CHECKING:
   __: Dimension
 else:
 
-  class Value:
+  class Value(_ValueExpr):
     """Explicit runtime value expression for shape annotations.
 
-    Use ``Value["size"]`` or ``Value["self.some_value + 3"]`` when a shape
+    Use ``Value("size")`` or ``Value("self.some_value + 3")`` when a shape
     depends on a runtime parameter rather than a previously bound dimension.
     """
 
     __slots__ = ()
 
-    def __class_getitem__(cls, expr: object) -> _ValueExpr:  # type: ignore[misc]
-      if not isinstance(expr, str):
-        msg = "Value[...] expects a string expression"
-        raise TypeError(msg)
-      return _ValueExpr(expr)
+    def __class_getitem__(cls, expr: object) -> Value:  # type: ignore[misc]
+      return cls(expr)
 
   # Common named dimensions
   Scalar = Dimension("")

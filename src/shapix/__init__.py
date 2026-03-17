@@ -23,7 +23,7 @@ Dimension symbols
     ``B``, ``N``, ``P``, ``L``, ``C``, ``D``, ``K``, ``H``, ``W`` — named dimensions.
     ``__`` — anonymous (match any single dim, no binding).
     ``Scalar`` — scalar (no dimensions).
-    ``Value["expr"]`` — explicit runtime value expression for shape dims.
+    ``Value("expr")`` — explicit runtime value expression for shape dims.
 
 Tree structure symbols
     ``T``, ``S`` — named tree structure symbols.

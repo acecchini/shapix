@@ -418,8 +418,10 @@ class TestSymbolicDims:
 
 class TestValueExpressions:
   def test_value_expr_from_argument(self) -> None:
+    Size = Value("size")
+
     @beartype
-    def f(size: int, x: F32[Value["size"]]) -> F32[Value["size"]]:  # noqa: F821
+    def f(size: int, x: F32[Size]) -> F32[Size]:
       return x
 
     arr = np.ones(4, dtype=np.float32)
@@ -430,16 +432,19 @@ class TestValueExpressions:
   def test_value_expr_from_self_attribute(self) -> None:
     class SomeClass:
       size = 5
+      FullSize = Value("self.size + 3")
 
       @beartype
-      def full(self) -> F32[Value["self.size + 3"]]:  # noqa: F821
+      def full(self) -> F32[FullSize]:
         return np.ones(self.size + 3, dtype=np.float32)
 
     assert SomeClass().full().shape == (8,)
 
   def test_value_expr_can_mix_scope_and_bound_dims(self) -> None:
+    Padded = Value("N + pad")
+
     @beartype
-    def f(x: F32[N], pad: int) -> F32[Value["N + pad"]]:  # noqa: F821
+    def f(x: F32[N], pad: int) -> F32[Padded]:
       return np.ones(x.shape[0] + pad, dtype=np.float32)
 
     assert f(np.ones(4, dtype=np.float32), 2).shape == (6,)

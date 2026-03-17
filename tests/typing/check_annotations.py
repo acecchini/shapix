@@ -192,8 +192,12 @@ def double_channels(x: F32[N, C]) -> F32[N, C * 2]:
   return np.concatenate([x, x], axis=1).astype(np.float32)
 
 
+FromSize = Value("size")
+FromSelf = Value("self.offset + size")
+
+
 @beartype
-def from_value(size: int) -> F32[Value["size"]]:  # noqa: F821
+def from_value(size: int) -> F32[FromSize]:
   return np.ones(size, dtype=np.float32)
 
 
@@ -201,7 +205,7 @@ class SomeClass:
   offset = 3
 
   @beartype
-  def from_self(self, size: int) -> F32[Value["self.offset + size"]]:  # noqa: F821
+  def from_self(self, size: int) -> F32[FromSelf]:
     return np.ones(self.offset + size, dtype=np.float32)
 
 

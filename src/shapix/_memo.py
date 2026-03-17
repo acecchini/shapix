@@ -187,7 +187,7 @@ def get_memo(_depth: int = 2) -> ShapeMemo:
 
 
 def get_scope(_depth: int = 2) -> dict[str, object]:
-  """Return the current runtime scope for ``Value[...]`` expressions."""
+  """Return the current runtime scope for ``Value(...)`` expressions."""
   explicit = _get_explicit_scope_stack()
   if explicit and explicit[-1] is not None:
     return explicit[-1]
@@ -201,7 +201,7 @@ def get_scope(_depth: int = 2) -> dict[str, object]:
 
   # beartype wrappers expose runtime arguments as ``args`` / ``kwargs`` plus
   # the wrapped function object. Rebind those to parameter names so
-  # ``Value["size"]`` and ``Value["self.attr"]`` work for both param and
+  # ``Value("size")`` and ``Value("self.attr")`` work for both param and
   # return validation.
   fn = locals_map.get("__beartype_func")
   args = locals_map.get("args")
