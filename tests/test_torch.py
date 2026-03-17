@@ -444,3 +444,83 @@ class TestTorchReturnViolations:
 
     with pytest.raises(BeartypeCallHintReturnViolation):
       f(torch.ones(3, 4, dtype=torch.float32))
+
+
+# =====================================================================
+# ScalarLike re-exports
+# =====================================================================
+
+
+class TestTorchScalarLikeReexports:
+  """ScalarLike types re-exported from numpy are identical objects."""
+
+  @pytest.mark.parametrize(
+    "name",
+    [
+      "StringLike",
+      "BoolScalarLike",
+      "I8ScalarLike",
+      "I16ScalarLike",
+      "I32ScalarLike",
+      "I64ScalarLike",
+      "U8ScalarLike",
+      "U16ScalarLike",
+      "U32ScalarLike",
+      "U64ScalarLike",
+      "F16ScalarLike",
+      "F32ScalarLike",
+      "F64ScalarLike",
+      "C64ScalarLike",
+      "C128ScalarLike",
+      "IntScalarLike",
+      "UIntScalarLike",
+      "IntegerScalarLike",
+      "FloatScalarLike",
+      "RealScalarLike",
+      "ComplexScalarLike",
+      "InexactScalarLike",
+      "NumScalarLike",
+      "ShapedScalarLike",
+    ],
+  )
+  def test_identity(self, name: str) -> None:
+    import shapix.numpy as np_mod
+    import shapix.torch as torch_mod
+
+    assert getattr(torch_mod, name) is getattr(np_mod, name)
+
+  def test_make_scalar_like_type_reexport(self) -> None:
+    from shapix.torch import make_scalar_like_type
+
+    T = make_scalar_like_type(np.float32, casting="same_kind")
+    assert is_bearable(1.0, T)
+
+  def test_i8_scalar_like_from_torch(self) -> None:
+    from shapix.torch import I8ScalarLike
+
+    assert is_bearable(-128, I8ScalarLike)
+    assert is_bearable(127, I8ScalarLike)
+    assert not is_bearable(128, I8ScalarLike)
+
+
+# =====================================================================
+# Like casting spot checks with PyTorch tensors
+# =====================================================================
+
+
+class TestTorchLikeCastingVariants:
+  def test_like_same_kind_torch_tensor(self) -> None:
+    from shapix._array_types import make_array_like_type
+    from shapix._dtypes import FLOAT32
+
+    T = make_array_like_type(FLOAT32, casting="same_kind")
+    assert is_bearable(torch.ones(3, dtype=torch.float32), T[...])
+    assert not is_bearable(torch.ones(3, dtype=torch.complex64), T[...])
+
+  def test_like_no_casting_torch_tensor(self) -> None:
+    from shapix._array_types import make_array_like_type
+    from shapix._dtypes import FLOAT32
+
+    T = make_array_like_type(FLOAT32, casting="no")
+    assert is_bearable(torch.ones(3, dtype=torch.float32), T[...])
+    assert not is_bearable(torch.ones(3, dtype=torch.float64), T[...])

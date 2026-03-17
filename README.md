@@ -311,10 +311,14 @@ Same type names as NumPy, plus `BF16`. Base type is `torch.Tensor`. Also exports
 
 ### Endianness variants
 
-For multi-byte dtypes, shapix provides endianness-constrained variants with `LE` (little-endian), `BE` (big-endian), and `N` (native) suffixes:
+For multi-byte dtypes, create endianness-constrained types programmatically using `make_array_type` with endianness `DtypeSpec` constants from `shapix._dtypes`:
 
 ```python
-from shapix.numpy import F32LE, I64BE, I32N
+from shapix import make_array_type, N, C
+from shapix._dtypes import FLOAT32_LE, INT64_BE, INT32_N
+
+F32LE = make_array_type(np.ndarray, FLOAT32_LE)
+I64BE = make_array_type(np.ndarray, INT64_BE)
 
 @beartype
 def process_le(x: F32LE[N, C]) -> F32LE[N, C]:
@@ -325,9 +329,7 @@ process_le(np.ones((4, 3), dtype="<f4"))   # OK — little-endian
 process_le(np.ones((4, 3), dtype=">f4"))   # Raises — big-endian
 ```
 
-Available for all multi-byte types: `I16LE`/`I16BE`/`I16N`, `I32LE`/`I32BE`/`I32N`, `I64LE`/`I64BE`/`I64N`, `U16LE`–`U64N`, `F16LE`–`F64N`, `C64LE`–`C128N`.
-
-Category groups also have endianness variants: `IntLE`, `FloatBE`, `RealN`, `ShapedLE`, etc.
+Available endianness specs for all multi-byte types: `INT16_LE`/`INT16_BE`/`INT16_N`, `INT32_LE`/`INT32_BE`/`INT32_N`, etc., plus category groups (`INT_LE`, `FLOAT_BE`, `REAL_N`, `SHAPED_LE`, etc.).
 
 Single-byte types (`Bool`, `I8`, `U8`) have no endianness variants (byte order is irrelevant).
 
@@ -410,12 +412,56 @@ clamp_pixel(-1)     # Raises — negative not allowed for unsigned
 
 Also: `StringLike` (str | np.str_).
 
+ScalarLike types are available from all backends:
+
+```python
+from shapix.numpy import U8ScalarLike   # defined here
+from shapix.jax import U8ScalarLike     # re-exported
+from shapix.torch import U8ScalarLike   # re-exported
+```
+
+For custom casting rules, use `make_scalar_like_type`:
+
+```python
+from shapix.numpy import make_scalar_like_type
+
+F32ScalarStrict = make_scalar_like_type(np.float32, casting="no")   # exact np.float32 only
+F32ScalarSafe = make_scalar_like_type(np.float32, casting="safe")   # float16 OK, complex rejected
+```
+
 The `ArrayLike` template is also public for custom static type combinations:
 
 ```python
 from shapix.numpy import ArrayLike
 
 type MyInputType = ArrayLike[float, np.float32]
+```
+
+### Casting rules
+
+The `casting` parameter on `make_array_like_type` and `make_scalar_like_type` controls dtype strictness using NumPy casting rules:
+
+| Casting | Meaning | Example (target=float32) |
+|---------|---------|--------------------------|
+| `"no"` | Exact dtype only | Only `float32` accepted |
+| `"equiv"` | Same kind, same size | `float32` only (no size change) |
+| `"safe"` | No data loss | `int16` OK, `float64` rejected |
+| `"same_kind"` | Same kind allowed | `int32` OK, `complex64` rejected |
+| `"unsafe"` | Any cast | `complex128` OK, strings rejected |
+
+```python
+from shapix import make_array_like_type
+from shapix._dtypes import FLOAT32
+from shapix.numpy import make_scalar_like_type
+
+# Strict: only exact float32 arrays
+F32Strict = make_array_like_type(FLOAT32, casting="no", name="F32Strict")
+
+# Permissive: accept anything castable
+F32Unsafe = make_array_like_type(FLOAT32, casting="unsafe", name="F32Unsafe")
+
+# Scalar with safe casting
+F32ScalarSafe = make_scalar_like_type(np.float32, casting="safe")
 ```
 
 ### Custom array types and Like types
@@ -698,7 +744,7 @@ def f(x: F32[~B, C]) -> F32[~B, C]:  # type: ignore[reportInvalidTypeForm]
 | Tree | Built-in with structure binding | Built-in with structure binding (via optree) |
 | Dependencies | jaxtyping + beartype | beartype only |
 | Custom decorator | Required | Not required |
-| Endianness | Not supported | LE/BE/N variants |
+| Endianness | Not supported | Programmatic LE/BE/N variants |
 | Structured dtypes | Not supported | `Structured()` helper |
 | ArrayLike | Not supported | `F32Like`, `IntLike`, etc. |
 | ScalarLike | Not supported | Range-validated scalar types |
@@ -719,7 +765,7 @@ def f(x: F32[~B, C]) -> F32[~B, C]:  # type: ignore[reportInvalidTypeForm]
 **Concrete:** `Bool`, `I8`, `I16`, `I32`, `I64`, `U8`, `U16`, `U32`, `U64`, `F16`, `F32`, `F64`, `C64`, `C128`
 **Categories:** `Int`, `UInt`, `Integer`, `Float`, `Real`, `Complex`, `Inexact`, `Num`, `Shaped`
 **Other:** `V`, `Str`, `Bytes`, `Obj`, `DT64`, `TD64`
-**Endianness:** `{Type}LE`, `{Type}BE`, `{Type}N` (e.g. `F32LE`, `I64BE`, `I32N`)
+**Endianness:** Programmatic via `make_array_type(np.ndarray, FLOAT32_LE)` using `DtypeSpec` constants
 
 ### Like types (`shapix.numpy`)
 
@@ -729,12 +775,13 @@ def f(x: F32[~B, C]) -> F32[~B, C]:  # type: ignore[reportInvalidTypeForm]
 
 ### JAX/PyTorch (`shapix.jax`, `shapix.torch`)
 
-Same array types as NumPy, plus `BF16`. Both export `Like` types. JAX also exports `Tree`.
+Same array types as NumPy, plus `BF16`. Both export `Like` types, `ScalarLike` types (re-exported from numpy), and `make_scalar_like_type`. JAX also exports `Tree`.
 
 ### Factories (`shapix`)
 
 `make_array_type(array_class, dtype_spec)` — custom array type
 `make_array_like_type(dtype_spec, *, casting="same_kind", name="ArrayLike")` — custom Like type
+`make_scalar_like_type(target_dtype, *, casting="same_kind", name="ScalarLike")` — custom ScalarLike type
 `DtypeSpec(name, allowed)` — custom dtype specification
 `DtypeSpec.structured(fields)` — structured dtype specification
 

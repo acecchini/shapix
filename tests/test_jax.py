@@ -429,3 +429,83 @@ class TestJaxMixedAnnotations:
     result = f(jnp.ones(5, dtype=jnp.float32))
     assert isinstance(result, np.ndarray)
     assert result.shape == (5,)
+
+
+# =====================================================================
+# ScalarLike re-exports
+# =====================================================================
+
+
+class TestJaxScalarLikeReexports:
+  """ScalarLike types re-exported from numpy are identical objects."""
+
+  @pytest.mark.parametrize(
+    "name",
+    [
+      "StringLike",
+      "BoolScalarLike",
+      "I8ScalarLike",
+      "I16ScalarLike",
+      "I32ScalarLike",
+      "I64ScalarLike",
+      "U8ScalarLike",
+      "U16ScalarLike",
+      "U32ScalarLike",
+      "U64ScalarLike",
+      "F16ScalarLike",
+      "F32ScalarLike",
+      "F64ScalarLike",
+      "C64ScalarLike",
+      "C128ScalarLike",
+      "IntScalarLike",
+      "UIntScalarLike",
+      "IntegerScalarLike",
+      "FloatScalarLike",
+      "RealScalarLike",
+      "ComplexScalarLike",
+      "InexactScalarLike",
+      "NumScalarLike",
+      "ShapedScalarLike",
+    ],
+  )
+  def test_identity(self, name: str) -> None:
+    import shapix.jax as jax_mod
+    import shapix.numpy as np_mod
+
+    assert getattr(jax_mod, name) is getattr(np_mod, name)
+
+  def test_make_scalar_like_type_reexport(self) -> None:
+    from shapix.jax import make_scalar_like_type
+
+    T = make_scalar_like_type(np.float32, casting="same_kind")
+    assert is_bearable(1.0, T)
+
+  def test_u8_scalar_like_from_jax(self) -> None:
+    from shapix.jax import U8ScalarLike
+
+    assert is_bearable(0, U8ScalarLike)
+    assert is_bearable(255, U8ScalarLike)
+    assert not is_bearable(256, U8ScalarLike)
+
+
+# =====================================================================
+# Like casting spot checks with JAX arrays
+# =====================================================================
+
+
+class TestJaxLikeCastingVariants:
+  def test_like_same_kind_jax_array(self) -> None:
+    from shapix._array_types import make_array_like_type
+    from shapix._dtypes import FLOAT32
+
+    T = make_array_like_type(FLOAT32, casting="same_kind")
+    assert is_bearable(jnp.ones(3, dtype=jnp.float32), T[...])
+    assert not is_bearable(jnp.ones(3, dtype=jnp.complex64), T[...])
+
+  def test_like_no_casting_jax_array(self) -> None:
+    from shapix._array_types import make_array_like_type
+    from shapix._dtypes import FLOAT32
+
+    T = make_array_like_type(FLOAT32, casting="no")
+    assert is_bearable(jnp.ones(3, dtype=jnp.float32), T[...])
+    assert not is_bearable(jnp.ones(3, dtype=jnp.int32), T[...])

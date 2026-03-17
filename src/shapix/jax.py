@@ -9,6 +9,9 @@ Usage::
 
     @beartype
     def forward(x: F32[N, C, H, W]) -> BF16[N, C, H, W]: ...
+
+ScalarLike types (range-validated scalars) and ``make_scalar_like_type``
+are re-exported from ``shapix.numpy`` for convenience.
 """
 
 from __future__ import annotations
@@ -76,6 +79,33 @@ __all__ = [
   "InexactLike",
   "NumLike",
   "ShapedLike",
+  # ScalarLike types (re-exported from numpy)
+  "StringLike",
+  "BoolScalarLike",
+  "I8ScalarLike",
+  "I16ScalarLike",
+  "I32ScalarLike",
+  "I64ScalarLike",
+  "U8ScalarLike",
+  "U16ScalarLike",
+  "U32ScalarLike",
+  "U64ScalarLike",
+  "F16ScalarLike",
+  "F32ScalarLike",
+  "F64ScalarLike",
+  "C64ScalarLike",
+  "C128ScalarLike",
+  "IntScalarLike",
+  "UIntScalarLike",
+  "IntegerScalarLike",
+  "FloatScalarLike",
+  "RealScalarLike",
+  "ComplexScalarLike",
+  "InexactScalarLike",
+  "NumScalarLike",
+  "ShapedScalarLike",
+  # ScalarLike factory
+  "make_scalar_like_type",
   # Tree
   "Tree",
   "Structure",
@@ -206,6 +236,36 @@ from .numpy import (
   U64Like as U64LikeNumpy,
   UIntLike as UIntLikeNumpy,
 )
+
+# ---------------------------------------------------------------------------
+# ScalarLike types (re-exported from numpy — no shape, just value validation)
+# ---------------------------------------------------------------------------
+
+from .numpy import BoolScalarLike as BoolScalarLike
+from .numpy import C64ScalarLike as C64ScalarLike
+from .numpy import C128ScalarLike as C128ScalarLike
+from .numpy import ComplexScalarLike as ComplexScalarLike
+from .numpy import F16ScalarLike as F16ScalarLike
+from .numpy import F32ScalarLike as F32ScalarLike
+from .numpy import F64ScalarLike as F64ScalarLike
+from .numpy import FloatScalarLike as FloatScalarLike
+from .numpy import I8ScalarLike as I8ScalarLike
+from .numpy import I16ScalarLike as I16ScalarLike
+from .numpy import I32ScalarLike as I32ScalarLike
+from .numpy import I64ScalarLike as I64ScalarLike
+from .numpy import InexactScalarLike as InexactScalarLike
+from .numpy import IntegerScalarLike as IntegerScalarLike
+from .numpy import IntScalarLike as IntScalarLike
+from .numpy import NumScalarLike as NumScalarLike
+from .numpy import RealScalarLike as RealScalarLike
+from .numpy import ShapedScalarLike as ShapedScalarLike
+from .numpy import StringLike as StringLike
+from .numpy import U8ScalarLike as U8ScalarLike
+from .numpy import U16ScalarLike as U16ScalarLike
+from .numpy import U32ScalarLike as U32ScalarLike
+from .numpy import U64ScalarLike as U64ScalarLike
+from .numpy import UIntScalarLike as UIntScalarLike
+from .numpy import make_scalar_like_type as make_scalar_like_type
 
 if tp.TYPE_CHECKING:
   type BoolLike[*Dims] = Bool[*Dims] | BoolLikeNumpy[*Dims]

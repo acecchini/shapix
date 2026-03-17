@@ -271,14 +271,14 @@ class _ArrayLikeChecker:
 
     # Wildcard ("*") accepts any dtype (used by SHAPED)
     if "*" in self._dtype_spec.allowed:
-      return True
+      return self._dtype_spec._check_byteorder(obj)
 
     import numpy as np
 
     for target in self._dtype_spec.allowed:
       try:
         if np.can_cast(source, target, casting=self._casting):  # pyright: ignore[reportArgumentType]
-          return True
+          return self._dtype_spec._check_byteorder(obj)
       except TypeError:
         continue
     return False

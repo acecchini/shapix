@@ -1112,57 +1112,69 @@ class TestArrayLikeMemoRestore:
 
 class TestEndiannessIntegration:
   def test_f32le_accepts_le(self) -> None:
-    from shapix.numpy import F32LE
+    from shapix._dtypes import FLOAT32_LE
+
+    F32LE = make_array_type(np.ndarray, FLOAT32_LE)
 
     @beartype
-    def f(x: F32LE[N]) -> F32LE[N]:
+    def f(x: F32LE[N]) -> F32LE[N]:  # type: ignore[valid-type]
       return x
 
     f(np.ones(3, dtype="<f4"))
 
   def test_f32le_rejects_be(self) -> None:
-    from shapix.numpy import F32LE
+    from shapix._dtypes import FLOAT32_LE
+
+    F32LE = make_array_type(np.ndarray, FLOAT32_LE)
 
     @beartype
-    def f(x: F32LE[N]) -> F32LE[N]:
+    def f(x: F32LE[N]) -> F32LE[N]:  # type: ignore[valid-type]
       return x
 
     with pytest.raises(BeartypeCallHintParamViolation):
       f(np.ones(3, dtype=">f4"))
 
   def test_i64be_accepts_be(self) -> None:
-    from shapix.numpy import I64BE
+    from shapix._dtypes import INT64_BE
+
+    I64BE = make_array_type(np.ndarray, INT64_BE)
 
     @beartype
-    def f(x: I64BE[N]) -> I64BE[N]:
+    def f(x: I64BE[N]) -> I64BE[N]:  # type: ignore[valid-type]
       return x
 
     f(np.ones(3, dtype=">i8"))
 
   def test_i64be_rejects_le(self) -> None:
-    from shapix.numpy import I64BE
+    from shapix._dtypes import INT64_BE
+
+    I64BE = make_array_type(np.ndarray, INT64_BE)
 
     @beartype
-    def f(x: I64BE[N]) -> I64BE[N]:
+    def f(x: I64BE[N]) -> I64BE[N]:  # type: ignore[valid-type]
       return x
 
     with pytest.raises(BeartypeCallHintParamViolation):
       f(np.ones(3, dtype="<i8"))
 
   def test_native_endianness(self) -> None:
-    from shapix.numpy import F32N
+    from shapix._dtypes import FLOAT32_N
+
+    F32N = make_array_type(np.ndarray, FLOAT32_N)
 
     @beartype
-    def f(x: F32N[N]) -> F32N[N]:
+    def f(x: F32N[N]) -> F32N[N]:  # type: ignore[valid-type]
       return x
 
     f(np.ones(3, dtype=np.float32))
 
   def test_endianness_cross_arg_consistency(self) -> None:
-    from shapix.numpy import F32LE
+    from shapix._dtypes import FLOAT32_LE
+
+    F32LE = make_array_type(np.ndarray, FLOAT32_LE)
 
     @beartype
-    def f(x: F32LE[N], y: F32LE[N]) -> F32LE[N]:
+    def f(x: F32LE[N], y: F32LE[N]) -> F32LE[N]:  # type: ignore[valid-type]
       return x + y
 
     f(np.ones(3, dtype="<f4"), np.ones(3, dtype="<f4"))
@@ -1214,3 +1226,316 @@ class TestStructuredDtypeIntegration:
     f(np.zeros(3, dtype=dt), np.zeros(3, dtype=dt))
     with pytest.raises(BeartypeCallHintParamViolation):
       f(np.zeros(3, dtype=dt), np.zeros(5, dtype=dt))
+
+
+# =====================================================================
+# Like casting variants (programmatic via make_array_like_type)
+# =====================================================================
+
+
+class TestLikeCastingVariants:
+  """Test casting × dtype combinations for Like types."""
+
+  @pytest.mark.parametrize(
+    "casting,accept_extra,reject_extra",
+    [
+      ("no", np.float32, np.float64),
+      ("equiv", np.float32, np.int32),
+      ("safe", np.float32, np.complex128),
+      ("same_kind", np.float32, np.complex128),
+      ("unsafe", np.float32, None),
+    ],
+  )
+  def test_f32like_casting_levels(
+    self,
+    casting: str,
+    accept_extra: np.dtype[np.generic],
+    reject_extra: np.dtype[np.generic] | None,
+  ) -> None:
+    T = make_array_like_type(FLOAT32, casting=casting, name=f"F32Like_{casting}")
+    arr = np.ones(3, dtype=accept_extra)
+    assert is_bearable(arr, T[...])
+    if reject_extra is not None:
+      bad = np.ones(3, dtype=reject_extra)
+      assert not is_bearable(bad, T[...])
+
+  @pytest.mark.parametrize(
+    "dtype_spec,accept_dtype,reject_dtype",
+    [
+      (FLOAT32, np.float32, np.complex128),
+      (DtypeSpec("Int8", frozenset({"int8"})), np.int8, np.float32),
+    ],
+  )
+  def test_like_casting_no_exact_match(
+    self,
+    dtype_spec: DtypeSpec,
+    accept_dtype: np.dtype[np.generic],
+    reject_dtype: np.dtype[np.generic],
+  ) -> None:
+    """casting='no' only accepts exact dtype."""
+    T = make_array_like_type(dtype_spec, casting="no")
+    assert is_bearable(np.ones(3, dtype=accept_dtype), T[...])
+    assert not is_bearable(np.ones(3, dtype=reject_dtype), T[...])
+
+  def test_like_safe_allows_int_to_float(self) -> None:
+    """int32 → float64 is safe."""
+    from shapix._dtypes import FLOAT64
+
+    T = make_array_like_type(FLOAT64, casting="safe")
+    assert is_bearable(np.ones(3, dtype=np.int32), T[...])
+
+  def test_like_safe_rejects_float_to_int(self) -> None:
+    """float32 → int32 is NOT safe."""
+    from shapix._dtypes import INT32
+
+    T = make_array_like_type(INT32, casting="safe")
+    assert not is_bearable(np.ones(3, dtype=np.float32), T[...])
+
+  def test_like_same_kind_int_to_float(self) -> None:
+    """int32 → float32 is same_kind (both numeric, int→float OK)."""
+    T = make_array_like_type(FLOAT32, casting="same_kind")
+    assert is_bearable(np.ones(3, dtype=np.int32), T[...])
+
+  def test_like_same_kind_complex_rejected(self) -> None:
+    """complex → float is NOT same_kind."""
+    T = make_array_like_type(FLOAT32, casting="same_kind")
+    assert not is_bearable(np.ones(3, dtype=np.complex128), T[...])
+
+  def test_like_unsafe_accepts_complex_to_float(self) -> None:
+    """complex → float IS unsafe-castable."""
+    T = make_array_like_type(FLOAT32, casting="unsafe")
+    assert is_bearable(np.ones(3, dtype=np.complex128), T[...])
+
+  def test_like_empty_array(self) -> None:
+    T = make_array_like_type(FLOAT32, casting="same_kind")
+    assert is_bearable(np.ones(0, dtype=np.float32), T[...])
+
+  def test_like_0d_array(self) -> None:
+    T = make_array_like_type(FLOAT32, casting="same_kind")
+    assert is_bearable(np.array(1.0, dtype=np.float32), T[...])
+
+  def test_like_scalar(self) -> None:
+    T = make_array_like_type(FLOAT32, casting="same_kind")
+    assert is_bearable(1.0, T[...])
+
+  def test_like_nested_list(self) -> None:
+    T = make_array_like_type(FLOAT32, casting="same_kind")
+    assert is_bearable([[1.0, 2.0], [3.0, 4.0]], T[...])
+
+
+# =====================================================================
+# Endianness array types (programmatic via make_array_type)
+# =====================================================================
+
+
+class TestEndiannessArrayTypes:
+  """Test endianness × dtype combinations via make_array_type."""
+
+  @pytest.mark.parametrize(
+    "endian_spec_name,byte_char,format_str",
+    [
+      ("FLOAT32_LE", "<", "f4"),
+      ("FLOAT32_BE", ">", "f4"),
+      ("FLOAT32_N", "=", "f4"),
+      ("INT16_LE", "<", "i2"),
+      ("INT16_BE", ">", "i2"),
+      ("INT32_LE", "<", "i4"),
+      ("INT32_BE", ">", "i4"),
+      ("INT64_LE", "<", "i8"),
+      ("INT64_BE", ">", "i8"),
+      ("UINT16_LE", "<", "u2"),
+      ("UINT32_LE", "<", "u4"),
+      ("UINT64_LE", "<", "u8"),
+      ("FLOAT16_LE", "<", "f2"),
+      ("FLOAT64_LE", "<", "f8"),
+      ("COMPLEX64_LE", "<", "c8"),
+      ("COMPLEX128_LE", "<", "c16"),
+    ],
+  )
+  def test_endianness_array_accept(
+    self, endian_spec_name: str, byte_char: str, format_str: str
+  ) -> None:
+    import shapix._dtypes as dtypes_mod
+
+    spec = getattr(dtypes_mod, endian_spec_name)
+    T = make_array_type(np.ndarray, spec)
+    arr = np.ones(3, dtype=np.dtype(f"{byte_char}{format_str}"))
+    assert is_bearable(arr, T[...])
+
+  @pytest.mark.parametrize(
+    "endian_spec_name,wrong_char,format_str",
+    [
+      ("FLOAT32_LE", ">", "f4"),
+      ("FLOAT32_BE", "<", "f4"),
+      ("INT32_LE", ">", "i4"),
+      ("INT64_BE", "<", "i8"),
+    ],
+  )
+  def test_endianness_array_reject(
+    self, endian_spec_name: str, wrong_char: str, format_str: str
+  ) -> None:
+    import shapix._dtypes as dtypes_mod
+
+    spec = getattr(dtypes_mod, endian_spec_name)
+    T = make_array_type(np.ndarray, spec)
+    arr = np.ones(3, dtype=np.dtype(f"{wrong_char}{format_str}"))
+    assert not is_bearable(arr, T[...])
+
+  def test_category_endianness(self) -> None:
+    """Category specs with endianness accept matching types."""
+    from shapix._dtypes import FLOAT_LE
+
+    T = make_array_type(np.ndarray, FLOAT_LE)
+    assert is_bearable(np.ones(3, dtype="<f4"), T[...])
+    assert is_bearable(np.ones(3, dtype="<f8"), T[...])
+    assert not is_bearable(np.ones(3, dtype=">f4"), T[...])
+
+  def test_shaped_endianness(self) -> None:
+    """SHAPED_LE accepts any dtype but only little-endian."""
+    from shapix._dtypes import SHAPED_LE
+
+    T = make_array_type(np.ndarray, SHAPED_LE)
+    assert is_bearable(np.ones(3, dtype="<f4"), T[...])
+    assert is_bearable(np.ones(3, dtype="<i4"), T[...])
+    assert not is_bearable(np.ones(3, dtype=">f4"), T[...])
+
+
+# =====================================================================
+# Endianness Like types (programmatic)
+# =====================================================================
+
+
+class TestEndiannessLikeTypes:
+  """Test endianness Like types via make_array_like_type."""
+
+  @pytest.mark.parametrize("casting", ["no", "equiv", "safe", "same_kind", "unsafe"])
+  def test_f32le_like_accept_reject(self, casting: str) -> None:
+    from shapix._dtypes import FLOAT32_LE
+
+    T = make_array_like_type(FLOAT32_LE, casting=casting)
+    # Correct endianness accepted
+    assert is_bearable(np.ones(3, dtype="<f4"), T[...])
+    # Wrong endianness rejected
+    assert not is_bearable(np.ones(3, dtype=">f4"), T[...])
+
+  def test_endianness_like_same_kind_int_to_float_le(self) -> None:
+    """int32 LE → float32 LE should be accepted under same_kind."""
+    from shapix._dtypes import FLOAT32_LE
+
+    T = make_array_like_type(FLOAT32_LE, casting="same_kind")
+    # int32 LE array should cast to float32 by same_kind, but endianness check
+    # is on the source array, not the target — source is LE int32
+    arr = np.ones(3, dtype="<i4")
+    assert is_bearable(arr, T[...])
+
+  def test_endianness_like_rejects_wrong_endian_scalar(self) -> None:
+    """Scalar (no endianness) should pass byteorder check."""
+    from shapix._dtypes import FLOAT32_LE
+
+    T = make_array_like_type(FLOAT32_LE, casting="same_kind")
+    # Scalars have no byte order, so _check_byteorder returns True
+    assert is_bearable(1.0, T[...])
+
+
+# =====================================================================
+# ScalarLike casting variants (programmatic)
+# =====================================================================
+
+
+class TestScalarLikeCastingVariants:
+  """Test make_scalar_like_type with various casting rules."""
+
+  def test_no_casting_strict(self) -> None:
+    from shapix.numpy import make_scalar_like_type
+
+    T = make_scalar_like_type(np.float32, casting="no")
+    assert is_bearable(np.float32(1.0), T)
+    assert not is_bearable(1.0, T)  # Python float != np.float32
+
+  def test_safe_casting(self) -> None:
+    from shapix.numpy import make_scalar_like_type
+
+    T = make_scalar_like_type(np.float32, casting="safe")
+    assert is_bearable(np.float16(1.0), T)  # float16 → float32 is safe
+    assert not is_bearable(np.complex64(1.0), T)  # complex → float not safe
+
+  def test_same_kind_casting(self) -> None:
+    from shapix.numpy import make_scalar_like_type
+
+    T = make_scalar_like_type(np.float32, casting="same_kind")
+    assert is_bearable(1.0, T)  # Python float → float32 is same_kind
+    assert not is_bearable(1 + 0j, T)  # complex → float not same_kind
+
+  def test_unsafe_casting(self) -> None:
+    from shapix.numpy import make_scalar_like_type
+
+    T = make_scalar_like_type(np.float32, casting="unsafe")
+    assert is_bearable(1 + 0j, T)  # complex → float is unsafe-castable
+    assert not is_bearable("hello", T)  # strings not castable
+
+  def test_int8_no_casting(self) -> None:
+    from shapix.numpy import make_scalar_like_type
+
+    T = make_scalar_like_type(np.int8, casting="no")
+    assert is_bearable(np.int8(1), T)
+    assert not is_bearable(1, T)  # Python int != np.int8
+
+  def test_int8_same_kind_casting(self) -> None:
+    from shapix.numpy import make_scalar_like_type
+
+    T = make_scalar_like_type(np.int8, casting="same_kind")
+    assert is_bearable(1, T)  # Python int → int8 same_kind
+    assert not is_bearable(1.0, T)  # float → int not same_kind
+
+  def test_int8_unsafe_casting(self) -> None:
+    from shapix.numpy import make_scalar_like_type
+
+    T = make_scalar_like_type(np.int8, casting="unsafe")
+    assert is_bearable(1.0, T)  # float → int8 is unsafe-castable
+    assert not is_bearable("hello", T)
+
+  @pytest.mark.parametrize(
+    "target,accept,reject",
+    [
+      (np.float64, np.float32(1.0), np.complex128(1.0)),
+      (np.int32, np.int16(1), np.float32(1.0)),
+      (np.uint8, np.uint8(1), np.int8(-1)),
+    ],
+  )
+  def test_safe_casting_matrix(
+    self, target: type[np.generic], accept: object, reject: object
+  ) -> None:
+    from shapix.numpy import make_scalar_like_type
+
+    T = make_scalar_like_type(target, casting="safe")
+    assert is_bearable(accept, T)
+    assert not is_bearable(reject, T)
+
+  def test_string_target(self) -> None:
+    """Target can be a string like 'float32'."""
+    from shapix.numpy import make_scalar_like_type
+
+    T = make_scalar_like_type("float32", casting="same_kind")
+    assert is_bearable(1.0, T)
+
+  def test_dtype_target(self) -> None:
+    """Target can be a np.dtype object."""
+    from shapix.numpy import make_scalar_like_type
+
+    T = make_scalar_like_type(np.dtype(np.float32), casting="same_kind")
+    assert is_bearable(1.0, T)
+
+  def test_rejects_non_scalar_base(self) -> None:
+    """Non-scalar types like list should be rejected."""
+    from shapix.numpy import make_scalar_like_type
+
+    T = make_scalar_like_type(np.float32, casting="unsafe")
+    assert not is_bearable([1.0, 2.0], T)
+    assert not is_bearable(np.ones(3), T)
+
+  def test_make_scalar_like_type_from_init(self) -> None:
+    """Factory is importable from shapix top-level."""
+    from shapix import make_scalar_like_type as factory
+
+    T = factory(np.float32, casting="same_kind")
+    assert is_bearable(1.0, T)

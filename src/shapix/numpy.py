@@ -9,9 +9,9 @@ Array types (e.g. ``F32``, ``Int``) are subscriptable with dimension symbols::
     @beartype
     def conv(x: F32[N, C, H, W]) -> F32[N, C, H, W]: ...
 
-Endianness variants use ``LE`` / ``BE`` / ``N`` suffixes::
-
-    from shapix.numpy import F32LE, I64BE, I32N
+Endianness variants are available programmatically via
+``make_array_type(np.ndarray, FLOAT32_LE)`` using DtypeSpec constants from
+``shapix._dtypes``.
 
 Additional dtypes: ``V`` (void), ``Str`` (string), ``Bytes``, ``Obj`` (object),
 ``DT64`` (datetime64), ``TD64`` (timedelta64).
@@ -34,6 +34,12 @@ scalar values with range checking — no shape, just value::
 
     @beartype
     def pixel(value: U8ScalarLike) -> int: ...  # [0, 255]
+
+``make_scalar_like_type`` creates casting-aware scalar types programmatically::
+
+    from shapix.numpy import make_scalar_like_type
+
+    F32Scalar = make_scalar_like_type(np.float32, casting="safe")
 
 ``Structured()`` creates array types for NumPy structured (record) dtypes::
 
@@ -86,69 +92,6 @@ __all__ = [
   "Obj",
   "DT64",
   "TD64",
-  # Array types — endianness (LE)
-  "I16LE",
-  "I32LE",
-  "I64LE",
-  "U16LE",
-  "U32LE",
-  "U64LE",
-  "F16LE",
-  "F32LE",
-  "F64LE",
-  "C64LE",
-  "C128LE",
-  "IntLE",
-  "UIntLE",
-  "IntegerLE",
-  "FloatLE",
-  "RealLE",
-  "ComplexLE",
-  "InexactLE",
-  "NumLE",
-  "ShapedLE",
-  # Array types — endianness (BE)
-  "I16BE",
-  "I32BE",
-  "I64BE",
-  "U16BE",
-  "U32BE",
-  "U64BE",
-  "F16BE",
-  "F32BE",
-  "F64BE",
-  "C64BE",
-  "C128BE",
-  "IntBE",
-  "UIntBE",
-  "IntegerBE",
-  "FloatBE",
-  "RealBE",
-  "ComplexBE",
-  "InexactBE",
-  "NumBE",
-  "ShapedBE",
-  # Array types — endianness (native)
-  "I16N",
-  "I32N",
-  "I64N",
-  "U16N",
-  "U32N",
-  "U64N",
-  "F16N",
-  "F32N",
-  "F64N",
-  "C64N",
-  "C128N",
-  "IntN",
-  "UIntN",
-  "IntegerN",
-  "FloatN",
-  "RealN",
-  "ComplexN",
-  "InexactN",
-  "NumN",
-  "ShapedN",
   # Structured dtype helper
   "Structured",
   # Scalar Like types
@@ -176,6 +119,8 @@ __all__ = [
   "InexactScalarLike",
   "NumScalarLike",
   "ShapedScalarLike",
+  # Scalar Like factory
+  "make_scalar_like_type",
   # ArrayLike template
   "ArrayLike",
   # Array Like types
@@ -211,70 +156,22 @@ from ._dtypes import (
   COMPLEX,
   COMPLEX64,
   COMPLEX128,
-  COMPLEX64_BE,
-  COMPLEX64_LE,
-  COMPLEX64_N,
-  COMPLEX128_BE,
-  COMPLEX128_LE,
-  COMPLEX128_N,
-  COMPLEX_BE,
-  COMPLEX_LE,
-  COMPLEX_N,
   DATETIME64,
   FLOAT,
   FLOAT16,
   FLOAT32,
   FLOAT64,
-  FLOAT16_BE,
-  FLOAT16_LE,
-  FLOAT16_N,
-  FLOAT32_BE,
-  FLOAT32_LE,
-  FLOAT32_N,
-  FLOAT64_BE,
-  FLOAT64_LE,
-  FLOAT64_N,
-  FLOAT_BE,
-  FLOAT_LE,
-  FLOAT_N,
   INEXACT,
-  INEXACT_BE,
-  INEXACT_LE,
-  INEXACT_N,
   INT,
   INT8,
   INT16,
   INT32,
   INT64,
-  INT16_BE,
-  INT16_LE,
-  INT16_N,
-  INT32_BE,
-  INT32_LE,
-  INT32_N,
-  INT64_BE,
-  INT64_LE,
-  INT64_N,
-  INT_BE,
-  INT_LE,
-  INT_N,
   INTEGER,
-  INTEGER_BE,
-  INTEGER_LE,
-  INTEGER_N,
   NUM,
-  NUM_BE,
-  NUM_LE,
-  NUM_N,
   OBJECT,
   REAL,
-  REAL_BE,
-  REAL_LE,
-  REAL_N,
   SHAPED,
-  SHAPED_BE,
-  SHAPED_LE,
-  SHAPED_N,
   STRING,
   TIMEDELTA64,
   UINT,
@@ -282,18 +179,6 @@ from ._dtypes import (
   UINT16,
   UINT32,
   UINT64,
-  UINT16_BE,
-  UINT16_LE,
-  UINT16_N,
-  UINT32_BE,
-  UINT32_LE,
-  UINT32_N,
-  UINT64_BE,
-  UINT64_LE,
-  UINT64_N,
-  UINT_BE,
-  UINT_LE,
-  UINT_N,
   VOID,
   DtypeSpec,
 )
@@ -442,72 +327,6 @@ if tp.TYPE_CHECKING:
   type DT64[*Dims] = NDArray[np.datetime64]
   type TD64[*Dims] = NDArray[np.timedelta64]
 
-  # --- LE variants (static type = same as base; runtime checks endianness) ---
-  type I16LE[*Dims] = NDArray[np.int16]
-  type I32LE[*Dims] = NDArray[np.int32]
-  type I64LE[*Dims] = NDArray[np.int64]
-  type U16LE[*Dims] = NDArray[np.uint16]
-  type U32LE[*Dims] = NDArray[np.uint32]
-  type U64LE[*Dims] = NDArray[np.uint64]
-  type F16LE[*Dims] = NDArray[np.float16]
-  type F32LE[*Dims] = NDArray[np.float32]
-  type F64LE[*Dims] = NDArray[np.float64]
-  type C64LE[*Dims] = NDArray[np.complex64]
-  type C128LE[*Dims] = NDArray[np.complex128]
-  type IntLE[*Dims] = NDArray[np.signedinteger[tp.Any]]
-  type UIntLE[*Dims] = NDArray[np.unsignedinteger[tp.Any]]
-  type IntegerLE[*Dims] = NDArray[np.integer[tp.Any]]
-  type FloatLE[*Dims] = NDArray[np.floating[tp.Any]]
-  type RealLE[*Dims] = NDArray[np.integer[tp.Any] | np.floating[tp.Any]]
-  type ComplexLE[*Dims] = NDArray[np.complexfloating[tp.Any, tp.Any]]
-  type InexactLE[*Dims] = NDArray[np.inexact[tp.Any]]
-  type NumLE[*Dims] = NDArray[np.number[tp.Any]]
-  type ShapedLE[*Dims] = NDArray[np.bool_ | np.number[tp.Any]]
-
-  # --- BE variants ---
-  type I16BE[*Dims] = NDArray[np.int16]
-  type I32BE[*Dims] = NDArray[np.int32]
-  type I64BE[*Dims] = NDArray[np.int64]
-  type U16BE[*Dims] = NDArray[np.uint16]
-  type U32BE[*Dims] = NDArray[np.uint32]
-  type U64BE[*Dims] = NDArray[np.uint64]
-  type F16BE[*Dims] = NDArray[np.float16]
-  type F32BE[*Dims] = NDArray[np.float32]
-  type F64BE[*Dims] = NDArray[np.float64]
-  type C64BE[*Dims] = NDArray[np.complex64]
-  type C128BE[*Dims] = NDArray[np.complex128]
-  type IntBE[*Dims] = NDArray[np.signedinteger[tp.Any]]
-  type UIntBE[*Dims] = NDArray[np.unsignedinteger[tp.Any]]
-  type IntegerBE[*Dims] = NDArray[np.integer[tp.Any]]
-  type FloatBE[*Dims] = NDArray[np.floating[tp.Any]]
-  type RealBE[*Dims] = NDArray[np.integer[tp.Any] | np.floating[tp.Any]]
-  type ComplexBE[*Dims] = NDArray[np.complexfloating[tp.Any, tp.Any]]
-  type InexactBE[*Dims] = NDArray[np.inexact[tp.Any]]
-  type NumBE[*Dims] = NDArray[np.number[tp.Any]]
-  type ShapedBE[*Dims] = NDArray[np.bool_ | np.number[tp.Any]]
-
-  # --- Native variants ---
-  type I16N[*Dims] = NDArray[np.int16]
-  type I32N[*Dims] = NDArray[np.int32]
-  type I64N[*Dims] = NDArray[np.int64]
-  type U16N[*Dims] = NDArray[np.uint16]
-  type U32N[*Dims] = NDArray[np.uint32]
-  type U64N[*Dims] = NDArray[np.uint64]
-  type F16N[*Dims] = NDArray[np.float16]
-  type F32N[*Dims] = NDArray[np.float32]
-  type F64N[*Dims] = NDArray[np.float64]
-  type C64N[*Dims] = NDArray[np.complex64]
-  type C128N[*Dims] = NDArray[np.complex128]
-  type IntN[*Dims] = NDArray[np.signedinteger[tp.Any]]
-  type UIntN[*Dims] = NDArray[np.unsignedinteger[tp.Any]]
-  type IntegerN[*Dims] = NDArray[np.integer[tp.Any]]
-  type FloatN[*Dims] = NDArray[np.floating[tp.Any]]
-  type RealN[*Dims] = NDArray[np.integer[tp.Any] | np.floating[tp.Any]]
-  type ComplexN[*Dims] = NDArray[np.complexfloating[tp.Any, tp.Any]]
-  type InexactN[*Dims] = NDArray[np.inexact[tp.Any]]
-  type NumN[*Dims] = NDArray[np.number[tp.Any]]
-  type ShapedN[*Dims] = NDArray[np.bool_ | np.number[tp.Any]]
-
   # --- Like types (static: ArrayLike template with bare scalar types) ---
   type BoolLike[*Dims] = ArrayLike[bool, np.bool_]
 
@@ -581,72 +400,6 @@ else:
   DT64 = make_array_type(np.ndarray, DATETIME64)
   TD64 = make_array_type(np.ndarray, TIMEDELTA64)
 
-  # --- LE variants ---
-  I16LE = make_array_type(np.ndarray, INT16_LE)
-  I32LE = make_array_type(np.ndarray, INT32_LE)
-  I64LE = make_array_type(np.ndarray, INT64_LE)
-  U16LE = make_array_type(np.ndarray, UINT16_LE)
-  U32LE = make_array_type(np.ndarray, UINT32_LE)
-  U64LE = make_array_type(np.ndarray, UINT64_LE)
-  F16LE = make_array_type(np.ndarray, FLOAT16_LE)
-  F32LE = make_array_type(np.ndarray, FLOAT32_LE)
-  F64LE = make_array_type(np.ndarray, FLOAT64_LE)
-  C64LE = make_array_type(np.ndarray, COMPLEX64_LE)
-  C128LE = make_array_type(np.ndarray, COMPLEX128_LE)
-  IntLE = make_array_type(np.ndarray, INT_LE)
-  UIntLE = make_array_type(np.ndarray, UINT_LE)
-  IntegerLE = make_array_type(np.ndarray, INTEGER_LE)
-  FloatLE = make_array_type(np.ndarray, FLOAT_LE)
-  RealLE = make_array_type(np.ndarray, REAL_LE)
-  ComplexLE = make_array_type(np.ndarray, COMPLEX_LE)
-  InexactLE = make_array_type(np.ndarray, INEXACT_LE)
-  NumLE = make_array_type(np.ndarray, NUM_LE)
-  ShapedLE = make_array_type(np.ndarray, SHAPED_LE)
-
-  # --- BE variants ---
-  I16BE = make_array_type(np.ndarray, INT16_BE)
-  I32BE = make_array_type(np.ndarray, INT32_BE)
-  I64BE = make_array_type(np.ndarray, INT64_BE)
-  U16BE = make_array_type(np.ndarray, UINT16_BE)
-  U32BE = make_array_type(np.ndarray, UINT32_BE)
-  U64BE = make_array_type(np.ndarray, UINT64_BE)
-  F16BE = make_array_type(np.ndarray, FLOAT16_BE)
-  F32BE = make_array_type(np.ndarray, FLOAT32_BE)
-  F64BE = make_array_type(np.ndarray, FLOAT64_BE)
-  C64BE = make_array_type(np.ndarray, COMPLEX64_BE)
-  C128BE = make_array_type(np.ndarray, COMPLEX128_BE)
-  IntBE = make_array_type(np.ndarray, INT_BE)
-  UIntBE = make_array_type(np.ndarray, UINT_BE)
-  IntegerBE = make_array_type(np.ndarray, INTEGER_BE)
-  FloatBE = make_array_type(np.ndarray, FLOAT_BE)
-  RealBE = make_array_type(np.ndarray, REAL_BE)
-  ComplexBE = make_array_type(np.ndarray, COMPLEX_BE)
-  InexactBE = make_array_type(np.ndarray, INEXACT_BE)
-  NumBE = make_array_type(np.ndarray, NUM_BE)
-  ShapedBE = make_array_type(np.ndarray, SHAPED_BE)
-
-  # --- Native variants ---
-  I16N = make_array_type(np.ndarray, INT16_N)
-  I32N = make_array_type(np.ndarray, INT32_N)
-  I64N = make_array_type(np.ndarray, INT64_N)
-  U16N = make_array_type(np.ndarray, UINT16_N)
-  U32N = make_array_type(np.ndarray, UINT32_N)
-  U64N = make_array_type(np.ndarray, UINT64_N)
-  F16N = make_array_type(np.ndarray, FLOAT16_N)
-  F32N = make_array_type(np.ndarray, FLOAT32_N)
-  F64N = make_array_type(np.ndarray, FLOAT64_N)
-  C64N = make_array_type(np.ndarray, COMPLEX64_N)
-  C128N = make_array_type(np.ndarray, COMPLEX128_N)
-  IntN = make_array_type(np.ndarray, INT_N)
-  UIntN = make_array_type(np.ndarray, UINT_N)
-  IntegerN = make_array_type(np.ndarray, INTEGER_N)
-  FloatN = make_array_type(np.ndarray, FLOAT_N)
-  RealN = make_array_type(np.ndarray, REAL_N)
-  ComplexN = make_array_type(np.ndarray, COMPLEX_N)
-  InexactN = make_array_type(np.ndarray, INEXACT_N)
-  NumN = make_array_type(np.ndarray, NUM_N)
-  ShapedN = make_array_type(np.ndarray, SHAPED_N)
-
   # --- Like types (runtime: factory with dtype + casting) ---
   BoolLike = make_array_like_type(BOOL, name="BoolLike")
 
@@ -676,3 +429,49 @@ else:
   InexactLike = make_array_like_type(INEXACT, name="InexactLike")
   NumLike = make_array_like_type(NUM, name="NumLike")
   ShapedLike = make_array_like_type(SHAPED, name="ShapedLike")
+
+
+# ---------------------------------------------------------------------------
+# ScalarLike factory (casting-aware scalar type creation)
+# ---------------------------------------------------------------------------
+
+_SCALAR_BASE = bool | int | float | complex | np.generic
+
+
+def make_scalar_like_type(
+  target_dtype: np.dtype[tp.Any] | type[np.generic] | str,
+  *,
+  casting: str = "same_kind",
+  name: str = "ScalarLike",
+) -> type:
+  """Create a scalar-like type with casting validation.
+
+  Uses ``np.can_cast(value, target_dtype, casting=casting)`` at runtime.
+
+  Parameters
+  ----------
+  target_dtype : dtype-like
+      Target NumPy dtype (e.g. ``np.float32``, ``"int8"``).
+  casting : str
+      NumPy casting rule: ``"no"`` | ``"equiv"`` | ``"safe"``
+      | ``"same_kind"`` | ``"unsafe"``.
+  name : str
+      Human-readable name for error messages.
+
+  Returns
+  -------
+  type
+      An ``Annotated`` type that beartype validates at runtime.
+  """
+  target = np.dtype(target_dtype)
+
+  def _check(value: object) -> bool:
+    try:
+      arr = np.asarray(value)
+      return np.can_cast(arr.dtype, target, casting=casting)  # pyright: ignore[reportArgumentType]
+    except (TypeError, ValueError):
+      return False
+
+  _check.__name__ = name
+  _check.__qualname__ = name
+  return A[_SCALAR_BASE, Is[_check]]  # type: ignore[return-value]
