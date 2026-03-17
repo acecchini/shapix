@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import subprocess
+import sys
+from pathlib import Path
+
 import numpy as np
 import pytest
 
@@ -29,13 +33,13 @@ class TestArrayFactoryEdges:
     factory = make_array_type(np.ndarray, FLOAT32)
     assert repr(factory) == "Float32Array"
 
-  def test_to_shape_spec_non_dimension_falls_back_to_named(self) -> None:
+  def test_to_shape_spec_rejects_unknown_token(self) -> None:
     class Token:
       def __str__(self) -> str:
         return "Token"
 
-    spec = _to_shape_spec((Token(),))
-    assert spec == (NamedDim("Token"),)
+    with pytest.raises(TypeError, match="Invalid shape token"):
+      _to_shape_spec((Token(),))
 
 
 class TestByteorderEdgePaths:
@@ -390,6 +394,37 @@ class TestVersionExport:
     assert hasattr(shapix, "__version__")
     assert isinstance(shapix.__version__, str)
     assert len(shapix.__version__) > 0
+
+  def test_root_import_does_not_require_numpy(self) -> None:
+    script = """
+import builtins
+import pathlib
+import sys
+
+sys.path.insert(0, str(pathlib.Path('.').resolve() / 'src'))
+real_import = builtins.__import__
+
+def fake_import(name, globals=None, locals=None, fromlist=(), level=0):
+    if name == 'numpy' or name.startswith('numpy.'):
+        raise ModuleNotFoundError("No module named 'numpy'")
+    return real_import(name, globals, locals, fromlist, level)
+
+builtins.__import__ = fake_import
+try:
+    import shapix
+    print(hasattr(shapix, 'Value'), hasattr(shapix, 'make_scalar_like_type'))
+finally:
+    builtins.__import__ = real_import
+"""
+    result = subprocess.run(
+      [sys.executable, "-c", script],
+      capture_output=True,
+      text=True,
+      cwd=Path(__file__).resolve().parents[1],
+      check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "True False"
 
 
 class TestNewDimensionSymbols:

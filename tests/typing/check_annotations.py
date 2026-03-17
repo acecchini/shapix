@@ -10,7 +10,7 @@ Tested with: pyright only
 import numpy as np
 from beartype import beartype
 
-from shapix import B, C, Dimension, H, N, Scalar, W, __, check, check_context
+from shapix import B, C, Dimension, H, N, Scalar, Value, W, __, check, check_context
 from shapix.numpy import (
   Bool,
   C64,
@@ -190,6 +190,19 @@ def pad(x: F32[N]) -> F32[N + 2]:
 @beartype
 def double_channels(x: F32[N, C]) -> F32[N, C * 2]:
   return np.concatenate([x, x], axis=1).astype(np.float32)
+
+
+@beartype
+def from_value(size: int) -> F32[Value["size"]]:  # noqa: F821
+  return np.ones(size, dtype=np.float32)
+
+
+class SomeClass:
+  offset = 3
+
+  @beartype
+  def from_self(self, size: int) -> F32[Value["self.offset + size"]]:  # noqa: F821
+    return np.ones(self.offset + size, dtype=np.float32)
 
 
 # ---------------------------------------------------------------------------

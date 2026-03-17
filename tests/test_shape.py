@@ -9,6 +9,7 @@ from shapix._shape import (
   FixedDim,
   NamedDim,
   SymbolicDim,
+  ValueDim,
   VariadicDim,
   check_shape,
 )
@@ -212,6 +213,41 @@ class TestSymbolicEdgeCases:
     memo.single["N"] = 5
     err = check_shape((3,), (SymbolicDim("N+1", broadcastable=True),), memo)
     assert "evaluated to 6 but got 3" in err
+
+  def test_symbolic_rejects_attribute_access(self) -> None:
+    memo = ShapeMemo(single={"N": 5})
+    err = check_shape((5,), (SymbolicDim("N.real"),), memo)
+    assert "attribute access is not allowed" in err
+
+  def test_symbolic_rejects_function_call(self) -> None:
+    memo = ShapeMemo(single={"N": 5})
+    err = check_shape((5,), (SymbolicDim("len(N)"),), memo)
+    assert "unsupported expression form" in err
+
+
+class TestValueDim:
+  def test_value_dim_uses_scope(self) -> None:
+    memo = ShapeMemo()
+    scope = {"size": 6}
+    assert check_shape((6,), (ValueDim("size"),), memo, scope) == ""
+
+  def test_value_dim_attribute_access(self) -> None:
+    class Obj:
+      width = 7
+
+    memo = ShapeMemo()
+    scope = {"self": Obj()}
+    assert check_shape((7,), (ValueDim("self.width"),), memo, scope) == ""
+
+  def test_value_dim_can_mix_bound_dims_and_scope(self) -> None:
+    memo = ShapeMemo(single={"N": 5})
+    scope = {"pad": 2}
+    assert check_shape((7,), (ValueDim("N + pad"),), memo, scope) == ""
+
+  def test_value_dim_unknown_name(self) -> None:
+    memo = ShapeMemo()
+    err = check_shape((5,), (ValueDim("size"),), memo, {})
+    assert "unknown name 'size'" in err
 
 
 class TestVariadicEdgeCases:

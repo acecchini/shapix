@@ -154,6 +154,36 @@ def flatten(x: F32[N, C]) -> F32[N * C]:
 
 Supported operators: `+`, `-`, `*`, `/`, `//`, `**`, `%`.
 
+Symbolic dimensions are intentionally limited to arithmetic over dimension names
+and numeric literals. Attribute access and function calls are rejected.
+
+### Runtime value dimensions
+
+Use `Value["expr"]` when a shape depends on a runtime parameter or `self`
+attribute rather than a previously bound dimension:
+
+```python
+from beartype import beartype
+from shapix import Value
+from shapix.numpy import F32
+import numpy as np
+
+@beartype
+def full(size: int) -> F32[Value["size"]]:
+    return np.full((size,), 1.0, dtype=np.float32)
+
+class SomeClass:
+    width = 5
+
+    @beartype
+    def full(self) -> F32[Value["self.width + 3"]]:
+        return np.full((self.width + 3,), 1.0, dtype=np.float32)
+```
+
+`Value[...]` uses a restricted arithmetic grammar as well. It allows names,
+attribute access, numeric literals, and arithmetic operators, but rejects calls,
+indexing, and other arbitrary Python expressions.
+
 ### Variadic dimensions
 
 Apply `~` (tilde) to any dimension to make it **variadic** — matching zero or more contiguous dimensions:
@@ -289,7 +319,7 @@ Concise names for fast, readable annotations:
 from shapix.numpy import F32, I64, Shaped  # and many more
 ```
 
-**Concrete dtypes:** `Bool`, `I8`, `I16`, `I32`, `I64`, `U8`, `U16`, `U32`, `U64`, `F16`, `F32`, `F64`, `C64`, `C128`
+**Concrete dtypes:** `Bool`, `I8`, `I16`, `I32`, `I64`, `U8`, `U16`, `U32`, `U64`, `F16`, `F32`, `F64`, `F128`, `C64`, `C128`, `C256`
 
 **Category dtypes:** `Int` (signed), `UInt` (unsigned), `Integer` (all int), `Float`, `Real` (int + float), `Complex`, `Inexact` (float + complex), `Num` (all numeric), `Shaped` (any dtype)
 
@@ -301,7 +331,7 @@ from shapix.numpy import F32, I64, Shaped  # and many more
 from shapix.jax import F32, BF16
 ```
 
-Same type names as NumPy, plus `BF16` and `BF16Like`. Base type is `jax.Array`. Also exports `Like` types and `Tree`.
+Most NumPy type names, plus `BF16` and `BF16Like`. Base type is `jax.Array`. JAX does not expose NumPy-only extended-precision array aliases such as `F128` / `C256`. Also exports `Like` types and `Tree`.
 
 ### PyTorch
 
@@ -309,7 +339,7 @@ Same type names as NumPy, plus `BF16` and `BF16Like`. Base type is `jax.Array`. 
 from shapix.torch import F32, BF16
 ```
 
-Same type names as NumPy, plus `BF16` and `BF16Like`. Base type is `torch.Tensor`. Also exports `Like` types.
+Most NumPy type names, plus `BF16` and `BF16Like`. Base type is `torch.Tensor`. PyTorch does not expose NumPy-only extended-precision array aliases such as `F128` / `C256`. Also exports `Like` types.
 
 ### Endianness variants
 
@@ -384,7 +414,7 @@ def process(x: F32Like[N, C]) -> F32[N, C]:
 
 Dtype compatibility uses NumPy's `same_kind` casting rules by default: `int32` can be passed where `float32` is expected (safe upcast), but `complex128` cannot.
 
-**Available:** `BoolLike`, `I8Like`, `I16Like`, `I32Like`, `I64Like`, `U8Like`–`U64Like`, `F16Like`, `F32Like`, `F64Like`, `C64Like`, `C128Like`, plus category aliases `IntLike`, `FloatLike`, `NumLike`, `ShapedLike`, etc.
+**Available:** `BoolLike`, `I8Like`, `I16Like`, `I32Like`, `I64Like`, `U8Like`–`U64Like`, `F16Like`, `F32Like`, `F64Like`, `F128Like`, `C64Like`, `C128Like`, `C256Like`, plus category aliases `IntLike`, `FloatLike`, `NumLike`, `ShapedLike`, etc.
 
 Like types are also available in JAX and PyTorch backends:
 
@@ -410,7 +440,7 @@ clamp_pixel(256)    # Raises — out of uint8 range
 clamp_pixel(-1)     # Raises — negative not allowed for unsigned
 ```
 
-**Available:** `BoolScalarLike`, `I8ScalarLike`–`I64ScalarLike`, `U8ScalarLike`–`U64ScalarLike`, `F16ScalarLike`–`F64ScalarLike`, `C64ScalarLike`, `C128ScalarLike`, plus category aliases `IntScalarLike`, `FloatScalarLike`, `NumScalarLike`, etc.
+**Available:** `BoolScalarLike`, `I8ScalarLike`–`I64ScalarLike`, `U8ScalarLike`–`U64ScalarLike`, `F16ScalarLike`–`F128ScalarLike`, `C64ScalarLike`, `C128ScalarLike`, `C256ScalarLike`, plus category aliases `IntScalarLike`, `FloatScalarLike`, `NumScalarLike`, etc.
 
 Also: `StringLike` (str | np.str_).
 
@@ -794,13 +824,13 @@ def f(x: F32[~B, C]) -> F32[~B, C]:  # type: ignore[reportInvalidTypeForm]
 
 ### Like types (`shapix.numpy`)
 
-**ArrayLike:** `BoolLike`, `I8Like`–`I64Like`, `U8Like`–`U64Like`, `F16Like`–`F64Like`, `C64Like`, `C128Like`, `IntLike`, `FloatLike`, `NumLike`, `ShapedLike`, etc.
-**ScalarLike:** `BoolScalarLike`, `I8ScalarLike`–`I64ScalarLike`, `U8ScalarLike`–`U64ScalarLike`, `F16ScalarLike`–`F64ScalarLike`, `C64ScalarLike`, `C128ScalarLike`, `IntScalarLike`, `FloatScalarLike`, `NumScalarLike`, etc.
+**ArrayLike:** `BoolLike`, `I8Like`–`I64Like`, `U8Like`–`U64Like`, `F16Like`–`F128Like`, `C64Like`, `C128Like`, `C256Like`, `IntLike`, `FloatLike`, `NumLike`, `ShapedLike`, etc.
+**ScalarLike:** `BoolScalarLike`, `I8ScalarLike`–`I64ScalarLike`, `U8ScalarLike`–`U64ScalarLike`, `F16ScalarLike`–`F128ScalarLike`, `C64ScalarLike`, `C128ScalarLike`, `C256ScalarLike`, `IntScalarLike`, `FloatScalarLike`, `NumScalarLike`, etc.
 **Other:** `StringLike`, `ArrayLike[scalar, dtype]` (template)
 
 ### JAX/PyTorch (`shapix.jax`, `shapix.torch`)
 
-Same array types as NumPy, plus `BF16` and `BF16Like`. Both export `Like` types, `ScalarLike` types (re-exported from numpy), and `make_scalar_like_type`. JAX also exports `Tree`.
+Most NumPy array types, plus `BF16` and `BF16Like`. NumPy-only extended-precision array aliases such as `F128` / `C256` stay in `shapix.numpy`. Both export `Like` types, `ScalarLike` types (re-exported from numpy), and `make_scalar_like_type`. JAX also exports `Tree`.
 
 ### Factories (`shapix`)
 

@@ -12,6 +12,9 @@ Dimension spec types:
 - :class:`FixedDim` — must match an exact integer (``3``, ``224``).
 - :class:`SymbolicDim` — arithmetic expression evaluated against bound
   dimensions (``N+1``, ``H*W``). Optionally broadcastable.
+- :class:`ValueDim` — arithmetic expression evaluated against runtime call
+  scope (``Value["size"]``, ``Value["self.width + 3"]``). Optionally
+  broadcastable.
 - :class:`VariadicDim` — matches zero or more contiguous dims and binds the
   matched sub-shape (``~spatial``). Optionally broadcastable.
 - :data:`ANONYMOUS` — matches any single dim without binding (``__``).
@@ -24,7 +27,12 @@ error message explaining the mismatch.
 
 from __future__ import annotations
 
+import ast
+import functools
+import numbers
+import operator
 from dataclasses import dataclass
+from collections.abc import Mapping
 
 from ._memo import ShapeMemo
 
@@ -32,6 +40,7 @@ __all__ = [
   "NamedDim",
   "FixedDim",
   "SymbolicDim",
+  "ValueDim",
   "VariadicDim",
   "ANONYMOUS",
   "ANONYMOUS_VARIADIC",
@@ -79,6 +88,18 @@ class SymbolicDim:
 
 
 @dataclass(frozen=True, slots=True)
+class ValueDim:
+  """A runtime value expression evaluated against the current call scope."""
+
+  expr: str
+  broadcastable: bool = False
+
+  def __repr__(self) -> str:
+    prefix = "+" if self.broadcastable else ""
+    return f'{prefix}Value["{self.expr}"]'
+
+
+@dataclass(frozen=True, slots=True)
 class VariadicDim:
   """Matches zero or more contiguous dimensions."""
 
@@ -112,8 +133,29 @@ ANONYMOUS = _Anonymous()
 ANONYMOUS_VARIADIC = _AnonymousVariadic()
 
 type DimSpec = (
-  NamedDim | FixedDim | SymbolicDim | VariadicDim | _Anonymous | _AnonymousVariadic
+  NamedDim
+  | FixedDim
+  | SymbolicDim
+  | ValueDim
+  | VariadicDim
+  | _Anonymous
+  | _AnonymousVariadic
 )
+
+
+_BINOPS: dict[type[ast.operator], object] = {
+  ast.Add: operator.add,
+  ast.Sub: operator.sub,
+  ast.Mult: operator.mul,
+  ast.Div: operator.truediv,
+  ast.FloorDiv: operator.floordiv,
+  ast.Pow: operator.pow,
+  ast.Mod: operator.mod,
+}
+_UNARYOPS: dict[type[ast.unaryop], object] = {
+  ast.UAdd: operator.pos,
+  ast.USub: operator.neg,
+}
 
 
 # ---------------------------------------------------------------------------
@@ -122,7 +164,10 @@ type DimSpec = (
 
 
 def check_shape(
-  shape: tuple[int, ...], spec: tuple[DimSpec, ...], memo: ShapeMemo
+  shape: tuple[int, ...],
+  spec: tuple[DimSpec, ...],
+  memo: ShapeMemo,
+  scope: Mapping[str, object] | None = None,
 ) -> str:
   """Validate *shape* against *spec*, updating *memo* with bindings.
 
@@ -153,7 +198,7 @@ def check_shape(
     # No variadic — exact rank match required
     if len(shape) != len(spec):
       return f"expected {len(spec)} dimensions but got {len(shape)} (shape={shape})"
-    return _check_fixed_dims(spec, shape, memo)
+    return _check_fixed_dims(spec, shape, memo, scope)
 
   # Split around the variadic dim
   n_prefix = variadic_idx
@@ -166,13 +211,13 @@ def check_shape(
     )
 
   # Check prefix
-  err = _check_fixed_dims(spec[:n_prefix], shape[:n_prefix], memo)
+  err = _check_fixed_dims(spec[:n_prefix], shape[:n_prefix], memo, scope)
   if err:
     return err
 
   # Check suffix
   if n_suffix > 0:
-    err = _check_fixed_dims(spec[-n_suffix:], shape[-n_suffix:], memo)
+    err = _check_fixed_dims(spec[-n_suffix:], shape[-n_suffix:], memo, scope)
     if err:
       return err
 
@@ -194,16 +239,21 @@ def check_shape(
 
 
 def _check_fixed_dims(
-  spec: tuple[DimSpec, ...], shape: tuple[int, ...], memo: ShapeMemo
+  spec: tuple[DimSpec, ...],
+  shape: tuple[int, ...],
+  memo: ShapeMemo,
+  scope: Mapping[str, object] | None,
 ) -> str:
   for dim, size in zip(spec, shape):
-    err = _check_one(dim, size, memo)
+    err = _check_one(dim, size, memo, scope)
     if err:
       return err
   return ""
 
 
-def _check_one(dim: DimSpec, size: int, memo: ShapeMemo) -> str:
+def _check_one(
+  dim: DimSpec, size: int, memo: ShapeMemo, scope: Mapping[str, object] | None
+) -> str:
   if isinstance(dim, _Anonymous):
     return ""
 
@@ -227,11 +277,27 @@ def _check_one(dim: DimSpec, size: int, memo: ShapeMemo) -> str:
     if dim.broadcastable and size == 1:
       return ""
     try:
-      expected = eval(dim.expr, {"__builtins__": {}}, memo.single)  # noqa: S307
+      expected = _evaluate_dim_expr(dim.expr, memo.single, allow_attr=False)
     except Exception as e:
       return f"cannot evaluate '{dim.expr}': {e}"
-    if expected != size:
-      return f"dimension '{dim.expr}' evaluated to {expected} but got {size}"
+    err = _check_expected_value(dim.expr, expected, size)
+    if err:
+      return err
+    return ""
+
+  if isinstance(dim, ValueDim):
+    if dim.broadcastable and size == 1:
+      return ""
+    try:
+      names = dict(memo.single)
+      if scope is not None:
+        names.update(scope)
+      expected = _evaluate_dim_expr(dim.expr, names, allow_attr=True)
+    except Exception as e:
+      return f"cannot evaluate {dim!r}: {e}"
+    err = _check_expected_value(repr(dim), expected, size)
+    if err:
+      return err
     return ""
 
   return f"internal error: unrecognized dim spec {dim!r}"
@@ -263,3 +329,97 @@ def _check_variadic(dim: VariadicDim, shape: tuple[int, ...], memo: ShapeMemo) -
     return ""
 
   return f"variadic '~{dim.name}' shape {shape} does not match existing {prev_shape}"
+
+
+def _check_expected_value(label: str, expected: object, size: int) -> str:
+  if isinstance(expected, bool) or not isinstance(expected, numbers.Real):
+    return f"dimension '{label}' resolved to non-real value {expected!r}"
+  if expected != size:
+    return f"dimension '{label}' evaluated to {expected} but got {size}"
+  return ""
+
+
+@functools.lru_cache(maxsize=512)
+def _parse_expr(expr: str, *, allow_attr: bool) -> ast.Expression:
+  try:
+    tree = ast.parse(expr, mode="eval")
+  except SyntaxError as e:  # pragma: no cover - exercised via public errors
+    raise ValueError(f"invalid syntax: {e.msg}") from e
+  _validate_expr(tree, allow_attr=allow_attr)
+  return tree
+
+
+def _validate_expr(node: ast.AST, *, allow_attr: bool) -> None:
+  if isinstance(node, ast.Expression):
+    _validate_expr(node.body, allow_attr=allow_attr)
+    return
+
+  if isinstance(node, ast.BinOp):
+    if type(node.op) not in _BINOPS:
+      raise ValueError(f"unsupported operator '{type(node.op).__name__}'")
+    _validate_expr(node.left, allow_attr=allow_attr)
+    _validate_expr(node.right, allow_attr=allow_attr)
+    return
+
+  if isinstance(node, ast.UnaryOp):
+    if type(node.op) not in _UNARYOPS:
+      raise ValueError(f"unsupported unary operator '{type(node.op).__name__}'")
+    _validate_expr(node.operand, allow_attr=allow_attr)
+    return
+
+  if isinstance(node, ast.Name):
+    return
+
+  if isinstance(node, ast.Attribute):
+    if not allow_attr:
+      raise ValueError("attribute access is not allowed here")
+    if node.attr.startswith("__"):
+      raise ValueError("dunder attribute access is not allowed")
+    _validate_expr(node.value, allow_attr=allow_attr)
+    return
+
+  if isinstance(node, ast.Constant):
+    value = node.value
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+      raise ValueError(f"unsupported literal {value!r}")
+    return
+
+  raise ValueError(
+    f"unsupported expression form '{ast.dump(node, include_attributes=False)}'"
+  )
+
+
+def _evaluate_dim_expr(
+  expr: str, names: Mapping[str, object], *, allow_attr: bool
+) -> object:
+  tree = _parse_expr(expr, allow_attr=allow_attr)
+  return _evaluate_expr_node(tree.body, names)
+
+
+def _evaluate_expr_node(node: ast.AST, names: Mapping[str, object]) -> object:
+  if isinstance(node, ast.BinOp):
+    left = _evaluate_expr_node(node.left, names)
+    right = _evaluate_expr_node(node.right, names)
+    return _BINOPS[type(node.op)](left, right)  # type: ignore[index]
+
+  if isinstance(node, ast.UnaryOp):
+    operand = _evaluate_expr_node(node.operand, names)
+    return _UNARYOPS[type(node.op)](operand)  # type: ignore[index]
+
+  if isinstance(node, ast.Name):
+    try:
+      return names[node.id]
+    except KeyError as e:
+      raise NameError(f"unknown name '{node.id}'") from e
+
+  if isinstance(node, ast.Attribute):
+    base = _evaluate_expr_node(node.value, names)
+    try:
+      return getattr(base, node.attr)
+    except AttributeError as e:
+      raise AttributeError(f"object {base!r} has no attribute '{node.attr}'") from e
+
+  if isinstance(node, ast.Constant):
+    return node.value
+
+  raise ValueError(f"unsupported expression node '{type(node).__name__}'")

@@ -73,8 +73,10 @@ __all__ = [
   "F16",
   "F32",
   "F64",
+  "F128",
   "C64",
   "C128",
+  "C256",
   # Array types — categories
   "Int",
   "UInt",
@@ -108,8 +110,10 @@ __all__ = [
   "F16ScalarLike",
   "F32ScalarLike",
   "F64ScalarLike",
+  "F128ScalarLike",
   "C64ScalarLike",
   "C128ScalarLike",
+  "C256ScalarLike",
   "IntScalarLike",
   "UIntScalarLike",
   "IntegerScalarLike",
@@ -136,8 +140,10 @@ __all__ = [
   "F16Like",
   "F32Like",
   "F64Like",
+  "F128Like",
   "C64Like",
   "C128Like",
+  "C256Like",
   "IntLike",
   "UIntLike",
   "IntegerLike",
@@ -156,11 +162,13 @@ from ._dtypes import (
   COMPLEX,
   COMPLEX64,
   COMPLEX128,
+  COMPLEX256,
   DATETIME64,
   FLOAT,
   FLOAT16,
   FLOAT32,
   FLOAT64,
+  FLOAT128,
   INEXACT,
   INT,
   INT8,
@@ -198,6 +206,10 @@ _UINT64_MAX = np.iinfo(np.uint64).max
 _FLOAT16_MIN, _FLOAT16_MAX = np.finfo(np.float16).min, np.finfo(np.float16).max
 _FLOAT32_MIN, _FLOAT32_MAX = np.finfo(np.float32).min, np.finfo(np.float32).max
 _FLOAT64_MIN, _FLOAT64_MAX = np.finfo(np.float64).min, np.finfo(np.float64).max
+_FLOAT128_MIN, _FLOAT128_MAX = (
+  np.finfo(np.longdouble).min,
+  np.finfo(np.longdouble).max,
+)
 
 
 def _ge(v: object):  # noqa: ANN202
@@ -218,14 +230,12 @@ type BoolScalarLike = bool | np.bool_
 type I8ScalarLike = A[int | np.integer[tp.Any], _ge(_INT8_MIN) & _le(_INT8_MAX)]  # type: ignore[type-arg]
 type I16ScalarLike = A[int | np.integer[tp.Any], _ge(_INT16_MIN) & _le(_INT16_MAX)]  # type: ignore[type-arg]
 type I32ScalarLike = A[int | np.integer[tp.Any], _ge(_INT32_MIN) & _le(_INT32_MAX)]  # type: ignore[type-arg]
-type I64ScalarLike = (
-  A[int, _ge(_INT64_MIN) & _le(_INT64_MAX)] | np.integer[tp.Any]
-)  # Any numpy integer is in int64 range
+type I64ScalarLike = A[int | np.integer[tp.Any], _ge(_INT64_MIN) & _le(_INT64_MAX)]  # type: ignore[type-arg]
 
 type U8ScalarLike = A[int | np.integer[tp.Any], _ge(0) & _le(_UINT8_MAX)]  # type: ignore[type-arg]
 type U16ScalarLike = A[int | np.integer[tp.Any], _ge(0) & _le(_UINT16_MAX)]  # type: ignore[type-arg]
 type U32ScalarLike = A[int | np.integer[tp.Any], _ge(0) & _le(_UINT32_MAX)]  # type: ignore[type-arg]
-type U64ScalarLike = A[int, _ge(0) & _le(_UINT64_MAX)] | A[np.integer[tp.Any], _ge(0)]  # type: ignore[type-arg]
+type U64ScalarLike = A[int | np.integer[tp.Any], _ge(0) & _le(_UINT64_MAX)]  # type: ignore[type-arg]
 
 type F16ScalarLike = A[
   float | np.floating[tp.Any], _ge(_FLOAT16_MIN) & _le(_FLOAT16_MAX)
@@ -236,9 +246,13 @@ type F32ScalarLike = A[
 type F64ScalarLike = A[
   float | np.floating[tp.Any], _ge(_FLOAT64_MIN) & _le(_FLOAT64_MAX)
 ]  # type: ignore[type-arg]
+type F128ScalarLike = A[
+  float | np.floating[tp.Any], _ge(_FLOAT128_MIN) & _le(_FLOAT128_MAX)
+]  # type: ignore[type-arg]
 
 type C64ScalarLike = complex | np.complexfloating[tp.Any, tp.Any]
 type C128ScalarLike = complex | np.complexfloating[tp.Any, tp.Any]
+type C256ScalarLike = complex | np.complexfloating[tp.Any, tp.Any]
 
 type IntScalarLike = I64ScalarLike
 type UIntScalarLike = U64ScalarLike
@@ -246,7 +260,7 @@ type IntegerScalarLike = int | np.integer[tp.Any]
 type FloatScalarLike = F64ScalarLike
 type RealScalarLike = int | float | np.integer[tp.Any] | np.floating[tp.Any]
 type ComplexScalarLike = complex | np.complexfloating[tp.Any, tp.Any]
-type InexactScalarLike = int | float | complex | np.inexact[tp.Any]
+type InexactScalarLike = float | complex | np.inexact[tp.Any]
 type NumScalarLike = int | float | complex | np.number[tp.Any]
 type ShapedScalarLike = bool | np.bool_ | NumScalarLike
 
@@ -305,9 +319,11 @@ if tp.TYPE_CHECKING:
   type F16[*Dims] = NDArray[np.float16]
   type F32[*Dims] = NDArray[np.float32]
   type F64[*Dims] = NDArray[np.float64]
+  type F128[*Dims] = NDArray[np.longdouble]
 
   type C64[*Dims] = NDArray[np.complex64]
   type C128[*Dims] = NDArray[np.complex128]
+  type C256[*Dims] = NDArray[np.clongdouble]
 
   type Int[*Dims] = NDArray[np.signedinteger[tp.Any]]
   type UInt[*Dims] = NDArray[np.unsignedinteger[tp.Any]]
@@ -343,9 +359,11 @@ if tp.TYPE_CHECKING:
   type F16Like[*Dims] = ArrayLike[float, np.float16]
   type F32Like[*Dims] = ArrayLike[float, np.float32]
   type F64Like[*Dims] = ArrayLike[float, np.float64]
+  type F128Like[*Dims] = ArrayLike[float, np.longdouble]
 
   type C64Like[*Dims] = ArrayLike[complex, np.complex64]
   type C128Like[*Dims] = ArrayLike[complex, np.complex128]
+  type C256Like[*Dims] = ArrayLike[complex, np.clongdouble]
 
   type IntLike[*Dims] = ArrayLike[int, np.signedinteger[tp.Any]]
   type UIntLike[*Dims] = ArrayLike[int, np.unsignedinteger[tp.Any]]
@@ -378,9 +396,11 @@ else:
   F16 = make_array_type(np.ndarray, FLOAT16)
   F32 = make_array_type(np.ndarray, FLOAT32)
   F64 = make_array_type(np.ndarray, FLOAT64)
+  F128 = make_array_type(np.ndarray, FLOAT128)
 
   C64 = make_array_type(np.ndarray, COMPLEX64)
   C128 = make_array_type(np.ndarray, COMPLEX128)
+  C256 = make_array_type(np.ndarray, COMPLEX256)
 
   Int = make_array_type(np.ndarray, INT)
   UInt = make_array_type(np.ndarray, UINT)
@@ -416,9 +436,11 @@ else:
   F16Like = make_array_like_type(FLOAT16, name="F16Like")
   F32Like = make_array_like_type(FLOAT32, name="F32Like")
   F64Like = make_array_like_type(FLOAT64, name="F64Like")
+  F128Like = make_array_like_type(FLOAT128, name="F128Like")
 
   C64Like = make_array_like_type(COMPLEX64, name="C64Like")
   C128Like = make_array_like_type(COMPLEX128, name="C128Like")
+  C256Like = make_array_like_type(COMPLEX256, name="C256Like")
 
   IntLike = make_array_like_type(INT, name="IntLike")
   UIntLike = make_array_like_type(UINT, name="UIntLike")

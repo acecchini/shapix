@@ -33,8 +33,10 @@ __all__ = [
   "FLOAT16",
   "FLOAT32",
   "FLOAT64",
+  "FLOAT128",
   "COMPLEX64",
   "COMPLEX128",
+  "COMPLEX256",
   "VOID",
   "STRING",
   "BYTES",
@@ -84,6 +86,9 @@ __all__ = [
   "FLOAT64_LE",
   "FLOAT64_BE",
   "FLOAT64_N",
+  "FLOAT128_LE",
+  "FLOAT128_BE",
+  "FLOAT128_N",
   # Endianness — complex
   "COMPLEX64_LE",
   "COMPLEX64_BE",
@@ -91,6 +96,9 @@ __all__ = [
   "COMPLEX128_LE",
   "COMPLEX128_BE",
   "COMPLEX128_N",
+  "COMPLEX256_LE",
+  "COMPLEX256_BE",
+  "COMPLEX256_N",
   # Endianness — category groups
   "INT_LE",
   "INT_BE",
@@ -247,6 +255,18 @@ def extract_dtype_str(obj: object) -> str:
   if dtype is None:
     return ""
 
+  # NumPy / JAX: dtype.name gives canonical names like "float32", "float128",
+  # "complex256", "datetime64", "str", ...
+  dtype_name = getattr(dtype, "name", None)
+  if isinstance(dtype_name, str) and dtype_name:
+    if dtype_name.startswith("void"):
+      return "void"
+    if dtype_name.startswith("bytes"):
+      return "bytes"
+    if dtype_name.startswith("str"):
+      return "str"
+    return dtype_name
+
   # NumPy / JAX: dtype.type.__name__ (e.g. "float32")
   dtype_type = getattr(dtype, "type", None)
   if dtype_type is not None:
@@ -309,16 +329,18 @@ BFLOAT16 = DtypeSpec("BFloat16", frozenset({"bfloat16"}))
 FLOAT16 = DtypeSpec("Float16", frozenset({"float16"}))
 FLOAT32 = DtypeSpec("Float32", frozenset({"float32"}))
 FLOAT64 = DtypeSpec("Float64", frozenset({"float64"}))
+FLOAT128 = DtypeSpec("Float128", frozenset({"float128", "longdouble"}))
 
 # Complex
 COMPLEX64 = DtypeSpec("Complex64", frozenset({"complex64"}))
 COMPLEX128 = DtypeSpec("Complex128", frozenset({"complex128"}))
+COMPLEX256 = DtypeSpec("Complex256", frozenset({"complex256", "clongdouble"}))
 
 # Void / structured / string / object / datetime
 VOID = DtypeSpec("Void", frozenset({"void"}))
-STRING = DtypeSpec("Str", frozenset({"str_"}))
-BYTES = DtypeSpec("Bytes", frozenset({"bytes_"}))
-OBJECT = DtypeSpec("Obj", frozenset({"object_"}))
+STRING = DtypeSpec("Str", frozenset({"str_", "str"}))
+BYTES = DtypeSpec("Bytes", frozenset({"bytes_", "bytes"}))
+OBJECT = DtypeSpec("Obj", frozenset({"object_", "object"}))
 DATETIME64 = DtypeSpec("DateTime64", frozenset({"datetime64"}))
 TIMEDELTA64 = DtypeSpec("TimeDelta64", frozenset({"timedelta64"}))
 
@@ -361,6 +383,9 @@ FLOAT32_N = _native(FLOAT32)
 FLOAT64_LE = _le(FLOAT64)
 FLOAT64_BE = _be(FLOAT64)
 FLOAT64_N = _native(FLOAT64)
+FLOAT128_LE = _le(FLOAT128)
+FLOAT128_BE = _be(FLOAT128)
+FLOAT128_N = _native(FLOAT128)
 
 # Complex
 COMPLEX64_LE = _le(COMPLEX64)
@@ -369,6 +394,9 @@ COMPLEX64_N = _native(COMPLEX64)
 COMPLEX128_LE = _le(COMPLEX128)
 COMPLEX128_BE = _be(COMPLEX128)
 COMPLEX128_N = _native(COMPLEX128)
+COMPLEX256_LE = _le(COMPLEX256)
+COMPLEX256_BE = _be(COMPLEX256)
+COMPLEX256_N = _native(COMPLEX256)
 
 # ---------------------------------------------------------------------------
 # Pre-defined dtype specs — category groups
@@ -376,8 +404,14 @@ COMPLEX128_N = _native(COMPLEX128)
 
 _INTS = INT8.allowed | INT16.allowed | INT32.allowed | INT64.allowed
 _UINTS = UINT8.allowed | UINT16.allowed | UINT32.allowed | UINT64.allowed
-_FLOATS = BFLOAT16.allowed | FLOAT16.allowed | FLOAT32.allowed | FLOAT64.allowed
-_COMPLEXES = COMPLEX64.allowed | COMPLEX128.allowed
+_FLOATS = (
+  BFLOAT16.allowed
+  | FLOAT16.allowed
+  | FLOAT32.allowed
+  | FLOAT64.allowed
+  | FLOAT128.allowed
+)
+_COMPLEXES = COMPLEX64.allowed | COMPLEX128.allowed | COMPLEX256.allowed
 
 INT = DtypeSpec("Int", _INTS)
 UINT = DtypeSpec("UInt", _UINTS)

@@ -11,6 +11,7 @@ automatically with ``@beartype``.  These are provided for:
 from __future__ import annotations
 
 import functools
+import inspect
 from collections.abc import Callable
 from typing import overload
 
@@ -47,6 +48,7 @@ def check[**P, R](
 
   def decorator(fn: Callable[P, R]) -> Callable[P, R]:
     inner = fn
+    signature = inspect.signature(fn)
     if conf is not None:
       from beartype import beartype
 
@@ -54,7 +56,9 @@ def check[**P, R](
 
     @functools.wraps(fn)
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-      push_memo()
+      bound = signature.bind_partial(*args, **kwargs)
+      bound.apply_defaults()
+      push_memo(scope=dict(bound.arguments))
       try:
         return inner(*args, **kwargs)  # type: ignore[return-value]
       finally:

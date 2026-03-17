@@ -18,9 +18,9 @@ from beartype.roar import (
 )
 
 import shapix
-from shapix import B, C, H, N, Dimension, __
+from shapix import B, C, H, N, Dimension, Value, __
 from shapix._array_types import _ArrayFactory, make_array_like_type, make_array_type
-from shapix._dtypes import FLOAT32, DtypeSpec
+from shapix._dtypes import COMPLEX256, FLOAT32, FLOAT128, DtypeSpec
 from shapix.numpy import (
   Bool,
   BoolLike,
@@ -28,16 +28,22 @@ from shapix.numpy import (
   F32,
   F32Like,
   F64,
+  F128,
+  F128Like,
   Float,
   I8ScalarLike,
   I32,
   I64,
+  I64ScalarLike,
   I64Like,
+  InexactScalarLike,
   Int,
   Num,
   Shaped,
   U8,
   U8ScalarLike,
+  C256,
+  C256Like,
 )
 
 
@@ -138,6 +144,34 @@ class TestDtypeReturnViolations:
 
     with pytest.raises(BeartypeCallHintReturnViolation):
       f(np.ones(3, dtype=np.float32))
+
+
+class TestExtendedPrecisionDtypes:
+  @pytest.mark.skipif(
+    np.dtype(np.longdouble).name not in FLOAT128.allowed,
+    reason="platform does not expose float128/longdouble distinctly",
+  )
+  def test_f128(self) -> None:
+    @beartype
+    def f(x: F128[N]) -> F128[N]:
+      return x
+
+    arr = np.ones(3, dtype=np.longdouble)
+    assert f(arr).dtype == arr.dtype
+    assert is_bearable(arr, F128Like[...])
+
+  @pytest.mark.skipif(
+    np.dtype(np.clongdouble).name not in COMPLEX256.allowed,
+    reason="platform does not expose complex256/clongdouble distinctly",
+  )
+  def test_c256(self) -> None:
+    @beartype
+    def f(x: C256[N]) -> C256[N]:
+      return x
+
+    arr = np.ones(3, dtype=np.clongdouble)
+    assert f(arr).dtype == arr.dtype
+    assert is_bearable(arr, C256Like[...])
 
   def test_return_wrong_category_dtype(self) -> None:
     @beartype
@@ -380,6 +414,35 @@ class TestSymbolicDims:
 
     with pytest.raises(BeartypeCallHintReturnViolation):
       f(np.ones((3, 4), dtype=np.float32))
+
+
+class TestValueExpressions:
+  def test_value_expr_from_argument(self) -> None:
+    @beartype
+    def f(size: int, x: F32[Value["size"]]) -> F32[Value["size"]]:  # noqa: F821
+      return x
+
+    arr = np.ones(4, dtype=np.float32)
+    assert f(4, arr).shape == (4,)
+    with pytest.raises(BeartypeCallHintParamViolation):
+      f(5, arr)
+
+  def test_value_expr_from_self_attribute(self) -> None:
+    class SomeClass:
+      size = 5
+
+      @beartype
+      def full(self) -> F32[Value["self.size + 3"]]:  # noqa: F821
+        return np.ones(self.size + 3, dtype=np.float32)
+
+    assert SomeClass().full().shape == (8,)
+
+  def test_value_expr_can_mix_scope_and_bound_dims(self) -> None:
+    @beartype
+    def f(x: F32[N], pad: int) -> F32[Value["N + pad"]]:  # noqa: F821
+      return np.ones(x.shape[0] + pad, dtype=np.float32)
+
+    assert f(np.ones(4, dtype=np.float32), 2).shape == (6,)
 
 
 # =====================================================================
@@ -1036,6 +1099,12 @@ class TestScalarLikeBoundaries:
     assert is_bearable(np.int8(42), I8ScalarLike)
     assert is_bearable(np.uint8(200), U8ScalarLike)
 
+  def test_i64_scalar_like_rejects_out_of_range_numpy_integer(self) -> None:
+    assert not is_bearable(np.uint64(2**63), I64ScalarLike)
+
+  def test_inexact_scalar_like_rejects_int(self) -> None:
+    assert not is_bearable(1, InexactScalarLike)
+
 
 # =====================================================================
 # ArrayLike shape constraint violations
@@ -1533,9 +1602,5 @@ class TestScalarLikeCastingVariants:
     assert not is_bearable([1.0, 2.0], T)
     assert not is_bearable(np.ones(3), T)
 
-  def test_make_scalar_like_type_from_init(self) -> None:
-    """Factory is importable from shapix top-level."""
-    from shapix import make_scalar_like_type as factory
-
-    T = factory(np.float32, casting="same_kind")
-    assert is_bearable(1.0, T)
+  def test_make_scalar_like_type_not_reexported_from_init(self) -> None:
+    assert not hasattr(shapix, "make_scalar_like_type")

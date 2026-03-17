@@ -23,6 +23,7 @@ Dimension symbols
     ``B``, ``N``, ``P``, ``L``, ``C``, ``D``, ``K``, ``H``, ``W`` — named dimensions.
     ``__`` — anonymous (match any single dim, no binding).
     ``Scalar`` — scalar (no dimensions).
+    ``Value["expr"]`` — explicit runtime value expression for shape dims.
 
 Tree structure symbols
     ``T``, ``S`` — named tree structure symbols.
@@ -45,8 +46,6 @@ Functions
     custom array classes.
     :func:`make_array_like_type` — create subscriptable array-like type
     factories with configurable dtype casting.
-    :func:`make_scalar_like_type` — create casting-aware scalar-like types
-    (from ``shapix.numpy``).
     :func:`check` — optional decorator for explicit memo management.
     Also supports combined mode: ``@check(conf=BeartypeConf())``.
 
@@ -77,6 +76,6 @@ from ._dimensions import L as L
 from ._dimensions import N as N
 from ._dimensions import P as P
 from ._dimensions import Scalar as Scalar
+from ._dimensions import Value as Value
 from ._dimensions import W as W
 from ._dtypes import DtypeSpec as DtypeSpec
-from .numpy import make_scalar_like_type as make_scalar_like_type

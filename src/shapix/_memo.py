@@ -1,4 +1,4 @@
-"""Thread-safe memo management for cross-argument dimension consistency.
+"""Thread-safe memo and scope management for shape checking.
 
 Two modes of operation:
 
@@ -17,9 +17,10 @@ from __future__ import annotations
 
 import sys
 import threading
+import inspect
 from dataclasses import dataclass, field
 
-__all__ = ["ShapeMemo", "get_memo", "push_memo", "pop_memo"]
+__all__ = ["ShapeMemo", "get_memo", "get_scope", "push_memo", "pop_memo"]
 
 
 @dataclass
@@ -66,17 +67,22 @@ _local = threading.local()
 # ---------------------------------------------------------------------------
 
 
-def push_memo() -> ShapeMemo:
-  """Push a fresh memo onto the explicit stack. Pair with :func:`pop_memo`."""
+def push_memo(
+  memo: ShapeMemo | None = None, *, scope: dict[str, object] | None = None
+) -> ShapeMemo:
+  """Push a memo onto the explicit stack. Pair with :func:`pop_memo`."""
   stack = _get_explicit_stack()
-  memo = ShapeMemo()
+  if memo is None:
+    memo = ShapeMemo()
   stack.append(memo)
+  _get_explicit_scope_stack().append(scope)
   return memo
 
 
 def pop_memo() -> None:
   """Pop the most recent explicit memo."""
   _get_explicit_stack().pop()
+  _get_explicit_scope_stack().pop()
 
 
 def _get_explicit_stack() -> list[ShapeMemo]:
@@ -85,6 +91,15 @@ def _get_explicit_stack() -> list[ShapeMemo]:
   except AttributeError:
     stack: list[ShapeMemo] = []
     _local.explicit_stack = stack
+    return stack
+
+
+def _get_explicit_scope_stack() -> list[dict[str, object] | None]:
+  try:
+    return _local.explicit_scope_stack  # type: ignore[has-type]
+  except AttributeError:
+    stack: list[dict[str, object] | None] = []
+    _local.explicit_scope_stack = stack
     return stack
 
 
@@ -169,6 +184,38 @@ def get_memo(_depth: int = 2) -> ShapeMemo:
   memo = ShapeMemo()
   stack.append((frame_id, code, lasti, memo))
   return memo
+
+
+def get_scope(_depth: int = 2) -> dict[str, object]:
+  """Return the current runtime scope for ``Value[...]`` expressions."""
+  explicit = _get_explicit_scope_stack()
+  if explicit and explicit[-1] is not None:
+    return explicit[-1]
+
+  try:
+    frame = sys._getframe(_depth)
+  except ValueError:
+    return {}
+
+  locals_map = dict(frame.f_locals)
+
+  # beartype wrappers expose runtime arguments as ``args`` / ``kwargs`` plus
+  # the wrapped function object. Rebind those to parameter names so
+  # ``Value["size"]`` and ``Value["self.attr"]`` work for both param and
+  # return validation.
+  fn = locals_map.get("__beartype_func")
+  args = locals_map.get("args")
+  kwargs = locals_map.get("kwargs")
+  if callable(fn) and isinstance(args, tuple) and isinstance(kwargs, dict):
+    try:
+      bound = inspect.signature(fn).bind_partial(*args, **kwargs)
+    except TypeError:
+      pass
+    else:
+      bound.apply_defaults()
+      return dict(bound.arguments)
+
+  return locals_map
 
 
 # ---------------------------------------------------------------------------

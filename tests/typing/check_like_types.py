@@ -9,10 +9,12 @@ from shapix.numpy import (
   BoolScalarLike,
   C64ScalarLike,
   C128ScalarLike,
+  C256ScalarLike,
   ComplexScalarLike,
   F16ScalarLike,
   F32ScalarLike,
   F64ScalarLike,
+  F128ScalarLike,
   FloatScalarLike,
   I8ScalarLike,
   I16ScalarLike,
@@ -73,6 +75,7 @@ _arr_like = ArrayLike  # type: ignore[type-arg]  # ArrayLike is a generic type a
 _f16: F16ScalarLike = 1.0
 _f32: F32ScalarLike = 1.0
 _f64: F64ScalarLike = 1.0
+_f128: F128ScalarLike = 1.0
 _fl: FloatScalarLike = 1.0
 
 # Int types
@@ -100,6 +103,7 @@ _shaped: ShapedScalarLike = True
 # Complex types
 _c64: C64ScalarLike = 1 + 0j
 _c128: C128ScalarLike = 1 + 0j
+_c256: C256ScalarLike = 1 + 0j
 
 # ---------------------------------------------------------------------------
 # ArrayLike types — verify import

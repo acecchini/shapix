@@ -20,6 +20,7 @@ from shapix import (
   Scalar,
   Structure,
   T,
+  Value,
   W,
   __,
   check,
@@ -39,7 +40,8 @@ assert callable(check_context)
 assert callable(make_array_type)
 
 # DtypeSpec is a class
-_ = DtypeSpec
+_dtype_spec_cls = DtypeSpec
+_value_marker = Value
 
 # ---------------------------------------------------------------------------
 # Dimension arithmetic — all binary operators

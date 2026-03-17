@@ -102,16 +102,17 @@ class _TreeChecker:
     tree_ops = self._get_ops()
     from beartype.door import is_bearable
 
-    from ._memo import _get_explicit_stack, get_memo
+    from ._memo import get_memo, get_scope, pop_memo, push_memo
 
-    # Bridge memo context so is_bearable → _ShapeChecker → get_memo() works
+    # Bridge memo + runtime scope so leaf checks reuse the caller's bindings
+    # and can resolve ``Value[...]`` expressions against the same parameters.
     memo = get_memo(_depth=3)
-    stack = _get_explicit_stack()
-    stack.append(memo)
+    scope = get_scope(_depth=3)
+    push_memo(memo, scope=scope)
     try:
       return self._validate(obj, tree_ops, is_bearable, memo)
     finally:
-      stack.pop()
+      pop_memo()
 
   def _validate(
     self, obj: object, tree_ops: tp.Any, is_bearable: tp.Any, memo: tp.Any

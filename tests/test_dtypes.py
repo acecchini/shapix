@@ -10,10 +10,12 @@ from shapix._dtypes import (
   COMPLEX,
   COMPLEX64,
   COMPLEX128,
+  COMPLEX256,
   FLOAT,
   FLOAT16,
   FLOAT32,
   FLOAT64,
+  FLOAT128,
   INT,
   INT8,
   INT16,
@@ -371,3 +373,24 @@ class TestByteorderMatching:
       dtype = FakeDtype()
 
     assert FLOAT32_LE._check_byteorder(FakeArr())
+
+
+class TestExtendedPrecisionDtypes:
+  @pytest.mark.skipif(
+    np.dtype(np.longdouble).name not in FLOAT128.allowed,
+    reason="platform does not expose float128/longdouble distinctly",
+  )
+  def test_float128_matches(self) -> None:
+    arr = np.zeros(2, dtype=np.longdouble)
+    assert extract_dtype_str(arr) in FLOAT128.allowed
+    assert FLOAT128.matches(arr)
+
+  @pytest.mark.skipif(
+    np.dtype(np.clongdouble).name not in COMPLEX256.allowed,
+    reason="platform does not expose complex256/clongdouble distinctly",
+  )
+  def test_complex256_matches(self) -> None:
+    arr = np.zeros(2, dtype=np.clongdouble)
+    assert extract_dtype_str(arr) in COMPLEX256.allowed
+    assert COMPLEX256.matches(arr)
+    assert COMPLEX.matches(arr)

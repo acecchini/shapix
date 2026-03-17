@@ -28,16 +28,19 @@ from typing import Annotated
 
 from beartype.vale import Is
 
-from ._dimensions import Dimension
+from ._dimensions import Dimension, _ValueExpr
 from ._dtypes import DtypeSpec
 from ._dtypes import extract_dtype_str as extract_dtype_str
 from ._memo import ShapeMemo as ShapeMemo
-from ._memo import get_memo
+from ._memo import get_memo, get_scope
 from ._shape import (
+  ANONYMOUS,
   ANONYMOUS_VARIADIC,
   DimSpec,
   FixedDim,
   NamedDim,
+  SymbolicDim,
+  ValueDim,
   VariadicDim,
   _AnonymousVariadic,
   check_shape,
@@ -92,9 +95,10 @@ class _StructChecker:
       return False
 
     memo = get_memo(_depth=3)
+    scope = get_scope(_depth=3)
     snap = memo.snapshot()
 
-    result = check_shape(tuple(shape), self._shape_spec, memo) == ""
+    result = check_shape(tuple(shape), self._shape_spec, memo, scope) == ""
 
     if not result:
       memo.restore(snap)
@@ -220,11 +224,12 @@ class _ArrayLikeChecker:
       return False
 
     memo = get_memo(_depth=3)
+    scope = get_scope(_depth=3)
 
     # Fast path: obj already has shape + dtype (np.ndarray, Tensor, jax.Array)
     shape = getattr(obj, "shape", None)
     if shape is not None and getattr(obj, "dtype", None) is not None:
-      result = self._check(obj, tuple(shape), memo)
+      result = self._check(obj, tuple(shape), memo, scope)
       if not result:
         self._fail_obj = obj
       return result
@@ -237,7 +242,7 @@ class _ArrayLikeChecker:
       self._fail_obj = obj
       return False
 
-    result = self._check(arr, tuple(arr.shape), memo)  # type: ignore[union-attr]
+    result = self._check(arr, tuple(arr.shape), memo, scope)  # type: ignore[union-attr]
     if not result:
       self._fail_obj = obj
     return result
@@ -257,13 +262,15 @@ class _ArrayLikeChecker:
     except (TypeError, ValueError):
       return None
 
-  def _check(self, obj: object, shape: tuple[int, ...], memo: ShapeMemo) -> bool:
+  def _check(
+    self, obj: object, shape: tuple[int, ...], memo: ShapeMemo, scope: dict[str, object]
+  ) -> bool:
     """Validate dtype (with casting rules) then shape (with memo)."""
     if not self._check_dtype(obj):
       return False
 
     snap = memo.snapshot()
-    result = check_shape(shape, self._shape_spec, memo) == ""
+    result = check_shape(shape, self._shape_spec, memo, scope) == ""
     if not result:
       memo.restore(snap)
     return result
@@ -402,14 +409,24 @@ def _to_shape_spec(dims: tuple[object, ...]) -> tuple[DimSpec, ...]:
   for d in dims:
     if d is Ellipsis:
       specs.append(ANONYMOUS_VARIADIC)
+    elif d is ANONYMOUS or d is ANONYMOUS_VARIADIC:
+      specs.append(d)
     elif isinstance(d, int):
       specs.append(FixedDim(d))
+    elif isinstance(d, (FixedDim, NamedDim, SymbolicDim, ValueDim, VariadicDim)):
+      specs.append(d)
     elif isinstance(d, Dimension):
       spec = d._dim_spec  # noqa: SLF001
       if spec is not None:
         specs.append(spec)
+    elif isinstance(d, _ValueExpr):
+      specs.append(d._dim_spec)  # noqa: SLF001
     else:
-      specs.append(NamedDim(str(d), broadcastable=False))
+      msg = (
+        "Invalid shape token "
+        f"{d!r}; expected int, Ellipsis, Dimension, Value[...], or a DimSpec"
+      )
+      raise TypeError(msg)
 
   variadic_count = sum(
     1 for s in specs if isinstance(s, (VariadicDim, _AnonymousVariadic))

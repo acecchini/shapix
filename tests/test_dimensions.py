@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-from shapix._dimensions import Dimension
+from shapix._dimensions import Dimension, Value
 from shapix._shape import (
   ANONYMOUS,
   ANONYMOUS_VARIADIC,
   FixedDim,
   NamedDim,
   SymbolicDim,
+  ValueDim,
   VariadicDim,
 )
 
@@ -218,3 +219,17 @@ class TestDimSpecEdgeCases:
     spec = d._dim_spec
     assert isinstance(spec, SymbolicDim)
     assert spec.expr == "(N+C)"
+
+
+class TestValueExpressions:
+  def test_value_expr(self) -> None:
+    spec = Value["size"]._dim_spec  # noqa: SLF001
+    assert isinstance(spec, ValueDim)
+    assert spec.expr == "size"
+    assert spec.broadcastable is False
+
+  def test_broadcastable_value_expr(self) -> None:
+    spec = (+Value["size"])._dim_spec  # noqa: SLF001
+    assert isinstance(spec, ValueDim)
+    assert spec.expr == "size"
+    assert spec.broadcastable is True

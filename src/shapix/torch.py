@@ -94,8 +94,10 @@ __all__ = [
   "F16ScalarLike",
   "F32ScalarLike",
   "F64ScalarLike",
+  "F128ScalarLike",
   "C64ScalarLike",
   "C128ScalarLike",
+  "C256ScalarLike",
   "IntScalarLike",
   "UIntScalarLike",
   "IntegerScalarLike",
@@ -142,10 +144,12 @@ from ._dtypes import (
 from .numpy import BoolScalarLike as BoolScalarLike
 from .numpy import C64ScalarLike as C64ScalarLike
 from .numpy import C128ScalarLike as C128ScalarLike
+from .numpy import C256ScalarLike as C256ScalarLike
 from .numpy import ComplexScalarLike as ComplexScalarLike
 from .numpy import F16ScalarLike as F16ScalarLike
 from .numpy import F32ScalarLike as F32ScalarLike
 from .numpy import F64ScalarLike as F64ScalarLike
+from .numpy import F128ScalarLike as F128ScalarLike
 from .numpy import FloatScalarLike as FloatScalarLike
 from .numpy import I8ScalarLike as I8ScalarLike
 from .numpy import I16ScalarLike as I16ScalarLike
