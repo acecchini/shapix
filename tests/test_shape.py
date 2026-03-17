@@ -183,3 +183,26 @@ class TestMixedSpecs:
     spec = (NamedDim("N"), ANONYMOUS_VARIADIC, NamedDim("C"))
     err = check_shape((5,), spec, memo)
     assert "expected at least 2 dimensions but got 1" in err
+
+
+class TestSymbolicEdgeCases:
+  def test_symbolic_division_by_zero(self) -> None:
+    memo = ShapeMemo()
+    memo.single["N"] = 10
+    err = check_shape((5,), (SymbolicDim("N//0"),), memo)
+    assert "cannot evaluate" in err
+
+  def test_symbolic_float_result_rejects(self) -> None:
+    memo = ShapeMemo()
+    memo.single["N"] = 3
+    err = check_shape((1,), (SymbolicDim("N/2"),), memo)
+    assert err != ""
+
+  def test_symbolic_float_result_passes(self) -> None:
+    memo = ShapeMemo()
+    memo.single["N"] = 4
+    assert check_shape((2,), (SymbolicDim("N/2"),), memo) == ""
+
+  def test_empty_shape_empty_spec(self) -> None:
+    memo = ShapeMemo()
+    assert check_shape((), (), memo) == ""

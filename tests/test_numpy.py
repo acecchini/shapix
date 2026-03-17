@@ -19,17 +19,17 @@ from beartype.roar import (
 
 import shapix
 from shapix import B, C, H, N, Dimension, __
-from shapix._array_types import _ArrayFactory, make_array_type
-from shapix._dtypes import FLOAT32
+from shapix._array_types import _ArrayFactory, make_array_like_type, make_array_type
+from shapix._dtypes import FLOAT32, DtypeSpec
 from shapix.numpy import (
-  ArrayLike,
   Bool,
-  BoolLk,
+  BoolLike,
   F16,
   F32,
   F32Like,
   F64,
   Float,
+  I8ScalarLike,
   I32,
   I64,
   I64Like,
@@ -37,6 +37,7 @@ from shapix.numpy import (
   Num,
   Shaped,
   U8,
+  U8ScalarLike,
 )
 
 
@@ -790,6 +791,30 @@ class TestCustomDimensions:
       f(np.ones((4, 5), dtype=np.float32))
 
 
+class TestCustomStructuredDtypes:
+  def test_same_structured_dtype_passes(self) -> None:
+    dt = np.dtype([("x", np.float32), ("y", np.int32)])
+    StructXY = make_array_type(np.ndarray, DtypeSpec.structured(dt))
+
+    @beartype
+    def f(x: StructXY[N], y: StructXY[N]) -> StructXY[N]:  # type: ignore[valid-type]
+      return x
+
+    f(np.zeros(3, dtype=dt), np.zeros(3, dtype=dt))
+
+  def test_different_structured_dtype_rejected(self) -> None:
+    dt_xy = np.dtype([("x", np.float32), ("y", np.int32)])
+    dt_xz = np.dtype([("x", np.float32), ("z", np.int32)])
+    StructXY = make_array_type(np.ndarray, DtypeSpec.structured(dt_xy))
+
+    @beartype
+    def f(x: StructXY[N], y: StructXY[N]) -> StructXY[N]:  # type: ignore[valid-type]
+      return x
+
+    with pytest.raises(BeartypeCallHintParamViolation):
+      f(np.zeros(3, dtype=dt_xy), np.zeros(3, dtype=dt_xz))
+
+
 # =====================================================================
 # Zero-sized and large arrays
 # =====================================================================
@@ -891,7 +916,7 @@ class TestArrayLikeAcceptance:
   )
   def test_f32like_accepted(self, value: object) -> None:
     @beartype
-    def f(x: F32Like) -> float:
+    def f(x: F32Like[...]) -> float:
       return float(np.asarray(x).sum())
 
     f(value)  # type: ignore
@@ -901,7 +926,7 @@ class TestArrayLikeRejection:
   @pytest.mark.parametrize("value", [object(), {"a": 1.0}], ids=["object", "dict"])
   def test_f32like_rejected(self, value: object) -> None:
     @beartype
-    def f(x: F32Like) -> float:
+    def f(x: F32Like[...]) -> float:
       return float(np.asarray(x).sum())
 
     with pytest.raises(BeartypeCallHintParamViolation):
@@ -911,22 +936,24 @@ class TestArrayLikeRejection:
 class TestArrayLikeVariousTypes:
   def test_i64like(self) -> None:
     @beartype
-    def f(x: I64Like) -> int:
+    def f(x: I64Like[...]) -> int:
       return int(np.asarray(x).sum())
 
     assert f(42) == 42
     assert f([1, 2, 3]) == 6
     assert f([[1, 2], [3, 4]]) == 10
 
-  def test_boollk(self) -> None:
-    assert is_bearable(True, BoolLk)
-    assert is_bearable([True, False], BoolLk)
+  def test_boollike(self) -> None:
+    assert is_bearable(True, BoolLike[...])
+    assert is_bearable([True, False], BoolLike[...])
 
   def test_custom_arraylike(self) -> None:
-    type MyLike = ArrayLike[float, np.ndarray]
+    from shapix._dtypes import FLOAT64
+
+    MyLike = make_array_like_type(FLOAT64, name="MyLike")
 
     @beartype
-    def f(x: MyLike) -> float:
+    def f(x: MyLike[...]) -> float:
       return float(np.asarray(x).sum())
 
     assert f(3.14) == 3.14
@@ -952,6 +979,27 @@ class TestMultipleVariadicRejected:
     with pytest.raises(TypeError, match="At most one variadic"):
       F32[~B, ..., C]
 
+  def test_numpy_rejects_torch(self) -> None:
+    torch = __import__("pytest").importorskip("torch")
+
+    @beartype
+    def f(x: F32[N]) -> F32[N]:
+      return x
+
+    with pytest.raises(BeartypeCallHintParamViolation):
+      f(torch.ones(3, dtype=torch.float32))
+
+  def test_numpy_rejects_jax(self) -> None:
+    jax = __import__("pytest").importorskip("jax")
+    jnp = jax.numpy
+
+    @beartype
+    def f(x: F32[N]) -> F32[N]:
+      return x
+
+    with pytest.raises(BeartypeCallHintParamViolation):
+      f(jnp.ones(3, dtype=jnp.float32))
+
   def test_single_variadic_still_works(self) -> None:
     """Verify single variadics are not rejected."""
 
@@ -960,3 +1008,22 @@ class TestMultipleVariadicRejected:
       return x
 
     f(np.ones((2, 3, 4), dtype=np.float32))
+
+
+# =====================================================================
+# ScalarLike boundary tests
+# =====================================================================
+
+
+class TestScalarLikeBoundaries:
+  def test_i8_scalar_like_boundaries(self) -> None:
+    assert is_bearable(-128, I8ScalarLike)
+    assert is_bearable(127, I8ScalarLike)
+    assert not is_bearable(-129, I8ScalarLike)
+    assert not is_bearable(128, I8ScalarLike)
+
+  def test_u8_scalar_like_boundaries(self) -> None:
+    assert is_bearable(0, U8ScalarLike)
+    assert is_bearable(255, U8ScalarLike)
+    assert not is_bearable(-1, U8ScalarLike)
+    assert not is_bearable(256, U8ScalarLike)

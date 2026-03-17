@@ -3,67 +3,64 @@
 Tested with: pyright, mypy, ty
 """
 
-import numpy as np
-
 from shapix.numpy import (
   ArrayLike,
+  # Scalar Like types
+  BoolScalarLike,
+  C64ScalarLike,
+  C128ScalarLike,
+  ComplexScalarLike,
+  F16ScalarLike,
+  F32ScalarLike,
+  F64ScalarLike,
+  FloatScalarLike,
+  I8ScalarLike,
+  I16ScalarLike,
+  I32ScalarLike,
+  I64ScalarLike,
+  InexactScalarLike,
+  IntegerScalarLike,
+  IntScalarLike,
+  NumScalarLike,
+  RealScalarLike,
+  ShapedScalarLike,
+  StringLike,
+  U8ScalarLike,
+  U16ScalarLike,
+  U32ScalarLike,
+  U64ScalarLike,
+  UIntScalarLike,
+  # Array Like types
   BoolLike,
-  BoolLk,
-  C128Like,
   C64Like,
-  Complex64Like,
-  Complex128Like,
+  C128Like,
   ComplexLike,
-  ComplexLk,
   F16Like,
   F32Like,
   F64Like,
-  Float16Like,
-  Float32Like,
-  Float64Like,
   FloatLike,
-  FloatLk,
-  Fraction,
+  I8Like,
   I16Like,
   I32Like,
   I64Like,
-  I8Like,
   InexactLike,
-  InexactLk,
-  Int16Like,
-  Int32Like,
-  Int64Like,
-  Int8Like,
   IntegerLike,
-  IntegerLk,
   IntLike,
-  IntLk,
   NumLike,
-  NumLk,
   RealLike,
-  RealLk,
-  Seed,
-  SeedLike,
   ShapedLike,
-  ShapedLk,
-  StringLike,
+  U8Like,
   U16Like,
   U32Like,
   U64Like,
-  U8Like,
-  UInt16Like,
-  UInt32Like,
-  UInt64Like,
-  UInt8Like,
   UIntLike,
-  UIntLk,
 )
 
 # ---------------------------------------------------------------------------
 # Scalar Like types — just verify they're importable and usable as annotations
 # ---------------------------------------------------------------------------
 
-_bool: BoolLike = True
+_bool: BoolScalarLike = True
 _str: StringLike = "hello"
 
 # ---------------------------------------------------------------------------
@@ -73,55 +70,51 @@ _str: StringLike = "hello"
 _arr_like = ArrayLike  # type: ignore[type-arg]  # ArrayLike is a generic type alias
 
 # Float types
-_f16: Float16Like = 1.0
-_f32: Float32Like = 1.0
-_f64: Float64Like = 1.0
-_fl: FloatLike = 1.0
+_f16: F16ScalarLike = 1.0
+_f32: F32ScalarLike = 1.0
+_f64: F64ScalarLike = 1.0
+_fl: FloatScalarLike = 1.0
 
 # Int types
-_i8: Int8Like = 1
-_i16: Int16Like = 1
-_i32: Int32Like = 1
-_i64: Int64Like = 1
-_il: IntLike = 1
+_i8: I8ScalarLike = 1
+_i16: I16ScalarLike = 1
+_i32: I32ScalarLike = 1
+_i64: I64ScalarLike = 1
+_il: IntScalarLike = 1
 
 # Uint types
-_u8: UInt8Like = 1
-_u16: UInt16Like = 1
-_u32: UInt32Like = 1
-_u64: UInt64Like = 1
-_ul: UIntLike = 1
+_u8: U8ScalarLike = 1
+_u16: U16ScalarLike = 1
+_u32: U32ScalarLike = 1
+_u64: U64ScalarLike = 1
+_ul: UIntScalarLike = 1
 
 # Category types
-_integer: IntegerLike = 1
-_real: RealLike = 1.0
-_complex: ComplexLike = 1 + 0j
-_inexact: InexactLike = 1.0
-_num: NumLike = 1
-_shaped: ShapedLike = True
+_integer: IntegerScalarLike = 1
+_real: RealScalarLike = 1.0
+_complex: ComplexScalarLike = 1 + 0j
+_inexact: InexactScalarLike = 1.0
+_num: NumScalarLike = 1
+_shaped: ShapedScalarLike = True
 
 # Complex types
-_c64: Complex64Like = 1 + 0j
-_c128: Complex128Like = 1 + 0j
-
-# Special types
-_frac: Fraction = 0.5
-_seed: Seed = np.uint64(42)
+_c64: C64ScalarLike = 1 + 0j
+_c128: C128ScalarLike = 1 + 0j
 
 # ---------------------------------------------------------------------------
-# ArrayLike Lk types — verify import
+# ArrayLike types — verify import
 # ---------------------------------------------------------------------------
 
-_blk: type = BoolLk  # type: ignore[assignment]
-_ilk: type = IntLk  # type: ignore[assignment]
-_ulk: type = UIntLk  # type: ignore[assignment]
-_iglk: type = IntegerLk  # type: ignore[assignment]
-_flk: type = FloatLk  # type: ignore[assignment]
-_rlk: type = RealLk  # type: ignore[assignment]
-_clk: type = ComplexLk  # type: ignore[assignment]
-_inlk: type = InexactLk  # type: ignore[assignment]
-_nlk: type = NumLk  # type: ignore[assignment]
-_slk: type = ShapedLk  # type: ignore[assignment]
+_blk: type = BoolLike  # type: ignore[assignment]
+_ilk: type = IntLike  # type: ignore[assignment]
+_ulk: type = UIntLike  # type: ignore[assignment]
+_iglk: type = IntegerLike  # type: ignore[assignment]
+_flk: type = FloatLike  # type: ignore[assignment]
+_rlk: type = RealLike  # type: ignore[assignment]
+_clk: type = ComplexLike  # type: ignore[assignment]
+_inlk: type = InexactLike  # type: ignore[assignment]
+_nlk: type = NumLike  # type: ignore[assignment]
+_slk: type = ShapedLike  # type: ignore[assignment]
 
 _i8lk: type = I8Like  # type: ignore[assignment]
 _i16lk: type = I16Like  # type: ignore[assignment]
@@ -136,5 +129,3 @@ _f32lk: type = F32Like  # type: ignore[assignment]
 _f64lk: type = F64Like  # type: ignore[assignment]
 _c64lk: type = C64Like  # type: ignore[assignment]
 _c128lk: type = C128Like  # type: ignore[assignment]
-
-_ = SeedLike

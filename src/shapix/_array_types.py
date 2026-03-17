@@ -1,20 +1,25 @@
-"""Core array type factory — the heart of shapix.
+"""Core array type factories — the heart of shapix.
 
-Transforms ``Float32Array[N, C, H, W]`` into
-``Annotated[np.ndarray, Is[_ShapeChecker(...)]]`` at runtime so that standard
-``@beartype`` performs both dtype and shape validation automatically.
+Transforms ``F32[N, C, H, W]`` into ``Annotated[np.ndarray, Is[checker]]``
+at runtime so that standard ``@beartype`` performs both dtype and shape
+validation automatically.
 
-The two main components are:
+The main components are:
 
-- :class:`_ShapeChecker` — a callable validator invoked by beartype's ``Is[]``
-  mechanism. It checks the dtype, then validates the shape against the spec
-  while maintaining cross-argument dimension consistency via the memo system.
+- :class:`_StructChecker` — a callable validator invoked by beartype's ``Is[]``
+  mechanism for strict array types.  Checks dtype then validates shape against
+  the spec while maintaining cross-argument dimension consistency via the memo.
 
-- :class:`_ArrayFactory` — a subscriptable object that converts
-  ``Float32Array[N, C]`` into the appropriate ``Annotated`` type hint.
+- :class:`_ArrayLikeChecker` — similar validator for array-like inputs
+  (scalars, sequences, arrays).  Converts inputs via ``np.asarray`` and checks
+  dtype compatibility using ``np.can_cast`` with configurable casting level.
 
-Use :func:`make_array_type` to create new array type factories for custom
-array classes or dtype combinations.
+- :class:`_ArrayFactory` / :class:`_ArrayLikeFactory` — subscriptable objects
+  that convert ``F32[N, C]`` or ``F32Like[N, C]`` into the appropriate
+  ``Annotated`` type hint.
+
+Use :func:`make_array_type` and :func:`make_array_like_type` to create new
+factories for custom array classes or dtype combinations.
 """
 
 from __future__ import annotations
@@ -24,7 +29,9 @@ from typing import Annotated
 from beartype.vale import Is
 
 from ._dimensions import Dimension
-from ._dtypes import DtypeSpec, extract_dtype_str
+from ._dtypes import DtypeSpec
+from ._dtypes import extract_dtype_str as extract_dtype_str
+from ._memo import ShapeMemo as ShapeMemo
 from ._memo import get_memo
 from ._shape import (
   ANONYMOUS_VARIADIC,
@@ -36,7 +43,7 @@ from ._shape import (
   check_shape,
 )
 
-__all__ = ["make_array_type"]
+__all__ = ["make_array_type", "make_array_like_type"]
 
 
 # ---------------------------------------------------------------------------
@@ -44,7 +51,7 @@ __all__ = ["make_array_type"]
 # ---------------------------------------------------------------------------
 
 
-class _ShapeChecker:
+class _StructChecker:
   """Callable invoked by beartype to validate dtype + shape at runtime.
 
   Instances are created once per unique annotation (e.g.
@@ -74,7 +81,7 @@ class _ShapeChecker:
       return False
 
     # Dtype check
-    if extract_dtype_str(obj) not in self._dtype_spec.allowed:
+    if not self._dtype_spec.matches(obj):
       return False
 
     # Shape check with memo (auto-detects call context)
@@ -130,7 +137,7 @@ class _ArrayFactory:
       dims = (dims,)
 
     shape_spec = _to_shape_spec(dims)
-    checker = _ShapeChecker(self._dtype_spec, shape_spec)
+    checker = _StructChecker(self._dtype_spec, shape_spec)
     return Annotated[self._array_type, Is[checker]]  # type: ignore[return-value]
 
   def __repr__(self) -> str:
@@ -163,6 +170,187 @@ def make_array_type(array_type: type, dtype_spec: DtypeSpec) -> _ArrayFactory:
       Float32Array[N, C, H, W]  # → Annotated[ndarray, Is[...]]
   """
   return _ArrayFactory(array_type, dtype_spec)
+
+
+# ---------------------------------------------------------------------------
+# ArrayLike checker
+# ---------------------------------------------------------------------------
+
+
+class _ArrayLikeChecker:
+  """Callable invoked by beartype to validate array-like objects with dtype + shape.
+
+  Handles arrays (objects with ``.shape`` + ``.dtype``), scalars, nested
+  sequences, ``__array__`` protocol objects, and buffer protocol objects
+  by converting to a numpy array and checking dtype + shape.
+
+  The *casting* parameter controls dtype strictness using numpy casting rules:
+  ``no < equiv < safe < same_kind < unsafe``.
+  """
+
+  __slots__ = ("_dtype_spec", "_shape_spec", "_casting", "_repr", "_fail_obj")
+
+  def __init__(
+    self,
+    dtype_spec: DtypeSpec,
+    shape_spec: tuple[DimSpec, ...],
+    *,
+    casting: str,
+    name: str,
+  ) -> None:
+    self._dtype_spec = dtype_spec
+    self._shape_spec = shape_spec
+    self._casting = casting
+    self._fail_obj: object | None = None
+
+    dims = ", ".join(repr(d) for d in shape_spec)
+    self._repr = f"{name}[{dims}]"
+
+  def __call__(self, obj: object) -> bool:
+    # Replay failure for beartype error-generation re-invocation
+    # (same pattern as _StructChecker).
+    if self._fail_obj is not None and self._fail_obj is obj:
+      self._fail_obj = None
+      return False
+
+    memo = get_memo(_depth=3)
+
+    # Fast path: obj already has shape + dtype (np.ndarray, Tensor, jax.Array)
+    shape = getattr(obj, "shape", None)
+    if shape is not None and getattr(obj, "dtype", None) is not None:
+      result = self._check(obj, tuple(shape), memo)
+      if not result:
+        self._fail_obj = obj
+      return result
+
+    # Slow path: convert scalar / sequence / __array__ / buffer to numpy array
+    try:
+      import numpy as np
+
+      arr = np.asarray(obj)
+    except (TypeError, ValueError):
+      self._fail_obj = obj
+      return False
+
+    result = self._check(arr, tuple(arr.shape), memo)
+    if not result:
+      self._fail_obj = obj
+    return result
+
+  def _check(self, obj: object, shape: tuple[int, ...], memo: ShapeMemo) -> bool:
+    """Validate dtype (with casting rules) then shape (with memo)."""
+    if not self._check_dtype(obj):
+      return False
+
+    # Snapshot memo state so we can restore on failure
+    single_snap = memo.single.copy()
+    variadic_snap = memo.variadic.copy()
+    structures_snap = memo.structures.copy()
+
+    result = check_shape(shape, self._shape_spec, memo) == ""
+
+    if not result:
+      memo.single.clear()
+      memo.single.update(single_snap)
+      memo.variadic.clear()
+      memo.variadic.update(variadic_snap)
+      memo.structures.clear()
+      memo.structures.update(structures_snap)
+
+    return result
+
+  def _check_dtype(self, obj: object) -> bool:
+    """Check dtype using numpy casting rules."""
+    # Strictest level: exact dtype match only
+    if self._casting == "no":
+      return self._dtype_spec.matches(obj)
+
+    source = extract_dtype_str(obj)
+    if not source:
+      return False
+
+    # Wildcard ("*") accepts any dtype (used by SHAPED)
+    if "*" in self._dtype_spec.allowed:
+      return True
+
+    import numpy as np
+
+    for target in self._dtype_spec.allowed:
+      try:
+        if np.can_cast(source, target, casting=self._casting):  # pyright: ignore[reportArgumentType]
+          return True
+      except TypeError:
+        continue
+    return False
+
+  def __repr__(self) -> str:
+    return self._repr
+
+
+# ---------------------------------------------------------------------------
+# ArrayLike factory
+# ---------------------------------------------------------------------------
+
+
+class _ArrayLikeFactory:
+  """Subscriptable factory: ``F32Like[N, C]`` → ``Annotated[object, Is[...]]``.
+
+  Created via :func:`make_array_like_type` and not instantiated directly.
+  Mirrors :class:`_ArrayFactory` but validates array-like inputs (scalars,
+  sequences, arrays) with dtype casting awareness.
+  """
+
+  __slots__ = ("_dtype_spec", "_casting", "__name__")
+
+  def __init__(self, dtype_spec: DtypeSpec, *, casting: str, name: str) -> None:
+    self._dtype_spec = dtype_spec
+    self._casting = casting
+    self.__name__ = name
+
+  def __getitem__(self, dims: object) -> type:
+    if not isinstance(dims, tuple):
+      dims = (dims,)
+
+    shape_spec = _to_shape_spec(dims)
+    checker = _ArrayLikeChecker(
+      self._dtype_spec, shape_spec, casting=self._casting, name=self.__name__
+    )
+    return Annotated[object, Is[checker]]  # type: ignore[return-value]
+
+  def __repr__(self) -> str:
+    return self.__name__
+
+
+def make_array_like_type(
+  dtype_spec: DtypeSpec, *, casting: str = "same_kind", name: str = "ArrayLike"
+) -> _ArrayLikeFactory:
+  """Create a subscriptable array-like type factory.
+
+  Parameters
+  ----------
+  dtype_spec:
+      A :class:`~shapix._dtypes.DtypeSpec` defining the allowed dtypes.
+  casting:
+      NumPy casting rule: ``"no"`` | ``"equiv"`` | ``"safe"``
+      | ``"same_kind"`` | ``"unsafe"``.  Controls how strictly dtype
+      compatibility is checked.  Default ``"same_kind"``.
+  name:
+      Human-readable name for error messages.
+
+  Returns
+  -------
+  _ArrayLikeFactory
+      A subscriptable factory.  ``factory[N, C]`` produces
+      ``Annotated[object, Is[checker]]``.
+
+  Example::
+
+      from shapix._dtypes import FLOAT32
+
+      F32Like = make_array_like_type(FLOAT32, name="F32Like")
+      F32Like[N, C, H, W]  # → Annotated[object, Is[...]]
+  """
+  return _ArrayLikeFactory(dtype_spec, casting=casting, name=name)
 
 
 # ---------------------------------------------------------------------------

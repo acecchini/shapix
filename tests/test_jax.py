@@ -31,7 +31,7 @@ from shapix.jax import (
   Num,
   Shaped,
   U8,
-  BoolLk,
+  BoolLike,
 )
 
 
@@ -321,45 +321,45 @@ class TestJaxLikeTypes:
     ids=["scalar", "list", "nested_list", "tuple"],
   )
   def test_f32like_accepts_scalars_and_sequences(self, value: object) -> None:
-    assert is_bearable(value, F32Like)
+    assert is_bearable(value, F32Like[...])
 
   def test_f32like_accepts_numpy(self) -> None:
-    assert is_bearable(np.ones(3, dtype=np.float32), F32Like)
+    assert is_bearable(np.ones(3, dtype=np.float32), F32Like[...])
 
   def test_f32like_accepts_jax(self) -> None:
-    assert is_bearable(jnp.ones(3, dtype=jnp.float32), F32Like)
+    assert is_bearable(jnp.ones(3, dtype=jnp.float32), F32Like[...])
 
   def test_f32like_rejects_non_numeric(self) -> None:
-    assert not is_bearable(object(), F32Like)
+    assert not is_bearable(object(), F32Like[...])
 
   def test_i64like(self) -> None:
-    assert is_bearable(42, I64Like)
-    assert is_bearable([1, 2, 3], I64Like)
+    assert is_bearable(42, I64Like[...])
+    assert is_bearable([1, 2, 3], I64Like[...])
 
-  def test_boollk(self) -> None:
-    assert is_bearable(True, BoolLk)
-    assert is_bearable([True, False], BoolLk)
+  def test_boollike(self) -> None:
+    assert is_bearable(True, BoolLike[...])
+    assert is_bearable([True, False], BoolLike[...])
 
 
 class TestJaxLikeEdgeCases:
   def test_deep_nesting(self) -> None:
-    assert is_bearable([[[[[[1.0]]]]]], F32Like)
+    assert is_bearable([[[[[[1.0]]]]]], F32Like[...])
 
   def test_empty_list(self) -> None:
-    assert is_bearable([], F32Like)
+    assert is_bearable([], F32Like[...])
 
   def test_0d_jax_array(self) -> None:
-    assert is_bearable(jnp.array(1.5, dtype=jnp.float32), F32Like)
+    assert is_bearable(jnp.array(1.5, dtype=jnp.float32), F32Like[...])
 
   def test_0d_numpy_array(self) -> None:
-    assert is_bearable(np.array(1.5, dtype=np.float32), F32Like)
+    assert is_bearable(np.array(1.5, dtype=np.float32), F32Like[...])
 
   def test_dict_rejected(self) -> None:
-    assert not is_bearable({"a": 1.0}, F32Like)
+    assert not is_bearable({"a": 1.0}, F32Like[...])
 
-  def test_f32like_rejects_torch_tensor(self) -> None:
+  def test_f32like_accepts_torch_tensor_via_numpy_arraylike(self) -> None:
     torch = pytest.importorskip("torch")
-    assert not is_bearable(torch.ones(3, dtype=torch.float32), F32Like)
+    assert is_bearable(torch.ones(3, dtype=torch.float32), F32Like[...])
 
 
 # =====================================================================

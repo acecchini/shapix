@@ -284,7 +284,7 @@ class _TreeFactory:
     has_leading = args[0] is Ellipsis
     has_trailing = args[-1] is Ellipsis
 
-    if has_leading and has_trailing:
+    if has_leading and has_trailing and len(args) > 1:
       msg = "Cannot have ... at both start and end of structure spec"
       raise TypeError(msg)
 

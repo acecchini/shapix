@@ -50,6 +50,7 @@ Context managers
     ``is_bearable()`` checks.
 """
 
+from ._array_types import make_array_like_type as make_array_like_type
 from ._array_types import make_array_type as make_array_type
 from ._decorator import check as check
 from ._decorator import check_context as check_context

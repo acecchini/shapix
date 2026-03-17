@@ -6,6 +6,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 from beartype import beartype
+from beartype.roar import BeartypeCallHintParamViolation
 
 import shapix
 from shapix import N, C
@@ -28,7 +29,7 @@ class TestCheckDecorator:
     def f(x: F32[N], y: F32[N]) -> F32[N]:
       return x + y
 
-    with pytest.raises(Exception):
+    with pytest.raises(BeartypeCallHintParamViolation):
       f(np.ones((3,), dtype=np.float32), np.ones((5,), dtype=np.float32))
 
   def test_with_conf(self) -> None:
@@ -88,3 +89,53 @@ class TestCheckContext:
     result = ctx.__enter__()
     assert result is ctx
     ctx.__exit__(None, None, None)
+
+
+class TestDecoratorEdgeCases:
+  def test_exception_cleanup(self) -> None:
+    """@check cleans memo even when the decorated function raises."""
+
+    @shapix.check
+    @beartype
+    def boom(x: F32[N]) -> F32[N]:
+      raise RuntimeError("boom")
+
+    with pytest.raises(RuntimeError, match="boom"):
+      boom(np.ones(5, dtype=np.float32))
+
+    # Should not leak memo state — next call should work independently
+    @shapix.check
+    @beartype
+    def ok(x: F32[N]) -> F32[N]:
+      return x
+
+    ok(np.ones(3, dtype=np.float32))
+
+  def test_metadata_preserved(self) -> None:
+    """@check preserves __name__ and __doc__."""
+
+    @shapix.check
+    @beartype
+    def my_func(x: F32[N]) -> F32[N]:
+      """My docstring."""
+      return x
+
+    assert my_func.__name__ == "my_func"
+    assert my_func.__doc__ == "My docstring."
+
+  def test_nested_check_context(self) -> None:
+    """Two nested contexts have independent bindings."""
+    from beartype.door import is_bearable
+
+    with shapix.check_context():
+      assert is_bearable(np.ones(4, dtype=np.float32), F32[N])
+      with shapix.check_context():
+        # Inner context: N should not be bound to 4
+        assert is_bearable(np.ones(10, dtype=np.float32), F32[N])
+      # Outer context: N should still be 4
+      assert not is_bearable(np.ones(10, dtype=np.float32), F32[N])
+
+  def test_empty_check_context(self) -> None:
+    """Enter/exit with no checks should not raise."""
+    with shapix.check_context():
+      pass

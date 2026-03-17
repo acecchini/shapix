@@ -7,6 +7,7 @@ import threading
 import numpy as np
 import pytest
 from beartype import beartype
+from beartype.roar import BeartypeCallHintParamViolation
 
 from shapix import N, C
 from shapix._memo import ShapeMemo, get_memo, pop_memo, push_memo
@@ -84,7 +85,7 @@ class TestFrameBasedMemo:
     def f(x: F32[N], y: F32[N]) -> F32[N]:
       return x + y
 
-    with pytest.raises(Exception):
+    with pytest.raises(BeartypeCallHintParamViolation):
       f(np.ones((3,), dtype=np.float32), np.ones((5,), dtype=np.float32))
 
 
@@ -113,3 +114,30 @@ class TestThreadSafety:
 
     assert len(errors) == 0, f"Thread errors: {errors}"
     assert len(results) == 5
+
+
+class TestMemoEdgeCases:
+  def test_bindings_str_empty(self) -> None:
+    from shapix._memo import bindings_str
+
+    memo = ShapeMemo()
+    assert bindings_str(memo) == ""
+
+  def test_bindings_str_with_structures(self) -> None:
+    from shapix._memo import bindings_str
+
+    memo = ShapeMemo(single={"N": 3}, structures={"T": "some_spec"})
+    formatted = bindings_str(memo)
+    assert "N=3" in formatted
+    # structures are not included in bindings_str
+    assert "T" not in formatted
+
+  def test_pop_empty_raises(self) -> None:
+    from shapix._memo import _get_explicit_stack, pop_memo
+
+    # Ensure stack is empty
+    stack = _get_explicit_stack()
+    orig_len = len(stack)
+    if orig_len == 0:
+      with pytest.raises(IndexError):
+        pop_memo()

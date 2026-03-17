@@ -15,7 +15,10 @@ optree = pytest.importorskip("optree")
 
 from beartype import beartype
 from beartype.door import is_bearable
-from beartype.roar import BeartypeCallHintParamViolation
+from beartype.roar import (
+  BeartypeCallHintParamViolation,
+  BeartypeCallHintReturnViolation,
+)
 
 import shapix
 from shapix import C, H, N, S, T, W, __
@@ -390,7 +393,7 @@ class TestReturnChecking:
     def f(x: Tree[F32[N]]) -> Tree[F64[N]]:
       return x  # returns F32, not F64
 
-    with pytest.raises(Exception):  # noqa: B017
+    with pytest.raises(BeartypeCallHintReturnViolation):
       f({"a": np.ones(3, dtype=np.float32)})
 
 
@@ -1199,7 +1202,7 @@ class TestReturnTypeFailures:
     def f(x: Tree[F32[N]]) -> Tree[I64[N]]:
       return x  # returning F32 when I64 expected
 
-    with pytest.raises(Exception):  # noqa: B017
+    with pytest.raises(BeartypeCallHintReturnViolation):
       f({"a": np.ones(3, dtype=np.float32)})
 
   def test_return_wrong_shape(self) -> None:
@@ -1207,7 +1210,7 @@ class TestReturnTypeFailures:
     def f(x: Tree[F32[N]]) -> Tree[F32[N, C]]:
       return x  # returning 1D when 2D expected
 
-    with pytest.raises(Exception):  # noqa: B017
+    with pytest.raises(BeartypeCallHintReturnViolation):
       f({"a": np.ones(3, dtype=np.float32)})
 
   def test_return_structure_mismatch(self) -> None:
@@ -1219,7 +1222,7 @@ class TestReturnTypeFailures:
       # Return different structure than input
       return [np.ones(3, dtype=np.float32)]
 
-    with pytest.raises(Exception):  # noqa: B017
+    with pytest.raises(BeartypeCallHintReturnViolation):
       f({"a": np.ones(3, dtype=np.float32)})
 
 
@@ -1283,10 +1286,14 @@ class TestReprAndFactory:
     with pytest.raises(TypeError, match="Cannot have"):
       Tree[F32[N], ..., ...]
 
-  def test_parse_spec_args_only_ellipsis_error(self) -> None:
-    # Single Ellipsis hits "both start and end" since args[0] == args[-1]
-    with pytest.raises(TypeError, match="Cannot have"):
+  def test_parse_spec_args_single_ellipsis_error(self) -> None:
+    """Single Ellipsis should say 'at least one structure name required'."""
+    with pytest.raises(TypeError, match="At least one structure name"):
       _TreeFactory._parse_spec_args((...,))
+
+  def test_parse_spec_args_both_ends_ellipsis_error(self) -> None:
+    with pytest.raises(TypeError, match="Cannot have"):
+      _TreeFactory._parse_spec_args((..., T, ...))
 
   def test_parse_spec_args_empty_tuple_error(self) -> None:
     with pytest.raises(TypeError, match="at least a leaf type"):

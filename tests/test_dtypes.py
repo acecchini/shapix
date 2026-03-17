@@ -68,8 +68,7 @@ class TestExtractDtypeStrNumpy:
   def test_structured_dtype(self) -> None:
     dt = np.dtype([("x", np.float32), ("y", np.int32)])
     arr = np.zeros(2, dtype=dt)
-    result = extract_dtype_str(arr)
-    assert "x" in result or "void" in result
+    assert extract_dtype_str(arr) == "void"
 
 
 # =====================================================================
@@ -238,3 +237,34 @@ class TestCustomDtypeSpec:
     assert spec.matches(np.zeros(2, dtype=np.float32))
     assert spec.matches(np.zeros(2, dtype=np.float64))
     assert not spec.matches(np.zeros(2, dtype=np.int32))
+
+
+class TestShapedVoidAndStructured:
+  def test_void_dtype_is_shaped(self) -> None:
+    dt = np.dtype("V8")
+    arr = np.zeros(2, dtype=dt)
+    assert extract_dtype_str(arr) == "void"
+    assert SHAPED.matches(arr)
+
+  def test_structured_dtype_is_shaped(self) -> None:
+    dt = np.dtype([("x", np.float32), ("y", np.int32)])
+    arr = np.zeros(2, dtype=dt)
+    assert extract_dtype_str(arr) == "void"
+    assert SHAPED.matches(arr)
+
+  def test_custom_structured_dtype_spec_is_exact(self) -> None:
+    dt_xy = np.dtype([("x", np.float32), ("y", np.int32)])
+    dt_xz = np.dtype([("x", np.float32), ("z", np.int32)])
+
+    spec = DtypeSpec.structured(dt_xy)
+    assert spec.matches(np.zeros(2, dtype=dt_xy))
+    assert not spec.matches(np.zeros(2, dtype=dt_xz))
+
+
+class TestDtypeEdgeCases:
+  def test_shaped_matches_bfloat16(self) -> None:
+    torch = pytest.importorskip("torch")
+    assert SHAPED.matches(torch.ones(2, dtype=torch.bfloat16))
+
+  def test_matches_no_dtype_returns_false(self) -> None:
+    assert SHAPED.matches(42) is False

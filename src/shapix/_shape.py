@@ -228,7 +228,7 @@ def _check_one(dim: DimSpec, size: int, memo: ShapeMemo) -> str:
       return ""
     try:
       expected = eval(dim.expr, {"__builtins__": {}}, memo.single)  # noqa: S307
-    except NameError as e:
+    except Exception as e:
       return f"cannot evaluate '{dim.expr}': {e}"
     if expected != size:
       return f"dimension '{dim.expr}' evaluated to {expected} but got {size}"
