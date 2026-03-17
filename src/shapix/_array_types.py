@@ -409,8 +409,10 @@ def _to_shape_spec(dims: tuple[object, ...]) -> tuple[DimSpec, ...]:
   for d in dims:
     if d is Ellipsis:
       specs.append(ANONYMOUS_VARIADIC)
-    elif d is ANONYMOUS or d is ANONYMOUS_VARIADIC:
-      specs.append(d)
+    elif d is ANONYMOUS:
+      specs.append(ANONYMOUS)
+    elif d is ANONYMOUS_VARIADIC:
+      specs.append(ANONYMOUS_VARIADIC)
     elif isinstance(d, int):
       specs.append(FixedDim(d))
     elif isinstance(d, (FixedDim, NamedDim, SymbolicDim, ValueDim, VariadicDim)):

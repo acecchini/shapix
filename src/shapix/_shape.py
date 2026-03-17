@@ -289,7 +289,7 @@ def _check_one(
     if dim.broadcastable and size == 1:
       return ""
     try:
-      names = dict(memo.single)
+      names: dict[str, object] = dict(memo.single)
       if scope is not None:
         names.update(scope)
       expected = _evaluate_dim_expr(dim.expr, names, allow_attr=True)
