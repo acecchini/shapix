@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 import shapix._memo as memo_mod
 from beartype import BeartypeConf
@@ -286,6 +287,47 @@ class TestArrayLikeCheckerEdges:
     bad = np.ones(3, dtype=np.int64)
     assert checker(bad) is False  # dtype mismatch, sets _fail_obj
     assert checker(bad) is False  # replay
+
+
+class TestInputValidation:
+  def test_invalid_casting_in_make_array_like_type(self) -> None:
+    from shapix._array_types import make_array_like_type
+
+    with pytest.raises(ValueError, match="Invalid casting"):
+      make_array_like_type(FLOAT32, casting="bogus")
+
+  def test_invalid_casting_in_make_scalar_like_type(self) -> None:
+    from shapix.numpy import make_scalar_like_type
+
+    with pytest.raises(ValueError, match="Invalid casting"):
+      make_scalar_like_type(np.float32, casting="bogus")
+
+  def test_invalid_byteorder_in_dtype_spec(self) -> None:
+    from shapix._dtypes import DtypeSpec
+
+    with pytest.raises(ValueError, match="Invalid byteorder"):
+      DtypeSpec("Bad", frozenset({"float32"}), byteorder="wrong")
+
+  def test_valid_castings_accepted(self) -> None:
+    from shapix._array_types import make_array_like_type
+
+    for casting in ("no", "equiv", "safe", "same_kind", "unsafe"):
+      factory = make_array_like_type(FLOAT32, casting=casting)
+      assert factory is not None
+
+  def test_memo_snapshot_restore(self) -> None:
+    memo = ShapeMemo(single={"N": 5}, variadic={"B": (False, (2, 3))})
+    memo.structures["T"] = "spec"
+    snap = memo.snapshot()
+
+    memo.single["C"] = 10
+    memo.variadic["X"] = (True, (1,))
+    memo.structures["S"] = "other"
+
+    memo.restore(snap)
+    assert memo.single == {"N": 5}
+    assert memo.variadic == {"B": (False, (2, 3))}
+    assert memo.structures == {"T": "spec"}
 
 
 class TestClawWrapper:

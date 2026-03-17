@@ -194,7 +194,7 @@ def check_shape(
 
 
 def _check_fixed_dims(
-  spec: tuple[DimSpec, ...] | list[DimSpec], shape: tuple[int, ...], memo: ShapeMemo
+  spec: tuple[DimSpec, ...], shape: tuple[int, ...], memo: ShapeMemo
 ) -> str:
   for dim, size in zip(spec, shape):
     err = _check_one(dim, size, memo)

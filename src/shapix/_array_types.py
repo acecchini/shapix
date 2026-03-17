@@ -45,6 +45,8 @@ from ._shape import (
 
 __all__ = ["make_array_type", "make_array_like_type"]
 
+_VALID_CASTINGS = frozenset({"no", "equiv", "safe", "same_kind", "unsafe"})
+
 
 # ---------------------------------------------------------------------------
 # Validator callable (used inside beartype's Is[...])
@@ -90,22 +92,12 @@ class _StructChecker:
       return False
 
     memo = get_memo(_depth=3)
-
-    # Snapshot memo state so we can restore on failure (avoid polluting
-    # the memo with partial bindings from a bad argument).
-    single_snap = memo.single.copy()
-    variadic_snap = memo.variadic.copy()
-    structures_snap = memo.structures.copy()
+    snap = memo.snapshot()
 
     result = check_shape(tuple(shape), self._shape_spec, memo) == ""
 
     if not result:
-      memo.single.clear()
-      memo.single.update(single_snap)
-      memo.variadic.clear()
-      memo.variadic.update(variadic_snap)
-      memo.structures.clear()
-      memo.structures.update(structures_snap)
+      memo.restore(snap)
       self._fail_obj = obj
 
     return result
@@ -242,21 +234,10 @@ class _ArrayLikeChecker:
     if not self._check_dtype(obj):
       return False
 
-    # Snapshot memo state so we can restore on failure
-    single_snap = memo.single.copy()
-    variadic_snap = memo.variadic.copy()
-    structures_snap = memo.structures.copy()
-
+    snap = memo.snapshot()
     result = check_shape(shape, self._shape_spec, memo) == ""
-
     if not result:
-      memo.single.clear()
-      memo.single.update(single_snap)
-      memo.variadic.clear()
-      memo.variadic.update(variadic_snap)
-      memo.structures.clear()
-      memo.structures.update(structures_snap)
-
+      memo.restore(snap)
     return result
 
   def _check_dtype(self, obj: object) -> bool:
@@ -350,6 +331,9 @@ def make_array_like_type(
       F32Like = make_array_like_type(FLOAT32, name="F32Like")
       F32Like[N, C, H, W]  # → Annotated[object, Is[...]]
   """
+  if casting not in _VALID_CASTINGS:
+    msg = f"Invalid casting {casting!r}, must be one of {sorted(_VALID_CASTINGS)}"
+    raise ValueError(msg)
   return _ArrayLikeFactory(dtype_spec, casting=casting, name=name)
 
 

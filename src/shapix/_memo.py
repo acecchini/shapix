@@ -35,6 +35,29 @@ class ShapeMemo:
   structures: dict[str, object] = field(default_factory=dict)
   """Tree structure bindings: ``{"T": <TreeSpec>}``."""
 
+  def snapshot(
+    self,
+  ) -> tuple[
+    dict[str, int], dict[str, tuple[bool, tuple[int, ...]]], dict[str, object]
+  ]:
+    """Capture a copy of all current bindings."""
+    return self.single.copy(), self.variadic.copy(), self.structures.copy()
+
+  def restore(
+    self,
+    snap: tuple[
+      dict[str, int], dict[str, tuple[bool, tuple[int, ...]]], dict[str, object]
+    ],
+  ) -> None:
+    """Roll back all bindings to a previous snapshot."""
+    single, variadic, structures = snap
+    self.single.clear()
+    self.single.update(single)
+    self.variadic.clear()
+    self.variadic.update(variadic)
+    self.structures.clear()
+    self.structures.update(structures)
+
 
 _local = threading.local()
 

@@ -17,6 +17,7 @@ _BACKEND_TESTS: dict[str, set[str]] = {
     "test_memo.py",
     "test_shape.py",
     "test_dimensions.py",
+    "test_coverage_edges.py",
   },
   "jax": {"test_jax.py", "test_dtypes.py"},
   "torch": {"test_torch.py", "test_dtypes.py"},

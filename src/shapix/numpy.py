@@ -463,6 +463,12 @@ def make_scalar_like_type(
   type
       An ``Annotated`` type that beartype validates at runtime.
   """
+  from ._array_types import _VALID_CASTINGS
+
+  if casting not in _VALID_CASTINGS:
+    msg = f"Invalid casting {casting!r}, must be one of {sorted(_VALID_CASTINGS)}"
+    raise ValueError(msg)
+
   target = np.dtype(target_dtype)
 
   def _check(value: object) -> bool:

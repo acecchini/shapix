@@ -206,36 +206,7 @@ else:
 # Like types (scalar | tensor | nested sequences — for input validation)
 # ---------------------------------------------------------------------------
 
-from .numpy import (
-  BoolLike as BoolLikeNumpy,
-  C64Like as C64LikeNumpy,
-  C128Like as C128LikeNumpy,
-  ComplexLike as ComplexLikeNumpy,
-  F16Like as F16LikeNumpy,
-  F32Like as F32LikeNumpy,
-  F64Like as F64LikeNumpy,
-  FloatLike as FloatLikeNumpy,
-  InexactLike as InexactLikeNumpy,
-  I8Like as I8LikeNumpy,
-  I16Like as I16LikeNumpy,
-  I32Like as I32LikeNumpy,
-  I64Like as I64LikeNumpy,
-  IntegerLike as IntegerLikeNumpy,
-  IntLike as IntLikeNumpy,
-  NumLike as NumLikeNumpy,
-  RealLike as RealLikeNumpy,
-  ShapedLike as ShapedLikeNumpy,
-  U8Like as U8LikeNumpy,
-  U16Like as U16LikeNumpy,
-  U32Like as U32LikeNumpy,
-  U64Like as U64LikeNumpy,
-  UIntLike as UIntLikeNumpy,
-)
-
-# ---------------------------------------------------------------------------
-# ScalarLike types (re-exported from numpy — no shape, just value validation)
-# ---------------------------------------------------------------------------
-
+# ScalarLike types + factory (re-exported from numpy — no shape, just value)
 from .numpy import BoolScalarLike as BoolScalarLike
 from .numpy import C64ScalarLike as C64ScalarLike
 from .numpy import C128ScalarLike as C128ScalarLike
@@ -263,6 +234,32 @@ from .numpy import UIntScalarLike as UIntScalarLike
 from .numpy import make_scalar_like_type as make_scalar_like_type
 
 if tp.TYPE_CHECKING:
+  from .numpy import (
+    BoolLike as BoolLikeNumpy,
+    C64Like as C64LikeNumpy,
+    C128Like as C128LikeNumpy,
+    ComplexLike as ComplexLikeNumpy,
+    F16Like as F16LikeNumpy,
+    F32Like as F32LikeNumpy,
+    F64Like as F64LikeNumpy,
+    FloatLike as FloatLikeNumpy,
+    InexactLike as InexactLikeNumpy,
+    I8Like as I8LikeNumpy,
+    I16Like as I16LikeNumpy,
+    I32Like as I32LikeNumpy,
+    I64Like as I64LikeNumpy,
+    IntegerLike as IntegerLikeNumpy,
+    IntLike as IntLikeNumpy,
+    NumLike as NumLikeNumpy,
+    RealLike as RealLikeNumpy,
+    ShapedLike as ShapedLikeNumpy,
+    U8Like as U8LikeNumpy,
+    U16Like as U16LikeNumpy,
+    U32Like as U32LikeNumpy,
+    U64Like as U64LikeNumpy,
+    UIntLike as UIntLikeNumpy,
+  )
+
   type BoolLike[*Dims] = Bool[*Dims] | BoolLikeNumpy[*Dims]
 
   type I8Like[*Dims] = I8[*Dims] | I8LikeNumpy[*Dims]

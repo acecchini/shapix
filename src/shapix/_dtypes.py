@@ -12,6 +12,7 @@ numpy, JAX, PyTorch, and TensorFlow arrays into a canonical string like
 
 from __future__ import annotations
 
+import typing as tp
 from dataclasses import dataclass, field
 
 __all__ = [
@@ -158,6 +159,18 @@ class DtypeSpec:
   allowed: frozenset[str]
   byteorder: str = "any"
   _structured: object = field(default=None, repr=False, compare=False)
+
+  _VALID_BYTEORDERS: tp.ClassVar[frozenset[str]] = frozenset({
+    "any",
+    "little",
+    "big",
+    "native",
+  })
+
+  def __post_init__(self) -> None:
+    if self.byteorder not in self._VALID_BYTEORDERS:
+      msg = f"Invalid byteorder {self.byteorder!r}, must be one of {sorted(self._VALID_BYTEORDERS)}"
+      raise ValueError(msg)
 
   def matches(self, obj: object) -> bool:
     """Return ``True`` if *obj*'s dtype matches this spec."""
