@@ -33,7 +33,9 @@ src/shapix/
 ## Naming conventions
 
 - Array types: `F32`, `I64`, `Bool`, `Shaped`, `Int`, `Float`, etc.
-- Like types: `F32Like`, `I64Like` (scalar | array | nested sequence)
+- Like types: `F32Like`, `I64Like` (scalar | array | nested sequence) — must be subscripted: `F32Like[N, C]` or `F32Like[...]`
+- ScalarLike types: `F32ScalarLike`, `I8ScalarLike` (range-validated scalars, no shape)
+- Endianness variants: `F32LE`, `I64BE`, `I32N` (LE/BE/N suffixes)
 - Dimensions: `N`, `C`, `H`, `W` (named); `~B` (variadic); `+N` (broadcast); `__` (anonymous); `~__` (anonymous variadic)
 
 ## Running tests

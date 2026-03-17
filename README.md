@@ -32,11 +32,21 @@ pip install shapix
 
 Shapix has one dependency: [beartype](https://github.com/beartype/beartype). Install your preferred array framework separately:
 
+Install optional dependencies alongside `shapix` with plain package names.
+Avoid extras-style installs such as `shapix[numpy]` or `shapix[torch]` (shapix intentionally does not provide extras).
+
 ```bash
 pip install shapix numpy          # NumPy
 pip install shapix torch          # PyTorch
 pip install shapix jax            # JAX
 pip install shapix numpy optree   # NumPy + tree support (optree or jax)
+```
+
+For `shapix.jax` and `shapix.torch`, install `numpy` alongside the backend:
+
+```bash
+pip install shapix numpy jax
+pip install shapix numpy torch
 ```
 
 ## Quick start
@@ -288,7 +298,7 @@ Same type names as NumPy, plus `BF16`. Base type is `torch.Tensor`.
 from shapix.numpy import F32Like
 
 @beartype
-def to_array(x: F32Like) -> np.ndarray:
+def to_array(x: F32Like[...]) -> np.ndarray:
     return np.asarray(x, dtype=np.float32)
 
 to_array(3.14)                          # scalar
@@ -298,14 +308,24 @@ to_array(np.ones((3, 4)))              # ndarray
 to_array([[[[[[1.0]]]]]])              # 6D+ — no depth limit
 ```
 
-**Available:** `I8Like`, `I16Like`, `I32Like`, `I64Like`, `U8Like`–`U64Like`, `F16Like`, `F32Like`, `F64Like`, `C64Like`, `C128Like`, plus category aliases `IntLk`, `FloatLk`, `NumLk`, etc.
+Like types **must be subscripted** — use `[...]` (Ellipsis) to accept any shape, or `[N, C]` to enforce specific dimensions:
+
+```python
+@beartype
+def process(x: F32Like[N, C]) -> F32[N, C]:
+    return np.asarray(x, dtype=np.float32)
+```
+
+**Available:** `I8Like`, `I16Like`, `I32Like`, `I64Like`, `U8Like`–`U64Like`, `F16Like`, `F32Like`, `F64Like`, `C64Like`, `C128Like`, plus category aliases `IntLike`, `FloatLike`, `NumLike`, etc.
+
+**Scalar-only types** (range-validated, no shape): `I8ScalarLike`, `F32ScalarLike`, `IntScalarLike`, etc.
 
 The `ArrayLike` template is also public for custom combinations:
 
 ```python
 from shapix.numpy import ArrayLike
 
-type MyInputType = ArrayLike[float, np.ndarray]
+type MyInputType = ArrayLike[float, np.float32]
 ```
 
 ### Custom array types
