@@ -354,7 +354,7 @@ if tp.TYPE_CHECKING:
   class Tree[_T]:
     """Static type stub — ``Tree[LeafType]`` for type checkers."""
 
-    def __class_getitem__(cls, item: object) -> type: ...  # type: ignore[override]
+    def __class_getitem__(cls, item: object) -> type: ...
 
 else:
   Tree = _TreeFactory(_get_jax_tree_util, name="Tree")

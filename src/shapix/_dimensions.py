@@ -245,7 +245,7 @@ class _ValueExpr(str):
   # Arithmetic → _ValueExpr (always, since scope is needed)
   # ------------------------------------------------------------------
 
-  def __add__(self, other: object) -> _ValueExpr:  # type: ignore[override]
+  def __add__(self, other: object) -> _ValueExpr:
     return _ValueExpr(f"({self}+{other})")
 
   def __radd__(self, other: object) -> _ValueExpr:
@@ -257,13 +257,13 @@ class _ValueExpr(str):
   def __rsub__(self, other: object) -> _ValueExpr:
     return _ValueExpr(f"({other}-{self})")
 
-  def __mul__(self, other: object) -> _ValueExpr:  # type: ignore[override]
+  def __mul__(self, other: object) -> _ValueExpr:
     return _ValueExpr(f"({self}*{other})")
 
-  def __rmul__(self, other: object) -> _ValueExpr:  # type: ignore[override]
+  def __rmul__(self, other: object) -> _ValueExpr:
     return _ValueExpr(f"({other}*{self})")
 
-  def __truediv__(self, other: object) -> _ValueExpr:  # type: ignore[override]
+  def __truediv__(self, other: object) -> _ValueExpr:
     return _ValueExpr(f"({self}/{other})")
 
   def __rtruediv__(self, other: object) -> _ValueExpr:
@@ -281,10 +281,10 @@ class _ValueExpr(str):
   def __rpow__(self, other: object) -> _ValueExpr:
     return _ValueExpr(f"({other}**{self})")
 
-  def __mod__(self, other: object) -> _ValueExpr:  # type: ignore[override]
+  def __mod__(self, other: object) -> _ValueExpr:
     return _ValueExpr(f"({self}%{other})")
 
-  def __rmod__(self, other: object) -> _ValueExpr:  # type: ignore[override]
+  def __rmod__(self, other: object) -> _ValueExpr:
     return _ValueExpr(f"({other}%{self})")
 
   # ------------------------------------------------------------------
@@ -307,7 +307,7 @@ class _ValueExpr(str):
 if tp.TYPE_CHECKING:
 
   class Value:
-    def __new__(cls, expr: str) -> Dimension: ...
+    def __new__(cls, expr: str) -> Dimension: ...  # type: ignore[misc]
 
     def __pos__(self) -> Dimension: ...
 

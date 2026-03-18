@@ -212,11 +212,11 @@ _FLOAT128_MIN, _FLOAT128_MAX = (
 )
 
 
-def _ge(v: object):  # noqa: ANN202
+def _ge(v: object) -> tp.Any:
   return Is[lambda x: x >= v]
 
 
-def _le(v: object):  # noqa: ANN202
+def _le(v: object) -> tp.Any:
   return Is[lambda x: x <= v]
 
 
@@ -234,47 +234,47 @@ _nb = Is[_not_bool]
 type StringLike = str | np.str_
 type BoolScalarLike = bool | np.bool_
 
-type I8ScalarLike = A[int | np.integer[tp.Any], _ge(_INT8_MIN) & _le(_INT8_MAX) & _nb]  # type: ignore[type-arg]
+type I8ScalarLike = A[int | np.integer[tp.Any], _ge(_INT8_MIN) & _le(_INT8_MAX) & _nb]
 type I16ScalarLike = A[
   int | np.integer[tp.Any], _ge(_INT16_MIN) & _le(_INT16_MAX) & _nb
-]  # type: ignore[type-arg]
+]
 type I32ScalarLike = A[
   int | np.integer[tp.Any], _ge(_INT32_MIN) & _le(_INT32_MAX) & _nb
-]  # type: ignore[type-arg]
+]
 type I64ScalarLike = A[
   int | np.integer[tp.Any], _ge(_INT64_MIN) & _le(_INT64_MAX) & _nb
-]  # type: ignore[type-arg]
+]
 
-type U8ScalarLike = A[int | np.integer[tp.Any], _ge(0) & _le(_UINT8_MAX) & _nb]  # type: ignore[type-arg]
-type U16ScalarLike = A[int | np.integer[tp.Any], _ge(0) & _le(_UINT16_MAX) & _nb]  # type: ignore[type-arg]
-type U32ScalarLike = A[int | np.integer[tp.Any], _ge(0) & _le(_UINT32_MAX) & _nb]  # type: ignore[type-arg]
-type U64ScalarLike = A[int | np.integer[tp.Any], _ge(0) & _le(_UINT64_MAX) & _nb]  # type: ignore[type-arg]
+type U8ScalarLike = A[int | np.integer[tp.Any], _ge(0) & _le(_UINT8_MAX) & _nb]
+type U16ScalarLike = A[int | np.integer[tp.Any], _ge(0) & _le(_UINT16_MAX) & _nb]
+type U32ScalarLike = A[int | np.integer[tp.Any], _ge(0) & _le(_UINT32_MAX) & _nb]
+type U64ScalarLike = A[int | np.integer[tp.Any], _ge(0) & _le(_UINT64_MAX) & _nb]
 
 type F16ScalarLike = A[
   float | np.floating[tp.Any], _ge(_FLOAT16_MIN) & _le(_FLOAT16_MAX) & _nb
-]  # type: ignore[type-arg]
+]
 type F32ScalarLike = A[
   float | np.floating[tp.Any], _ge(_FLOAT32_MIN) & _le(_FLOAT32_MAX) & _nb
-]  # type: ignore[type-arg]
+]
 type F64ScalarLike = A[
   float | np.floating[tp.Any], _ge(_FLOAT64_MIN) & _le(_FLOAT64_MAX) & _nb
-]  # type: ignore[type-arg]
+]
 type F128ScalarLike = A[
   float | np.floating[tp.Any], _ge(_FLOAT128_MIN) & _le(_FLOAT128_MAX) & _nb
-]  # type: ignore[type-arg]
+]
 
-type C64ScalarLike = A[complex | np.complexfloating[tp.Any, tp.Any], _nb]  # type: ignore[type-arg]
-type C128ScalarLike = A[complex | np.complexfloating[tp.Any, tp.Any], _nb]  # type: ignore[type-arg]
-type C256ScalarLike = A[complex | np.complexfloating[tp.Any, tp.Any], _nb]  # type: ignore[type-arg]
+type C64ScalarLike = A[complex | np.complexfloating[tp.Any, tp.Any], _nb]
+type C128ScalarLike = A[complex | np.complexfloating[tp.Any, tp.Any], _nb]
+type C256ScalarLike = A[complex | np.complexfloating[tp.Any, tp.Any], _nb]
 
 type IntScalarLike = I64ScalarLike
 type UIntScalarLike = U64ScalarLike
-type IntegerScalarLike = A[int | np.integer[tp.Any], _nb]  # type: ignore[type-arg]
+type IntegerScalarLike = A[int | np.integer[tp.Any], _nb]
 type FloatScalarLike = F64ScalarLike
-type RealScalarLike = A[int | float | np.integer[tp.Any] | np.floating[tp.Any], _nb]  # type: ignore[type-arg]
-type ComplexScalarLike = A[complex | np.complexfloating[tp.Any, tp.Any], _nb]  # type: ignore[type-arg]
-type InexactScalarLike = A[float | complex | np.inexact[tp.Any], _nb]  # type: ignore[type-arg]
-type NumScalarLike = A[int | float | complex | np.number[tp.Any], _nb]  # type: ignore[type-arg]
+type RealScalarLike = A[int | float | np.integer[tp.Any] | np.floating[tp.Any], _nb]
+type ComplexScalarLike = A[complex | np.complexfloating[tp.Any, tp.Any], _nb]
+type InexactScalarLike = A[float | complex | np.inexact[tp.Any], _nb]
+type NumScalarLike = A[int | float | complex | np.number[tp.Any], _nb]
 type ShapedScalarLike = bool | np.bool_ | NumScalarLike
 
 # ---------------------------------------------------------------------------
@@ -561,7 +561,7 @@ def make_scalar_like_type(
       return False
     try:
       arr = np.asarray(value)
-      return np.can_cast(arr.dtype, target, casting=casting)  # pyright: ignore[reportArgumentType]
+      return np.can_cast(arr.dtype, target, casting=casting)  # type: ignore[arg-type]  # pyright: ignore[reportArgumentType]
     except (TypeError, ValueError):
       return False
 

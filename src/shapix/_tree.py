@@ -49,6 +49,8 @@ from typing import Annotated
 
 from beartype.vale import Is
 
+from ._memo import ShapeMemo
+
 __all__ = ["Structure", "T", "S"]
 
 
@@ -62,7 +64,8 @@ class Structure(str):
 
   Create symbols and use them in Tree type annotations::
 
-      from shapix import Structure, Tree, N, C
+      from shapix import Structure, N, C
+      from shapix.optree import Tree
       from shapix.numpy import F32
 
       Params = Structure("Params")
@@ -115,7 +118,7 @@ class _TreeChecker:
       pop_memo()
 
   def _validate(
-    self, obj: object, tree_ops: tp.Any, is_bearable: tp.Any, memo: tp.Any
+    self, obj: object, tree_ops: tp.Any, is_bearable: tp.Any, memo: ShapeMemo
   ) -> bool:
     leaf_type = self._leaf_type
 
@@ -143,7 +146,7 @@ class _TreeChecker:
       return self._bind_or_check(names[0], tree_ops.tree_structure(obj), memo)
     return self._check_top_down(names, obj, tree_ops, memo, wildcard=False)
 
-  def _bind_or_check(self, name: str, tree_spec: object, memo: tp.Any) -> bool:
+  def _bind_or_check(self, name: str, tree_spec: object, memo: ShapeMemo) -> bool:
     """Bind a structure name or check it matches a previous binding."""
     if name not in memo.structures:
       memo.structures[name] = tree_spec
@@ -155,7 +158,7 @@ class _TreeChecker:
     names: list[str],
     obj: object,
     tree_ops: tp.Any,
-    memo: tp.Any,
+    memo: ShapeMemo,
     *,
     wildcard: bool,
   ) -> bool:
@@ -191,7 +194,7 @@ class _TreeChecker:
     return True
 
   def _check_bottom_up(
-    self, names: list[str], obj: object, tree_ops: tp.Any, memo: tp.Any
+    self, names: list[str], obj: object, tree_ops: tp.Any, memo: ShapeMemo
   ) -> bool:
     """Check structure names bottom-up (inner to outer).
 

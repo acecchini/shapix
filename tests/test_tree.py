@@ -1321,23 +1321,3 @@ class TestOptreeBackend:
     from shapix.optree import Tree as OptreeTree
 
     assert repr(OptreeTree) == "Tree"
-
-
-class TestJaxTreeBackend:
-  def test_jax_tree_basic(self) -> None:
-    pytest.importorskip("jax")
-    from shapix.jax import Tree as JaxTree
-
-    @shapix.check
-    @beartype
-    def f(x: JaxTree[F32[N]]) -> JaxTree[F32[N]]:
-      return x
-
-    data = {"a": np.ones(3, dtype=np.float32)}
-    f(data)
-
-  def test_jax_tree_repr(self) -> None:
-    pytest.importorskip("jax")
-    from shapix.jax import Tree as JaxTree
-
-    assert repr(JaxTree) == "Tree"

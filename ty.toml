@@ -1,2 +1,10 @@
 [environment]
 python-version = "3.12"
+
+[rules]
+# Dimension/ValueExpr subclass str and intentionally override arithmetic
+# operators with different return types. This is by design.
+invalid-method-override = "ignore"
+# Some `# type: ignore` comments are needed by mypy but not ty.
+# Suppress the warning rather than removing cross-checker suppressions.
+unused-type-ignore-comment = "ignore"

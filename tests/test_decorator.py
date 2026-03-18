@@ -208,6 +208,59 @@ class TestValueWithCheckDecorator:
     assert f(7).shape == (7,)
 
 
+class TestAsyncCheckContext:
+  def test_async_check_context(self) -> None:
+    """async with check_context() works correctly."""
+    import asyncio
+
+    from beartype.door import is_bearable
+
+    async def run() -> None:
+      async with shapix.check_context():
+        assert is_bearable(np.ones((4, 3), dtype=np.float32), F32[N, C])
+        assert not is_bearable(np.ones((4, 5), dtype=np.float32), F32[N, C])
+
+    asyncio.run(run())
+
+  def test_async_check_context_cleanup(self) -> None:
+    """After exiting async context, a new context gets a fresh memo."""
+    import asyncio
+
+    from beartype.door import is_bearable
+
+    async def run() -> None:
+      async with shapix.check_context():
+        assert is_bearable(np.ones((4,), dtype=np.float32), F32[N])
+
+      async with shapix.check_context():
+        assert is_bearable(np.ones((10,), dtype=np.float32), F32[N])
+
+    asyncio.run(run())
+
+  def test_async_concurrent_check_context(self) -> None:
+    """Overlapping async with check_context() tasks are isolated."""
+    import asyncio
+
+    from beartype.door import is_bearable
+
+    async def task_a() -> bool:
+      async with shapix.check_context():
+        await asyncio.sleep(0)
+        return is_bearable(np.ones((4,), dtype=np.float32), F32[N])
+
+    async def task_b() -> bool:
+      async with shapix.check_context():
+        await asyncio.sleep(0)
+        return is_bearable(np.ones((10,), dtype=np.float32), F32[N])
+
+    async def run() -> None:
+      a, b = await asyncio.gather(task_a(), task_b())
+      assert a
+      assert b
+
+    asyncio.run(run())
+
+
 class TestAsyncCheckDecorator:
   def test_async_basic(self) -> None:
     """Decorated async fn still works, iscoroutinefunction is True."""
@@ -277,3 +330,92 @@ class TestAsyncCheckDecorator:
 
     result = asyncio.run(f(4))
     assert result.shape == (4,)
+
+  def test_async_concurrent_memo_isolation(self) -> None:
+    """Concurrent @check tasks see independent memos."""
+    import asyncio
+
+    @shapix.check
+    @beartype
+    async def task_fn(x: F32[N]) -> F32[N]:
+      await asyncio.sleep(0)
+      return x
+
+    async def run() -> None:
+      a = np.ones((4,), dtype=np.float32)
+      b = np.ones((10,), dtype=np.float32)
+      ra, rb = await asyncio.gather(task_fn(a), task_fn(b))
+      assert ra.shape == (4,)
+      assert rb.shape == (10,)
+
+    asyncio.run(run())
+
+  def test_async_concurrent_value_resolution(self) -> None:
+    """Concurrent tasks using Value("self.attr") on different instances."""
+    import asyncio
+
+    class Obj:
+      def __init__(self, size: int) -> None:
+        self.size = size
+
+      @shapix.check
+      @beartype
+      async def f(self) -> F32[Value("self.size")]:  # type: ignore[valid-type]
+        await asyncio.sleep(0)
+        return np.ones(self.size, dtype=np.float32)
+
+    async def run() -> None:
+      a, b = await asyncio.gather(Obj(3).f(), Obj(7).f())
+      assert a.shape == (3,)
+      assert b.shape == (7,)
+
+    asyncio.run(run())
+
+  def test_async_exception_cleanup(self) -> None:
+    """Memo is cleaned up when async function raises."""
+    import asyncio
+
+    @shapix.check
+    @beartype
+    async def boom(x: F32[N]) -> F32[N]:
+      raise RuntimeError("boom")
+
+    with pytest.raises(RuntimeError, match="boom"):
+      asyncio.run(boom(np.ones(5, dtype=np.float32)))
+
+    # Should not leak — next call works independently
+    @shapix.check
+    @beartype
+    async def ok(x: F32[N]) -> F32[N]:
+      return x
+
+    result = asyncio.run(ok(np.ones(3, dtype=np.float32)))
+    assert result.shape == (3,)
+
+  def test_async_cancellation(self) -> None:
+    """Memo is cleaned up when task is cancelled."""
+    import asyncio
+
+    @shapix.check
+    @beartype
+    async def slow(x: F32[N]) -> F32[N]:
+      await asyncio.sleep(100)
+      return x
+
+    async def run() -> None:
+      task = asyncio.create_task(slow(np.ones(5, dtype=np.float32)))
+      await asyncio.sleep(0)
+      task.cancel()
+      with pytest.raises(asyncio.CancelledError):
+        await task
+
+      # Memo should not be leaked — a new call works fine
+      @shapix.check
+      @beartype
+      async def ok(x: F32[N]) -> F32[N]:
+        return x
+
+      result = await ok(np.ones(3, dtype=np.float32))
+      assert result.shape == (3,)
+
+    asyncio.run(run())

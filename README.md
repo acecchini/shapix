@@ -7,9 +7,9 @@ from beartype import beartype
 from shapix import N, C, H, W
 from shapix.numpy import F32
 
+
 @beartype
-def conv2d(x: F32[N, C, H, W], weight: F32[C, C, 3, 3]) -> F32[N, C, H, W]:
-    ...
+def conv2d(x: F32[N, C, H, W], weight: F32[C, C, 3, 3]) -> F32[N, C, H, W]: ...
 ```
 
 Shapix turns array shape annotations into **Python objects** that beartype validates at runtime. Dimensions like `N` and `C` are checked for consistency across all parameters — if `x` has batch size 8, then `weight` must agree, automatically.
@@ -30,7 +30,7 @@ Shapix turns array shape annotations into **Python objects** that beartype valid
 pip install shapix
 ```
 
-Shapix has one dependency: [beartype](https://github.com/beartype/beartype). Install your preferred array framework separately:
+Shapix has one dependency: [beartype](https://github.com/beartype/beartype) (>= 0.20, tested with 0.20–0.22). The frame-based memo system depends on beartype's internal call-stack layout; if you encounter issues with a newer beartype version, please file a bug. Install your preferred array framework separately:
 
 Install optional dependencies alongside `shapix` with plain package names.
 Avoid extras-style installs such as `shapix[numpy]` or `shapix[torch]` (shapix intentionally does not provide extras).
@@ -59,13 +59,15 @@ from beartype import beartype
 from shapix import N, C
 from shapix.numpy import F32
 
+
 @beartype
 def normalize(x: F32[N, C]) -> F32[N, C]:
-    return x / x.sum(axis=1, keepdims=True)
+  return x / x.sum(axis=1, keepdims=True)
 
-normalize(np.ones((4, 3), dtype=np.float32))   # OK
-normalize(np.ones((4, 3), dtype=np.float64))   # Raises — wrong dtype
-normalize(np.ones((4,), dtype=np.float32))     # Raises — wrong rank
+
+normalize(np.ones((4, 3), dtype=np.float32))  # OK
+normalize(np.ones((4, 3), dtype=np.float64))  # Raises — wrong dtype
+normalize(np.ones((4,), dtype=np.float32))  # Raises — wrong rank
 ```
 
 ### Cross-argument consistency
@@ -75,13 +77,16 @@ Named dimensions are tracked within each function call. If `N` is bound to 4 by 
 ```python
 @beartype
 def add(x: F32[N, C], y: F32[N, C]) -> F32[N, C]:
-    return x + y
+  return x + y
 
-add(np.ones((4, 3), dtype=np.float32),
-    np.ones((4, 3), dtype=np.float32))   # OK — N=4, C=3 in both
 
-add(np.ones((4, 3), dtype=np.float32),
-    np.ones((5, 3), dtype=np.float32))   # Raises — N=4 vs N=5
+add(
+  np.ones((4, 3), dtype=np.float32), np.ones((4, 3), dtype=np.float32)
+)  # OK — N=4, C=3 in both
+
+add(
+  np.ones((4, 3), dtype=np.float32), np.ones((5, 3), dtype=np.float32)
+)  # Raises — N=4 vs N=5
 ```
 
 ### Sequential calls are independent
@@ -91,9 +96,10 @@ Each function invocation gets a fresh set of dimension bindings:
 ```python
 @beartype
 def f(x: F32[N]) -> F32[N]:
-    return x
+  return x
 
-f(np.ones((3,), dtype=np.float32))    # N=3
+
+f(np.ones((3,), dtype=np.float32))  # N=3
 f(np.ones((100,), dtype=np.float32))  # N=100 — no conflict with previous call
 ```
 
@@ -121,9 +127,9 @@ Bind to a size on first occurrence and enforce consistency on subsequent ones.
 from shapix import N, C, H, W
 from shapix.numpy import F32
 
+
 @beartype
-def forward(x: F32[N, C, H, W]) -> F32[N, C, H, W]:
-    ...
+def forward(x: F32[N, C, H, W]) -> F32[N, C, H, W]: ...
 ```
 
 ### Fixed dimensions
@@ -132,8 +138,7 @@ Use plain integers for dimensions that must match an exact size:
 
 ```python
 @beartype
-def rgb_to_gray(x: F32[N, 3, H, W]) -> F32[N, 1, H, W]:
-    ...
+def rgb_to_gray(x: F32[N, 3, H, W]) -> F32[N, 1, H, W]: ...
 ```
 
 ### Symbolic dimensions
@@ -143,13 +148,14 @@ Dimensions support arithmetic. Expressions are evaluated against bound dimension
 ```python
 from shapix import N, C
 
+
 @beartype
-def pad(x: F32[N]) -> F32[N + 2]:
-    ...
+def pad(x: F32[N]) -> F32[N + 2]: ...
+
 
 @beartype
 def flatten(x: F32[N, C]) -> F32[N * C]:
-    return x.reshape(-1)
+  return x.reshape(-1)
 ```
 
 Supported operators: `+`, `-`, `*`, `/`, `//`, `**`, `%`.
@@ -171,16 +177,18 @@ import numpy as np
 Size = Value("size")
 WidthPlus3 = Value("self.width + 3")
 
+
 @beartype
 def full(size: int) -> F32[Size]:
-    return np.full((size,), 1.0, dtype=np.float32)
+  return np.full((size,), 1.0, dtype=np.float32)
+
 
 class SomeClass:
-    width = 5
+  width = 5
 
-    @beartype
-    def full(self) -> F32[WidthPlus3]:
-        return np.full((self.width + 3,), 1.0, dtype=np.float32)
+  @beartype
+  def full(self) -> F32[WidthPlus3]:
+    return np.full((self.width + 3,), 1.0, dtype=np.float32)
 ```
 
 `Value(...)` uses a restricted arithmetic grammar as well. It allows names,
@@ -195,13 +203,15 @@ Apply `~` (tilde) to any dimension to make it **variadic** — matching zero or 
 from shapix import B, C
 from shapix.numpy import F32
 
+
 @beartype
 def normalize(x: F32[~B, C]) -> F32[~B, C]:
-    return x / x.sum(axis=-1, keepdims=True)
+  return x / x.sum(axis=-1, keepdims=True)
 
-normalize(np.ones((3,), dtype=np.float32))        # *B=(),     C=3
-normalize(np.ones((4, 3), dtype=np.float32))       # *B=(4,),   C=3
-normalize(np.ones((2, 4, 3), dtype=np.float32))    # *B=(2,4),  C=3
+
+normalize(np.ones((3,), dtype=np.float32))  # *B=(),     C=3
+normalize(np.ones((4, 3), dtype=np.float32))  # *B=(4,),   C=3
+normalize(np.ones((2, 4, 3), dtype=np.float32))  # *B=(2,4),  C=3
 ```
 
 Named variadic dimensions enforce cross-argument consistency on the matched shape:
@@ -209,7 +219,7 @@ Named variadic dimensions enforce cross-argument consistency on the matched shap
 ```python
 @beartype
 def add(x: F32[~B, C], y: F32[~B, C]) -> F32[~B, C]:
-    return x + y
+  return x + y
 ```
 
 Use `~__` (anonymous variadic) when you don't need consistency:
@@ -217,9 +227,10 @@ Use `~__` (anonymous variadic) when you don't need consistency:
 ```python
 from shapix import __, C
 
+
 @beartype
 def last_dim(x: F32[~__, C]) -> F32[~__, C]:
-    return x
+  return x
 ```
 
 ### Broadcastable dimensions
@@ -229,12 +240,15 @@ Apply `+` (unary plus) to any dimension to make it **broadcastable** — size 1 
 ```python
 from shapix import N, C
 
+
 @beartype
 def broadcast_add(x: F32[N, C], y: F32[+N, C]) -> F32[N, C]:
-    return x + y
+  return x + y
 
-broadcast_add(np.ones((4, 3), dtype=np.float32),
-              np.ones((1, 3), dtype=np.float32))   # OK — +N allows size 1
+
+broadcast_add(
+  np.ones((4, 3), dtype=np.float32), np.ones((1, 3), dtype=np.float32)
+)  # OK — +N allows size 1
 ```
 
 Broadcastable also works with variadic dimensions: `~+B` matches zero or more dims where each can be 1 or the bound value.
@@ -246,9 +260,12 @@ Broadcastable also works with variadic dimensions: `~+B` matches zero or more di
 ```python
 from shapix import __, C
 
+
 @beartype
 def f(x: F32[__, C]) -> F32[__, C]:
-    return x
+  return x
+
+
 # __ matches anything, only C is cross-checked
 ```
 
@@ -260,9 +277,10 @@ def f(x: F32[__, C]) -> F32[__, C]:
 from shapix import Scalar
 from shapix.numpy import F32
 
+
 @beartype
 def dot(x: F32[N], y: F32[N]) -> F32[Scalar]:
-    return np.dot(x, y)  # returns shape ()
+  return np.dot(x, y)  # returns shape ()
 ```
 
 > **Note:** `Scalar` must be the only shape token. Mixed forms like `F32[N, Scalar]` or `F32[Scalar, ...]` raise `TypeError` at hint construction time.
@@ -278,25 +296,25 @@ Vocab = Dimension("Vocab")
 Embed = Dimension("Embed")
 Seq = Dimension("Seq")
 
+
 @beartype
-def embed(tokens: I64[N, Seq], table: F32[Vocab, Embed]) -> F32[N, Seq, Embed]:
-    ...
+def embed(tokens: I64[N, Seq], table: F32[Vocab, Embed]) -> F32[N, Seq, Embed]: ...
 ```
 
 Unary operators work on custom dimensions too: `~Vocab` (variadic), `+Vocab` (broadcastable).
 
-To silence pyright/Pylance on custom dimensions, use the `TYPE_CHECKING` pattern:
+To silence type checker errors on custom dimensions, use the `TYPE_CHECKING` pattern:
 
 ```python
 import typing as tp
 from shapix import Dimension
 
 if tp.TYPE_CHECKING:
-    type Vocab = int
-    type Embed = int
+  type Vocab = int
+  type Embed = int
 else:
-    Vocab = Dimension("Vocab")
-    Embed = Dimension("Embed")
+  Vocab = Dimension("Vocab")
+  Embed = Dimension("Embed")
 ```
 
 ### Summary
@@ -359,13 +377,15 @@ from shapix._dtypes import FLOAT32_LE, INT64_BE, INT32_N
 F32LE = make_array_type(np.ndarray, FLOAT32_LE)
 I64BE = make_array_type(np.ndarray, INT64_BE)
 
+
 @beartype
 def process_le(x: F32LE[N, C]) -> F32LE[N, C]:
-    """Only accepts little-endian float32 arrays."""
-    return x
+  """Only accepts little-endian float32 arrays."""
+  return x
 
-process_le(np.ones((4, 3), dtype="<f4"))   # OK — little-endian
-process_le(np.ones((4, 3), dtype=">f4"))   # Raises — big-endian
+
+process_le(np.ones((4, 3), dtype="<f4"))  # OK — little-endian
+process_le(np.ones((4, 3), dtype=">f4"))  # Raises — big-endian
 ```
 
 Available endianness specs for all multi-byte types: `INT16_LE`/`INT16_BE`/`INT16_N`, `INT32_LE`/`INT32_BE`/`INT32_N`, etc., plus category groups (`INT_LE`, `FLOAT_BE`, `REAL_N`, `SHAPED_LE`, etc.).
@@ -381,13 +401,15 @@ from shapix.numpy import Structured
 
 Point = Structured([("x", np.float32), ("y", np.float32)])
 
+
 @beartype
 def process_points(pts: Point[N]) -> Point[N]:
-    return pts
+  return pts
+
 
 # Exact field match required
 pts = np.zeros(10, dtype=[("x", np.float32), ("y", np.float32)])
-process_points(pts)   # OK
+process_points(pts)  # OK
 
 wrong = np.zeros(10, dtype=[("a", np.float32), ("b", np.float32)])
 process_points(wrong)  # Raises — field names don't match
@@ -400,15 +422,17 @@ process_points(wrong)  # Raises — field names don't match
 ```python
 from shapix.numpy import F32Like
 
+
 @beartype
 def to_array(x: F32Like[...]) -> np.ndarray:
-    return np.asarray(x, dtype=np.float32)
+  return np.asarray(x, dtype=np.float32)
 
-to_array(3.14)                          # scalar
-to_array([1.0, 2.0, 3.0])              # 1D list
-to_array([[1.0, 2.0], [3.0, 4.0]])     # 2D nested list
-to_array(np.ones((3, 4)))              # ndarray
-to_array([[[[[[1.0]]]]]])              # 6D+ — no depth limit
+
+to_array(3.14)  # scalar
+to_array([1.0, 2.0, 3.0])  # 1D list
+to_array([[1.0, 2.0], [3.0, 4.0]])  # 2D nested list
+to_array(np.ones((3, 4)))  # ndarray
+to_array([[[[[[1.0]]]]]])  # 6D+ — no depth limit
 ```
 
 Like types **must be subscripted** — use `[...]` (Ellipsis) to accept any shape, or `[N, C]` to enforce specific dimensions:
@@ -416,7 +440,7 @@ Like types **must be subscripted** — use `[...]` (Ellipsis) to accept any shap
 ```python
 @beartype
 def process(x: F32Like[N, C]) -> F32[N, C]:
-    return np.asarray(x, dtype=np.float32)
+  return np.asarray(x, dtype=np.float32)
 ```
 
 Dtype compatibility uses NumPy's `same_kind` casting rules by default: `int32` can be passed where `float32` is expected (safe upcast), but `complex128` cannot.
@@ -426,8 +450,8 @@ Dtype compatibility uses NumPy's `same_kind` casting rules by default: `int32` c
 Like types are also available in JAX and PyTorch backends:
 
 ```python
-from shapix.jax import F32Like     # accepts jax.Array, ndarray, scalars, sequences
-from shapix.torch import F32Like   # accepts Tensor, ndarray, scalars, sequences
+from shapix.jax import F32Like  # accepts jax.Array, ndarray, scalars, sequences
+from shapix.torch import F32Like  # accepts Tensor, ndarray, scalars, sequences
 ```
 
 ### ScalarLike types (range-validated scalars)
@@ -439,14 +463,16 @@ ScalarLike types validate individual scalar values with range checking — no sh
 ```python
 from shapix.numpy import I8ScalarLike, F32ScalarLike, U8ScalarLike
 
+
 @beartype
 def clamp_pixel(value: U8ScalarLike) -> int:
-    """Accepts int in [0, 255] range."""
-    return int(value)
+  """Accepts int in [0, 255] range."""
+  return int(value)
 
-clamp_pixel(128)    # OK
-clamp_pixel(256)    # Raises — out of uint8 range
-clamp_pixel(-1)     # Raises — negative not allowed for unsigned
+
+clamp_pixel(128)  # OK
+clamp_pixel(256)  # Raises — out of uint8 range
+clamp_pixel(-1)  # Raises — negative not allowed for unsigned
 ```
 
 **Available:** `BoolScalarLike`, `I8ScalarLike`–`I64ScalarLike`, `U8ScalarLike`–`U64ScalarLike`, `F16ScalarLike`–`F128ScalarLike`, `C64ScalarLike`, `C128ScalarLike`, `C256ScalarLike`, plus category aliases `IntScalarLike`, `FloatScalarLike`, `NumScalarLike`, etc.
@@ -456,9 +482,9 @@ Also: `StringLike` (str | np.str_).
 ScalarLike types are available from all backends:
 
 ```python
-from shapix.numpy import U8ScalarLike   # defined here
-from shapix.jax import U8ScalarLike     # re-exported
-from shapix.torch import U8ScalarLike   # re-exported
+from shapix.numpy import U8ScalarLike  # defined here
+from shapix.jax import U8ScalarLike  # re-exported
+from shapix.torch import U8ScalarLike  # re-exported
 ```
 
 For custom casting rules, use `make_scalar_like_type`:
@@ -466,8 +492,12 @@ For custom casting rules, use `make_scalar_like_type`:
 ```python
 from shapix.numpy import make_scalar_like_type
 
-F32ScalarStrict = make_scalar_like_type(np.float32, casting="no")   # exact np.float32 only
-F32ScalarSafe = make_scalar_like_type(np.float32, casting="safe")   # float16 OK, complex rejected
+F32ScalarStrict = make_scalar_like_type(
+  np.float32, casting="no"
+)  # exact np.float32 only
+F32ScalarSafe = make_scalar_like_type(
+  np.float32, casting="safe"
+)  # float16 OK, complex rejected
 ```
 
 The `ArrayLike` template is also public for custom static type combinations:
@@ -532,8 +562,8 @@ The `casting` parameter controls dtype strictness using NumPy casting rules: `"n
 Tree annotations validate all leaves in a nested structure (dicts, lists, tuples, namedtuples). Import `Tree` from an explicit backend module:
 
 ```python
-from shapix.optree import Tree   # backed by optree
-from shapix.jax import Tree      # backed by jax.tree_util
+from shapix.optree import Tree  # backed by optree
+from shapix.jax import Tree  # backed by jax.tree_util
 ```
 
 ### Basic leaf checking
@@ -543,13 +573,16 @@ from shapix import T, S, N, C
 from shapix.optree import Tree  # or: from shapix.jax import Tree
 from shapix.numpy import F32
 
+
 @beartype
-def process(data: Tree[F32[N, C]]) -> Tree[F32[N, C]]:
-    ...
+def process(data: Tree[F32[N, C]]) -> Tree[F32[N, C]]: ...
+
 
 # All leaves must be F32 arrays with consistent N and C
-process({"params": np.ones((3, 4), dtype=np.float32),
-         "state": np.ones((3, 4), dtype=np.float32)})
+process({
+  "params": np.ones((3, 4), dtype=np.float32),
+  "state": np.ones((3, 4), dtype=np.float32),
+})
 ```
 
 ### Structure binding
@@ -558,11 +591,11 @@ Named structure symbols (`T`, `S`) enforce that multiple arguments share identic
 
 ```python
 @beartype
-def add_trees(x: Tree[F32[N], T], y: Tree[F32[N], T]) -> Tree[F32[N]]:
-    ...
+def add_trees(x: Tree[F32[N], T], y: Tree[F32[N], T]) -> Tree[F32[N]]: ...
+
 
 add_trees({"a": x1, "b": x2}, {"a": y1, "b": y2})  # OK — same structure
-add_trees({"a": x1}, [y1, y2])                       # Raises — different structure
+add_trees({"a": x1}, [y1, y2])  # Raises — different structure
 ```
 
 ### Multi-level structure matching
@@ -573,17 +606,22 @@ Structure names are listed left-to-right from outer to inner. Without `...`, eac
 # T = full tree structure (all levels)
 def f(x: Tree[F32[N], T], y: Tree[F32[N], T]): ...
 
+
 # T = top-level only, subtrees are arbitrary
 def f(x: Tree[F32[N], T, ...], y: Tree[F32[N], T, ...]): ...
+
 
 # T = bottom-level only (leaf-adjacent container)
 def f(x: Tree[F32[N], ..., T], y: Tree[F32[N], ..., T]): ...
 
+
 # T = top level, S = full remaining structure below
 def f(x: Tree[int, T], y: Tree[int, S], z: Tree[int, T, S]): ...
 
+
 # T = top, S = next, inner levels unchecked
 def f(x: Tree[F32[N], T, S, ...]): ...
+
 
 # S = bottom, T = second-from-bottom
 def f(x: Tree[F32[N], ..., T, S]): ...
@@ -599,6 +637,7 @@ from shapix import Structure
 Params = Structure("Params")
 State = Structure("State")
 
+
 @beartype
 def train(params: Tree[F32[N], Params], state: Tree[I64[N], State]): ...
 ```
@@ -613,11 +652,12 @@ The one rule: **every dimension symbol used in an annotation must be imported in
 
 ```python
 from __future__ import annotations
-from shapix import C           # B is NOT imported
+from shapix import C  # B is NOT imported
 from shapix.numpy import F32
 
+
 @beartype
-def f(x: F32[~B, C]): ...     # BeartypeDecorHintForwardRefException — B is not in scope
+def f(x: F32[~B, C]): ...  # BeartypeDecorHintForwardRefException — B is not in scope
 ```
 
 Fix: import `B`:
@@ -635,10 +675,12 @@ Instead of decorating each function with `@beartype`, you can instrument an enti
 ```python
 # In your_package/__init__.py
 from beartype.claw import beartype_this_package
+
 beartype_this_package()
 
 # Or via shapix's wrapper:
 from shapix.claw import shapix_this_package
+
 shapix_this_package()
 ```
 
@@ -666,8 +708,8 @@ def f(x: F32[N, C], y: F32[N, C]) -> F32[N, C]: ...
 **`@shapix.check`** takes a different approach: instead of detecting the frame, it explicitly pushes a fresh memo onto a stack before the call and pops it after. All validators see this explicit memo first (it takes priority over frame detection):
 
 ```python
-@shapix.check   # Pushes memo before call, pops after
-@beartype        # Validates parameters using that memo
+@shapix.check  # Pushes memo before call, pops after
+@beartype  # Validates parameters using that memo
 def f(x: F32[N, C], y: F32[N, C]) -> F32[N, C]: ...
 ```
 
@@ -676,7 +718,8 @@ def f(x: F32[N, C], y: F32[N, C]) -> F32[N, C]: ...
 ```python
 from beartype import BeartypeConf
 
-@shapix.check(conf=BeartypeConf())   # Applies @beartype + memo management
+
+@shapix.check(conf=BeartypeConf())  # Applies @beartype + memo management
 def f(x: F32[N, C], y: F32[N, C]) -> F32[N, C]: ...
 ```
 
@@ -691,10 +734,12 @@ Frame-based detection counts a fixed number of frames up from the validator. If 
 @beartype
 def f(x: F32[N, C], y: F32[N, C]) -> F32[N, C]: ...
 
+
 # This might not — a middleware decorator adds extra frames
-@some_middleware   # Adds frames between beartype's wrapper and the caller
+@some_middleware  # Adds frames between beartype's wrapper and the caller
 @beartype
 def f(x: F32[N, C], y: F32[N, C]) -> F32[N, C]: ...
+
 
 # Fix: @shapix.check bypasses frame detection entirely
 @some_middleware
@@ -727,8 +772,8 @@ is_bearable(y, F32[N, C])  # Binds N=999 in a new memo — no error!
 
 # With check_context — checks share a memo, N IS cross-checked
 with shapix.check_context():
-    assert is_bearable(x, F32[N, C])  # Binds N=4
-    assert is_bearable(y, F32[N, C])  # Checks N=4 — raises if y has N=999
+  assert is_bearable(x, F32[N, C])  # Binds N=4
+  assert is_bearable(y, F32[N, C])  # Checks N=4 — raises if y has N=999
 ```
 
 ## How it works
@@ -755,7 +800,9 @@ However, some patterns are fundamentally runtime-only and produce type checker e
 | Custom dimensions | `F32[Vocab, Embed]` | `# type: ignore` or `TYPE_CHECKING` pattern |
 | `Value(...)` | `F32[Value("size")]` | `# type: ignore` |
 
-### Recommended pyright config
+### Recommended type checker config
+
+#### pyright
 
 Add to your `pyproject.toml` or `pyrightconfig.json` to suppress the most common shapix-related diagnostics:
 
@@ -764,6 +811,17 @@ Add to your `pyproject.toml` or `pyrightconfig.json` to suppress the most common
 reportInvalidTypeForm = false
 ```
 
+#### mypy
+
+```toml
+[tool.mypy]
+ignore_missing_imports = true
+```
+
+#### ty
+
+No special configuration needed for ty.
+
 ### Inline `# type: ignore`
 
 For patterns that all three checkers reject (arithmetic dims, Value(), custom dims), use blanket `# type: ignore`:
@@ -771,11 +829,12 @@ For patterns that all three checkers reject (arithmetic dims, Value(), custom di
 ```python
 @beartype
 def pad(x: F32[N]) -> F32[N + 2]:  # type: ignore
-    ...
+  ...
+
 
 @beartype
 def f(x: F32[~B, C]) -> F32[~B, C]:  # type: ignore
-    ...
+  ...
 ```
 
 ### Custom dimensions under TYPE_CHECKING
@@ -787,12 +846,13 @@ import typing as tp
 from shapix import Dimension
 
 if tp.TYPE_CHECKING:
-    import typing as _tp
-    Vocab = _tp.TypeVar("Vocab")
-    Embed = _tp.TypeVar("Embed")
+  import typing as _tp
+
+  Vocab = _tp.TypeVar("Vocab")
+  Embed = _tp.TypeVar("Embed")
 else:
-    Vocab = Dimension("Vocab")
-    Embed = Dimension("Embed")
+  Vocab = Dimension("Vocab")
+  Embed = Dimension("Embed")
 ```
 
 ## Compared to jaxtyping

@@ -409,3 +409,37 @@ class TestMixedScalarRejection:
 
     hint = F32[Scalar]
     assert hasattr(hint, "__metadata__")
+
+  def test_dimension_empty_n_raises(self) -> None:
+    """Dimension("") (equivalent to Scalar) mixed with N must raise."""
+    from shapix import N
+    from shapix.numpy import F32
+
+    with pytest.raises(TypeError, match="Scalar must be the only shape token"):
+      F32[Dimension(""), N]
+
+  def test_n_dimension_empty_raises(self) -> None:
+    from shapix import N
+    from shapix.numpy import F32
+
+    with pytest.raises(TypeError, match="Scalar must be the only shape token"):
+      F32[N, Dimension("")]
+
+  def test_ellipsis_dimension_empty_raises(self) -> None:
+    from shapix.numpy import F32
+
+    with pytest.raises(TypeError, match="Scalar must be the only shape token"):
+      F32[..., Dimension("")]
+
+  def test_dimension_empty_ellipsis_raises(self) -> None:
+    from shapix.numpy import F32
+
+    with pytest.raises(TypeError, match="Scalar must be the only shape token"):
+      F32[Dimension(""), ...]
+
+  def test_dimension_empty_alone_works(self) -> None:
+    """Dimension("") by itself is valid (equivalent to Scalar)."""
+    from shapix.numpy import F32
+
+    hint = F32[Dimension("")]
+    assert hasattr(hint, "__metadata__")

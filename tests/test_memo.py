@@ -132,15 +132,13 @@ class TestMemoEdgeCases:
     # structures are not included in bindings_str
     assert "T" not in formatted
 
-  def test_pop_empty_raises(self) -> None:
-    from shapix._memo import _get_explicit_stack, pop_memo
+  def test_pop_empty_is_safe(self) -> None:
+    from shapix._memo import _explicit_stack, pop_memo
 
-    # Ensure stack is empty
-    stack = _get_explicit_stack()
-    orig_len = len(stack)
-    if orig_len == 0:
-      with pytest.raises(IndexError):
-        pop_memo()
+    # Ensure stack is empty, then verify pop on empty doesn't corrupt state
+    assert _explicit_stack.get() == ()
+    pop_memo()
+    assert _explicit_stack.get() == ()
 
   def test_get_memo_without_explicit_returns_frame_based(self) -> None:
     """Without explicit stack, get_memo should use frame detection."""

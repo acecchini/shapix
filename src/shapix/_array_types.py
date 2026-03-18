@@ -29,7 +29,7 @@ from typing import Annotated
 
 from beartype.vale import Is
 
-from ._dimensions import Dimension, Scalar, _ValueExpr
+from ._dimensions import Dimension, _ValueExpr
 from ._dtypes import DtypeSpec
 from ._dtypes import extract_dtype_str as extract_dtype_str
 from ._memo import ShapeMemo as ShapeMemo
@@ -243,7 +243,7 @@ class _ArrayLikeChecker:
       self._fail_obj = obj
       return False
 
-    result = self._check(arr, tuple(arr.shape), memo, scope)  # type: ignore[union-attr]
+    result = self._check(arr, tuple(arr.shape), memo, scope)  # type: ignore[attr-defined]
     if not result:
       self._fail_obj = obj
     return result
@@ -252,7 +252,7 @@ class _ArrayLikeChecker:
     """Convert *obj* to an array with ``.shape`` and ``.dtype``, or None."""
     if self._asarray is not None:
       try:
-        return self._asarray(obj)  # type: ignore[operator]
+        return self._asarray(obj)
       except Exception:  # noqa: BLE001
         pass  # fall through to numpy
 
@@ -299,7 +299,7 @@ class _ArrayLikeChecker:
 
     for target in self._dtype_spec.allowed:
       try:
-        if np.can_cast(source, target, casting=self._casting):  # pyright: ignore[reportArgumentType]
+        if np.can_cast(source, target, casting=self._casting):  # type: ignore[arg-type]  # pyright: ignore[reportArgumentType]
           return self._dtype_spec._check_byteorder(obj)
       except TypeError:
         continue
@@ -404,9 +404,14 @@ def make_array_like_type(
 # ---------------------------------------------------------------------------
 
 
+def _is_scalar_token(d: object) -> bool:
+  """True if *d* represents the scalar sentinel (zero-dim shape)."""
+  return isinstance(d, Dimension) and d._dim_spec is None  # noqa: SLF001
+
+
 def _to_shape_spec(dims: tuple[object, ...]) -> tuple[DimSpec, ...]:
   """Convert a tuple of user-facing dim objects to internal DimSpec."""
-  if any(d is Scalar for d in dims) and len(dims) > 1:
+  if any(_is_scalar_token(d) for d in dims) and len(dims) > 1:
     msg = (
       "Scalar must be the only shape token; mixed use like F32[N, Scalar] is invalid"
     )

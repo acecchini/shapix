@@ -1,4 +1,4 @@
-"""Thread-safe memo and scope management for shape checking.
+"""Thread-safe and async-safe memo and scope management for shape checking.
 
 Two modes of operation:
 
@@ -7,7 +7,9 @@ Two modes of operation:
    All parameter checks within one function call share the same memo.
 
 2. **Explicit (push/pop)**: When used with ``@shapix.check``, the memo is managed
-   via an explicit stack. This is guaranteed correct regardless of call-stack depth.
+   via an explicit stack stored in a :class:`contextvars.ContextVar`.  This is
+   guaranteed correct regardless of call-stack depth **and** is async-task-safe
+   (each ``asyncio`` task inherits a snapshot of the parent's context).
 
 If no memo context exists (e.g. a bare ``isinstance`` check), a temporary memo is
 created per check — dimensions are validated individually but not cross-checked.
@@ -15,9 +17,11 @@ created per check — dimensions are validated individually but not cross-checke
 
 from __future__ import annotations
 
+import contextvars
+import inspect
 import sys
 import threading
-import inspect
+import types
 from dataclasses import dataclass, field
 
 __all__ = ["ShapeMemo", "get_memo", "get_scope", "push_memo", "pop_memo"]
@@ -62,52 +66,43 @@ class ShapeMemo:
     self.structures.update(structures)
 
 
-_local = threading.local()
-
 # ---------------------------------------------------------------------------
 # Explicit stack (used by @shapix.check / check_context)
+#
+# Stored as immutable tuples in ContextVar so that asyncio task fork
+# (copy-on-write) isolates each task's stack automatically.
 # ---------------------------------------------------------------------------
+
+_explicit_stack: contextvars.ContextVar[tuple[ShapeMemo, ...]] = contextvars.ContextVar(
+  "_explicit_stack", default=()
+)
+_explicit_scope_stack: contextvars.ContextVar[tuple[dict[str, object] | None, ...]] = (
+  contextvars.ContextVar("_explicit_scope_stack", default=())
+)
 
 
 def push_memo(
   memo: ShapeMemo | None = None, *, scope: dict[str, object] | None = None
 ) -> ShapeMemo:
   """Push a memo onto the explicit stack. Pair with :func:`pop_memo`."""
-  stack = _get_explicit_stack()
   if memo is None:
     memo = ShapeMemo()
-  stack.append(memo)
-  _get_explicit_scope_stack().append(scope)
+  _explicit_stack.set(_explicit_stack.get() + (memo,))
+  _explicit_scope_stack.set(_explicit_scope_stack.get() + (scope,))
   return memo
 
 
 def pop_memo() -> None:
   """Pop the most recent explicit memo."""
-  _get_explicit_stack().pop()
-  _get_explicit_scope_stack().pop()
-
-
-def _get_explicit_stack() -> list[ShapeMemo]:
-  try:
-    return _local.explicit_stack  # type: ignore[has-type]
-  except AttributeError:
-    stack: list[ShapeMemo] = []
-    _local.explicit_stack = stack
-    return stack
-
-
-def _get_explicit_scope_stack() -> list[dict[str, object] | None]:
-  try:
-    return _local.explicit_scope_stack  # type: ignore[has-type]
-  except AttributeError:
-    stack: list[dict[str, object] | None] = []
-    _local.explicit_scope_stack = stack
-    return stack
+  _explicit_stack.set(_explicit_stack.get()[:-1])
+  _explicit_scope_stack.set(_explicit_scope_stack.get()[:-1])
 
 
 # ---------------------------------------------------------------------------
 # Frame-based auto-detection (used by Is[_ShapeChecker] validators)
 # ---------------------------------------------------------------------------
+
+_local = threading.local()
 
 
 def get_memo(_depth: int = 2) -> ShapeMemo:
@@ -128,7 +123,7 @@ def get_memo(_depth: int = 2) -> ShapeMemo:
       → beartype wrapper.
   """
   # 1. Explicit stack takes priority
-  explicit = _get_explicit_stack()
+  explicit = _explicit_stack.get()
   if explicit:
     return explicit[-1]
 
@@ -177,7 +172,7 @@ def get_memo(_depth: int = 2) -> ShapeMemo:
   # New call context — clean stale entries when stack grows large
   if len(stack) > _FRAME_STACK_GC_THRESHOLD:
     active: set[int] = set()
-    f = sys._getframe(0)
+    f: types.FrameType | None = sys._getframe(0)
     while f is not None:
       active.add(id(f))
       f = f.f_back
@@ -190,7 +185,7 @@ def get_memo(_depth: int = 2) -> ShapeMemo:
 
 def get_scope(_depth: int = 2) -> dict[str, object]:
   """Return the current runtime scope for ``Value(...)`` expressions."""
-  explicit = _get_explicit_scope_stack()
+  explicit = _explicit_scope_stack.get()
   if explicit and explicit[-1] is not None:
     return explicit[-1]
 

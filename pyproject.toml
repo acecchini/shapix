@@ -6,7 +6,7 @@ readme = "README.md"
 license = "MIT"
 authors = [{ name = "acecchini", email = "ale.cecchini.valette@gmail.com" }]
 requires-python = ">=3.12"
-dependencies = ["beartype>=0.20"]
+dependencies = ["beartype>=0.20"]  # Tested with 0.20-0.22; see tox.toml
 keywords = [
   "type-checking",
   "shape",
@@ -82,18 +82,15 @@ ignore-words-list = "numbe"
 [tool.pyright]
 typeCheckingMode = "strict"
 include = ["src", "tests/typing"]
-reportInvalidTypeForm = false
-reportMissingTypeStubs = false
+# Beartype's Is[lambda ...] validators produce unknown types in closures
+reportUnknownLambdaType = false
 reportUnknownMemberType = false
-reportUnknownParameterType = false
 reportUnknownVariableType = false
 reportUnknownArgumentType = false
-reportUntypedBaseClass = false
-reportCallIssue = false
-reportIndexIssue = false
-reportPrivateUsage = false
-reportUnknownLambdaType = false
+# _TreeFactory is used at runtime via module-level assignment, not direct reference
 reportUnusedClass = false
+# numpy._NestedSequence, ._SupportsArray, and internal _dim_spec access
+reportPrivateUsage = false
 reportUnusedImport = "warning"
 pythonVersion = "3.12"
 pythonPlatform = "Linux"

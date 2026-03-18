@@ -12,10 +12,14 @@ from __future__ import annotations
 
 import functools
 import inspect
+import typing as tp
 from collections.abc import Callable
 from typing import overload
 
 from ._memo import pop_memo, push_memo
+
+if tp.TYPE_CHECKING:
+  from beartype import BeartypeConf
 
 __all__ = ["check", "check_context"]
 
@@ -24,12 +28,12 @@ __all__ = ["check", "check_context"]
 def check[**P, R](fn: Callable[P, R], /) -> Callable[P, R]: ...
 @overload
 def check[**P, R](
-  *, conf: object = ...
+  *, conf: BeartypeConf = ...
 ) -> Callable[[Callable[P, R]], Callable[P, R]]: ...
 
 
 def check[**P, R](
-  fn: Callable[P, R] | None = None, /, *, conf: object | None = None
+  fn: Callable[P, R] | None = None, /, *, conf: BeartypeConf | None = None
 ) -> Callable[P, R] | Callable[[Callable[P, R]], Callable[P, R]]:
   """Decorator that manages the dimension memo around a function call.
 
@@ -52,7 +56,7 @@ def check[**P, R](
     if conf is not None:
       from beartype import beartype
 
-      inner = beartype(fn, conf=conf)  # type: ignore[arg-type]
+      inner = beartype(fn, conf=conf)  # type: ignore[call-overload]
 
     if inspect.iscoroutinefunction(fn):
 
@@ -62,7 +66,7 @@ def check[**P, R](
         bound.apply_defaults()
         push_memo(scope=dict(bound.arguments))
         try:
-          return await inner(*args, **kwargs)  # type: ignore[misc]
+          return await inner(*args, **kwargs)  # type: ignore[misc,no-any-return]
         finally:
           pop_memo()
 
@@ -74,25 +78,28 @@ def check[**P, R](
       bound.apply_defaults()
       push_memo(scope=dict(bound.arguments))
       try:
-        return inner(*args, **kwargs)  # type: ignore[return-value]
+        return inner(*args, **kwargs)
       finally:
         pop_memo()
 
-    return wrapper  # type: ignore[return-value]
+    return wrapper
 
   if fn is not None:
     return decorator(fn)
-  return decorator  # type: ignore[return-value]
+  return decorator
 
 
 class check_context:
   """Context manager for manual ``isinstance`` checks with shared memo.
 
-  Usage::
+  Supports both sync and async contexts::
 
       with shapix.check_context():
         assert isinstance(x, Float32Array[N, C])
         assert isinstance(y, Float32Array[N])  # same N
+
+      async with shapix.check_context():
+        assert isinstance(x, Float32Array[N, C])
   """
 
   __slots__ = ()
@@ -102,4 +109,11 @@ class check_context:
     return self
 
   def __exit__(self, *_: object) -> None:
+    pop_memo()
+
+  async def __aenter__(self) -> check_context:
+    push_memo()
+    return self
+
+  async def __aexit__(self, *_: object) -> None:
     pop_memo()

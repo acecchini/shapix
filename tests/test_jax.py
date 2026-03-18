@@ -590,6 +590,24 @@ class TestJaxValueResolution:
     assert result.shape == (6,)
 
 
+class TestJaxTreeBackend:
+  def test_jax_tree_basic(self) -> None:
+    from shapix.jax import Tree as JaxTree
+
+    @shapix.check
+    @beartype
+    def f(x: JaxTree[F32[N]]) -> JaxTree[F32[N]]:
+      return x
+
+    data = {"a": jnp.ones(3, dtype=jnp.float32)}
+    f(data)
+
+  def test_jax_tree_repr(self) -> None:
+    from shapix.jax import Tree as JaxTree
+
+    assert repr(JaxTree) == "Tree"
+
+
 class TestJaxNumericScalarBoolRejection:
   def test_i64_scalar_rejects_bool(self) -> None:
     from shapix.jax import I64ScalarLike

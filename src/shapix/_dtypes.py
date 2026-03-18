@@ -239,7 +239,7 @@ class DtypeSpec:
     """
     import numpy as np
 
-    dt = np.dtype(dtype)  # type: ignore[arg-type]
+    dt = np.dtype(dtype)  # type: ignore[call-overload]
     return DtypeSpec(
       name=f"Structured({dt})", allowed=frozenset({"void"}), _structured=dt
     )
@@ -274,7 +274,7 @@ def extract_dtype_str(obj: object) -> str:
   # NumPy / JAX: dtype.type.__name__ (e.g. "float32")
   dtype_type = getattr(dtype, "type", None)
   if dtype_type is not None:
-    name = getattr(dtype_type, "__name__", None)
+    name: str | None = getattr(dtype_type, "__name__", None)
     if name is not None:
       return name
 

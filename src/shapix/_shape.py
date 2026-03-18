@@ -31,8 +31,8 @@ import ast
 import functools
 import numbers
 import operator
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from collections.abc import Mapping
 
 from ._memo import ShapeMemo
 
@@ -143,7 +143,7 @@ type DimSpec = (
 )
 
 
-_BINOPS: dict[type[ast.operator], object] = {
+_BINOPS: dict[type, Callable[..., object]] = {
   ast.Add: operator.add,
   ast.Sub: operator.sub,
   ast.Mult: operator.mul,
@@ -152,7 +152,7 @@ _BINOPS: dict[type[ast.operator], object] = {
   ast.Pow: operator.pow,
   ast.Mod: operator.mod,
 }
-_UNARYOPS: dict[type[ast.unaryop], object] = {
+_UNARYOPS: dict[type, Callable[..., object]] = {
   ast.UAdd: operator.pos,
   ast.USub: operator.neg,
 }
@@ -400,11 +400,11 @@ def _evaluate_expr_node(node: ast.AST, names: Mapping[str, object]) -> object:
   if isinstance(node, ast.BinOp):
     left = _evaluate_expr_node(node.left, names)
     right = _evaluate_expr_node(node.right, names)
-    return _BINOPS[type(node.op)](left, right)  # type: ignore[index]
+    return _BINOPS[type(node.op)](left, right)
 
   if isinstance(node, ast.UnaryOp):
     operand = _evaluate_expr_node(node.operand, names)
-    return _UNARYOPS[type(node.op)](operand)  # type: ignore[index]
+    return _UNARYOPS[type(node.op)](operand)
 
   if isinstance(node, ast.Name):
     try:
