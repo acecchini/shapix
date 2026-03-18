@@ -1642,7 +1642,7 @@ static = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "beartype", specifier = ">=0.20" }]
+requires-dist = [{ name = "beartype", specifier = ">=0.20,<1" }]
 
 [package.metadata.requires-dev]
 dev = [

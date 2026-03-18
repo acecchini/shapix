@@ -94,7 +94,14 @@ class Structure(str):
 class _TreeChecker:
   """Beartype validator for tree leaf types and structure consistency."""
 
-  __slots__ = ("_leaf_type", "_structure_spec", "_get_ops", "_repr", "_fail_obj")
+  __slots__ = (
+    "_leaf_type",
+    "_structure_spec",
+    "_get_ops",
+    "_repr",
+    "_fail_obj",
+    "_fail_replays",
+  )
 
   def __init__(
     self,
@@ -107,17 +114,21 @@ class _TreeChecker:
     self._structure_spec = structure_spec
     self._get_ops = get_ops
     self._fail_obj: object | None = None
+    self._fail_replays: int = 0
     spec_str = f", {structure_spec}" if structure_spec else ""
     self._repr = f"Tree[{leaf_type!r}{spec_str}]"
 
   def __call__(self, obj: object) -> bool:
-    # Replay guard: when beartype's error-generation code re-invokes us
-    # from a different call-stack frame, the fresh memo would lack prior
-    # bindings, causing a previously failing check to pass.  Keep replaying
-    # the failure until a successful validation with a (possibly different)
-    # object clears it.  We use ``is`` identity (not ``id()``) to avoid
-    # false matches from recycled addresses.
+    # Replay guard: beartype's error-generation code re-invokes validators
+    # up to 2 times after the initial failure.  Without this guard, the
+    # fresh memo during replay would lack prior bindings, causing a
+    # previously failing check to erroneously pass.  We allow exactly 2
+    # replays, then clear so the same object can be re-checked in a fresh
+    # context without being permanently poisoned.
     if self._fail_obj is not None and self._fail_obj is obj:
+      self._fail_replays -= 1
+      if self._fail_replays <= 0:
+        self._fail_obj = None
       return False
 
     tree_ops = self._get_ops()
@@ -139,6 +150,7 @@ class _TreeChecker:
     if not result:
       memo.restore(snap)
       self._fail_obj = obj
+      self._fail_replays = 2
     else:
       self._fail_obj = None
 

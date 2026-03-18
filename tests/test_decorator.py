@@ -502,3 +502,43 @@ class TestAsyncCheckDecorator:
       assert result.shape == (3,)
 
     asyncio.run(run())
+
+  def test_async_child_task_inside_check_context_shares_memo(self) -> None:
+    """Child task inherits parent's memo by reference (documented behavior).
+
+    A child task spawned inside an active ``check_context`` sees the same
+    live ``ShapeMemo`` — this is intentional (shared by reference).  For
+    full isolation, each task should enter its own ``check_context``.
+    """
+    import asyncio
+
+    from shapix._memo import _explicit_stack
+
+    async def run() -> None:
+      async with shapix.check_context():
+        from beartype.door import is_bearable
+
+        # Bind N=4 in the parent context
+        x = np.ones((4, 3), dtype=np.float32)
+        assert is_bearable(x, F32[N, C])
+
+        # Capture parent memo object identity
+        parent_stack = _explicit_stack.get()
+        assert len(parent_stack) > 0
+        parent_memo = parent_stack[-1]
+
+        child_saw: dict[str, object] = {}
+
+        async def child() -> None:
+          child_stack = _explicit_stack.get()
+          if child_stack:
+            child_saw["memo"] = child_stack[-1]
+            child_saw["N"] = child_stack[-1].single.get("N")
+
+        await asyncio.create_task(child())
+
+        # Child inherits the same memo object (shared by reference)
+        assert child_saw.get("memo") is parent_memo
+        assert child_saw.get("N") == 4
+
+    asyncio.run(run())

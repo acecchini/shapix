@@ -1337,6 +1337,47 @@ class TestReplayGuard:
       f({"a": np.ones(3, dtype=np.float32)})
     assert "True ==" not in str(exc_info.value)
 
+  def test_same_object_succeeds_in_fresh_context(self) -> None:
+    """Object that fails once must not be permanently poisoned.
+
+    After the replay counter is exhausted, the same object should be
+    re-checkable in a fresh context where it could legitimately pass.
+    """
+    from shapix._tree import _TreeChecker
+
+    checker = _TreeChecker(
+      F32[N],  # type: ignore[arg-type]
+      "T",
+      get_ops=lambda: __import__("optree"),
+    )
+
+    x_dict = {"a": np.ones(3, dtype=np.float32)}
+    y_list = [np.ones(3, dtype=np.float32)]
+
+    # First check: x_dict passes, binding T to dict structure
+    with shapix.check_context():
+      assert is_bearable(x_dict, type(x_dict))  # warm up memo
+      assert checker(x_dict)
+
+    # Second check: y_list fails because structure doesn't match
+    # (in a context where T is bound to dict from a prior arg)
+    @shapix.check
+    @beartype
+    def struct_check(a: Tree[F32[N], T], b: Tree[F32[N], T]) -> Tree[F32[N]]:
+      return a
+
+    with pytest.raises(BeartypeCallHintParamViolation):
+      struct_check(x_dict, y_list)
+
+    # Critical: y_list must NOT be poisoned — it should work in a fresh
+    # context where it is checked alone (no conflicting T binding)
+    @shapix.check
+    @beartype
+    def solo_check(a: Tree[F32[N], T]) -> Tree[F32[N]]:
+      return a
+
+    solo_check(y_list)  # must not raise
+
 
 # =====================================================================
 # Backend-specific Tree modules

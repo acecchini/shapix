@@ -103,6 +103,11 @@ class check_context:
 
       async with shapix.check_context():
         assert isinstance(x, Float32Array[N, C])
+
+  .. note::
+     Child async tasks spawned inside an active context inherit the same
+     mutable memo by reference.  For full task isolation, each task should
+     enter its own ``check_context()``.
   """
 
   __slots__ = ()

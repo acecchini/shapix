@@ -8,8 +8,11 @@ Two modes of operation:
 
 2. **Explicit (push/pop)**: When used with ``@shapix.check``, the memo is managed
    via an explicit stack stored in a :class:`contextvars.ContextVar`.  This is
-   guaranteed correct regardless of call-stack depth **and** is async-task-safe
-   (each ``asyncio`` task inherits a snapshot of the parent's context).
+   guaranteed correct regardless of call-stack depth.  The stack structure is
+   async-task-safe (push/pop in one task cannot mutate another's stack), but
+   ``ShapeMemo`` objects are shared by reference — child tasks that inherit an
+   active parent context see the same live memo.  For full isolation, each task
+   should create its own ``check_context``.
 
 If no memo context exists (e.g. a bare ``isinstance`` check), a temporary memo is
 created per check — dimensions are validated individually but not cross-checked.
@@ -70,7 +73,10 @@ class ShapeMemo:
 # Explicit stack (used by @shapix.check / check_context)
 #
 # Stored as immutable tuples in ContextVar so that asyncio task fork
-# (copy-on-write) isolates each task's stack automatically.
+# cannot modify the parent's stack (push/pop are isolated).  Note that
+# ShapeMemo objects within the tuple are shared by reference; child tasks
+# that inherit an active explicit stack see the same live memo.  For full
+# task isolation, each task should create its own check_context.
 # ---------------------------------------------------------------------------
 
 _explicit_stack: contextvars.ContextVar[tuple[ShapeMemo, ...]] = contextvars.ContextVar(

@@ -591,7 +591,8 @@ Named structure symbols (`T`, `S`) enforce that multiple arguments share identic
 
 ```python
 @beartype
-def add_trees(x: Tree[F32[N], T], y: Tree[F32[N], T]) -> Tree[F32[N]]: ...
+def add_trees(x: Tree[F32[N], T], y: Tree[F32[N], T]) -> Tree[F32[N]]:  # type: ignore
+  ...
 
 
 add_trees({"a": x1, "b": x2}, {"a": y1, "b": y2})  # OK — same structure
@@ -604,27 +605,27 @@ Structure names are listed left-to-right from outer to inner. Without `...`, eac
 
 ```python
 # T = full tree structure (all levels)
-def f(x: Tree[F32[N], T], y: Tree[F32[N], T]): ...
+def f(x: Tree[F32[N], T], y: Tree[F32[N], T]): ...  # type: ignore
 
 
 # T = top-level only, subtrees are arbitrary
-def f(x: Tree[F32[N], T, ...], y: Tree[F32[N], T, ...]): ...
+def f(x: Tree[F32[N], T, ...], y: Tree[F32[N], T, ...]): ...  # type: ignore
 
 
 # T = bottom-level only (leaf-adjacent container)
-def f(x: Tree[F32[N], ..., T], y: Tree[F32[N], ..., T]): ...
+def f(x: Tree[F32[N], ..., T], y: Tree[F32[N], ..., T]): ...  # type: ignore
 
 
 # T = top level, S = full remaining structure below
-def f(x: Tree[int, T], y: Tree[int, S], z: Tree[int, T, S]): ...
+def f(x: Tree[int, T], y: Tree[int, S], z: Tree[int, T, S]): ...  # type: ignore
 
 
 # T = top, S = next, inner levels unchecked
-def f(x: Tree[F32[N], T, S, ...]): ...
+def f(x: Tree[F32[N], T, S, ...]): ...  # type: ignore
 
 
 # S = bottom, T = second-from-bottom
-def f(x: Tree[F32[N], ..., T, S]): ...
+def f(x: Tree[F32[N], ..., T, S]): ...  # type: ignore
 ```
 
 ### Custom structure symbols
@@ -639,7 +640,7 @@ State = Structure("State")
 
 
 @beartype
-def train(params: Tree[F32[N], Params], state: Tree[I64[N], State]): ...
+def train(params: Tree[F32[N], Params], state: Tree[I64[N], State]): ...  # type: ignore
 ```
 
 ## Advanced usage
