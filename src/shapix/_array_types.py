@@ -33,7 +33,7 @@ from ._dimensions import Dimension, _ValueExpr
 from ._dtypes import DtypeSpec
 from ._dtypes import extract_dtype_str as extract_dtype_str
 from ._memo import ShapeMemo as ShapeMemo
-from ._memo import get_memo, get_scope
+from ._memo import get_memo, get_scope, has_untagged_memo
 from ._shape import (
   ANONYMOUS,
   ANONYMOUS_VARIADIC,
@@ -82,9 +82,15 @@ class _StructChecker:
     # failing check would incorrectly pass.  To stay consistent, replay
     # the failure for one re-check, then clear it.  We use ``is`` identity
     # (not ``id()``) to avoid false matches from recycled addresses.
+    #
+    # Exception: when an untagged explicit memo is active (check_context),
+    # the real memo with bindings is still visible during re-invocation,
+    # so the guard is unnecessary.  Clear stale state and re-validate.
     if self._fail_obj is not None and self._fail_obj is obj:
-      self._fail_obj = None
-      return False
+      if not has_untagged_memo():
+        self._fail_obj = None
+        return False
+      self._fail_obj = None  # clear stale guard; real validation runs below
 
     # Dtype check
     if not self._dtype_spec.matches(obj):
@@ -221,8 +227,10 @@ class _ArrayLikeChecker:
     # Replay failure for beartype error-generation re-invocation
     # (same pattern as _StructChecker).
     if self._fail_obj is not None and self._fail_obj is obj:
-      self._fail_obj = None
-      return False
+      if not has_untagged_memo():
+        self._fail_obj = None
+        return False
+      self._fail_obj = None  # clear stale guard; real validation runs below
 
     memo = get_memo(_depth=3)
     scope = get_scope(_depth=3)

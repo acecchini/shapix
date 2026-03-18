@@ -542,3 +542,71 @@ class TestAsyncCheckDecorator:
         assert child_saw.get("N") == 4
 
     asyncio.run(run())
+
+
+class TestCheckContextFreshRecheck:
+  """Replay guards must not leak _fail_obj across fresh check_context() scopes.
+
+  When an untagged explicit memo is active (check_context), beartype's
+  error-generation re-invocation still sees the real memo, so the replay
+  guard should be bypassed — allowing the same object to be re-validated
+  in a fresh context where it may legitimately pass.
+  """
+
+  def test_struct_checker_same_object_fresh_context(self) -> None:
+    """Object that fails in one check_context must pass in a fresh one."""
+    from beartype.door import is_bearable
+
+    hint = F32[N]
+
+    arr = np.ones((4,), dtype=np.float32)
+
+    # Context 1: bind N=3 first, then arr (shape 4) must fail
+    with shapix.check_context():
+      assert is_bearable(np.ones((3,), dtype=np.float32), hint)  # bind N=3
+      assert not is_bearable(arr, hint)  # fails: N=3 but shape is 4
+
+    # Context 2: fresh memo, N is unbound — arr (shape 4) should pass
+    with shapix.check_context():
+      assert is_bearable(arr, hint)  # must not be poisoned
+
+  def test_arraylike_checker_same_object_fresh_context(self) -> None:
+    """ArrayLike object that fails in one context must pass in a fresh one."""
+    from beartype.door import is_bearable
+
+    from shapix.numpy import F32Like
+
+    hint = F32Like[N]
+
+    arr = np.ones((4,), dtype=np.float32)
+
+    # Context 1: bind N=3, then arr (shape 4) fails
+    with shapix.check_context():
+      assert is_bearable(np.ones((3,), dtype=np.float32), hint)  # bind N=3
+      assert not is_bearable(arr, hint)  # fails: shape mismatch
+
+    # Context 2: fresh memo — arr should pass
+    with shapix.check_context():
+      assert is_bearable(arr, hint)  # must not be poisoned
+
+  def test_tree_checker_same_object_fresh_context(self) -> None:
+    """Tree object that fails in one context must pass in a fresh one."""
+    pytest.importorskip("optree")
+    from beartype.door import is_bearable
+
+    from shapix import T
+    from shapix.optree import Tree
+
+    hint = Tree[F32[N], T]  # type: ignore[type-arg]
+
+    x_dict = {"a": np.ones(3, dtype=np.float32)}
+    y_list = [np.ones(3, dtype=np.float32)]
+
+    # Context 1: bind T to dict structure via x_dict, then y_list fails
+    with shapix.check_context():
+      assert is_bearable(x_dict, hint)  # bind T = dict structure
+      assert not is_bearable(y_list, hint)  # fails: list != dict
+
+    # Context 2: fresh memo — y_list should pass (T unbound)
+    with shapix.check_context():
+      assert is_bearable(y_list, hint)  # must not be poisoned

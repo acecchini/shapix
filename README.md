@@ -848,10 +848,8 @@ import typing as tp
 from shapix import Dimension
 
 if tp.TYPE_CHECKING:
-  import typing as _tp
-
-  Vocab = _tp.TypeVar("Vocab")
-  Embed = _tp.TypeVar("Embed")
+  type Vocab = int
+  type Embed = int
 else:
   Vocab = Dimension("Vocab")
   Embed = Dimension("Embed")

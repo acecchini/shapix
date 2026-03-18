@@ -57,7 +57,7 @@ from typing import Annotated
 
 from beartype.vale import Is
 
-from ._memo import ShapeMemo
+from ._memo import ShapeMemo, has_untagged_memo
 
 __all__ = ["Structure", "T", "S"]
 
@@ -125,11 +125,18 @@ class _TreeChecker:
     # previously failing check to erroneously pass.  We allow exactly 2
     # replays, then clear so the same object can be re-checked in a fresh
     # context without being permanently poisoned.
+    #
+    # Exception: when an untagged explicit memo is active (check_context),
+    # the real memo with bindings is still visible during re-invocation,
+    # so the guard is unnecessary.  Clear stale state and re-validate.
     if self._fail_obj is not None and self._fail_obj is obj:
-      self._fail_replays -= 1
-      if self._fail_replays <= 0:
-        self._fail_obj = None
-      return False
+      if not has_untagged_memo():
+        self._fail_replays -= 1
+        if self._fail_replays <= 0:
+          self._fail_obj = None
+        return False
+      self._fail_obj = None  # clear stale guard; real validation runs below
+      self._fail_replays = 0
 
     tree_ops = self._get_ops()
     from beartype.door import is_bearable

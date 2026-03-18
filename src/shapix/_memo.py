@@ -27,7 +27,14 @@ import threading
 import types
 from dataclasses import dataclass, field
 
-__all__ = ["ShapeMemo", "get_memo", "get_scope", "push_memo", "pop_memo"]
+__all__ = [
+  "ShapeMemo",
+  "get_memo",
+  "get_scope",
+  "push_memo",
+  "pop_memo",
+  "has_untagged_memo",
+]
 
 _FRAME_STACK_GC_THRESHOLD = 8
 
@@ -118,6 +125,21 @@ def pop_memo() -> None:
   _explicit_stack.set(_explicit_stack.get()[:-1])
   _explicit_scope_stack.set(_explicit_scope_stack.get()[:-1])
   _explicit_owner_stack.set(_explicit_owner_stack.get()[:-1])
+
+
+def has_untagged_memo() -> bool:
+  """True when an untagged explicit memo is active (check_context scope).
+
+  Untagged entries are pushed by :class:`check_context` (and :class:`_TreeChecker`)
+  and are unconditionally visible to all validators.  When such a memo is active,
+  beartype's error-generation re-invocation still sees the real memo with bindings,
+  so the replay guard is unnecessary.
+  """
+  stack = _explicit_stack.get()
+  if not stack:
+    return False
+  owners = _explicit_owner_stack.get()
+  return owners[-1] is None
 
 
 # ---------------------------------------------------------------------------
