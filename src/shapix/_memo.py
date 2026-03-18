@@ -79,16 +79,31 @@ _explicit_stack: contextvars.ContextVar[tuple[ShapeMemo, ...]] = contextvars.Con
 _explicit_scope_stack: contextvars.ContextVar[tuple[dict[str, object] | None, ...]] = (
   contextvars.ContextVar("_explicit_scope_stack", default=())
 )
+_explicit_owner_stack: contextvars.ContextVar[tuple[types.CodeType | None, ...]] = (
+  contextvars.ContextVar("_explicit_owner_stack", default=())
+)
 
 
 def push_memo(
-  memo: ShapeMemo | None = None, *, scope: dict[str, object] | None = None
+  memo: ShapeMemo | None = None,
+  *,
+  scope: dict[str, object] | None = None,
+  owner_code: types.CodeType | None = None,
 ) -> ShapeMemo:
-  """Push a memo onto the explicit stack. Pair with :func:`pop_memo`."""
+  """Push a memo onto the explicit stack. Pair with :func:`pop_memo`.
+
+  Parameters
+  ----------
+  owner_code:
+      When set, this entry is only visible to frames whose ``f_code``
+      matches.  Untagged entries (``None``) are unconditional and used
+      by :class:`check_context` and :class:`_TreeChecker`.
+  """
   if memo is None:
     memo = ShapeMemo()
   _explicit_stack.set(_explicit_stack.get() + (memo,))
   _explicit_scope_stack.set(_explicit_scope_stack.get() + (scope,))
+  _explicit_owner_stack.set(_explicit_owner_stack.get() + (owner_code,))
   return memo
 
 
@@ -96,6 +111,7 @@ def pop_memo() -> None:
   """Pop the most recent explicit memo."""
   _explicit_stack.set(_explicit_stack.get()[:-1])
   _explicit_scope_stack.set(_explicit_scope_stack.get()[:-1])
+  _explicit_owner_stack.set(_explicit_owner_stack.get()[:-1])
 
 
 # ---------------------------------------------------------------------------
@@ -122,10 +138,22 @@ def get_memo(_depth: int = 2) -> ShapeMemo:
       Default ``2`` accounts for: our validator → beartype's ``_is_valid_bool``
       → beartype wrapper.
   """
-  # 1. Explicit stack takes priority
+  # 1. Explicit stack takes priority (if owner matches or untagged)
   explicit = _explicit_stack.get()
   if explicit:
-    return explicit[-1]
+    owners = _explicit_owner_stack.get()
+    owner_code = owners[-1] if owners else None
+    if owner_code is None:
+      # Untagged entry (check_context / TreeChecker) — always visible
+      return explicit[-1]
+    # Tagged entry — only visible if the caller's frame matches
+    try:
+      frame = sys._getframe(_depth)
+      if frame.f_code is owner_code:
+        return explicit[-1]
+    except ValueError:
+      pass
+    # Fall through to frame-based detection
 
   # 2. Frame-based detection
   try:
@@ -187,7 +215,19 @@ def get_scope(_depth: int = 2) -> dict[str, object]:
   """Return the current runtime scope for ``Value(...)`` expressions."""
   explicit = _explicit_scope_stack.get()
   if explicit and explicit[-1] is not None:
-    return explicit[-1]
+    owners = _explicit_owner_stack.get()
+    owner_code = owners[-1] if owners else None
+    if owner_code is None:
+      # Untagged entry — always visible
+      return explicit[-1]
+    # Tagged entry — only visible if the caller's frame matches
+    try:
+      frame = sys._getframe(_depth)
+      if frame.f_code is owner_code:
+        return explicit[-1]
+    except ValueError:
+      pass
+    # Fall through to frame-based detection
 
   try:
     frame = sys._getframe(_depth)

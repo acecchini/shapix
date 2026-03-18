@@ -1301,6 +1301,44 @@ class TestReprAndFactory:
 
 
 # =====================================================================
+# Replay guard (_fail_obj) — non-contradictory error messages
+# =====================================================================
+
+
+class TestReplayGuard:
+  """_TreeChecker must produce non-contradictory beartype error messages."""
+
+  def test_plain_beartype_tree_param_mismatch_error_message(self) -> None:
+    """Plain @beartype tree param mismatch must not say True == Is[...]."""
+
+    @shapix.check
+    @beartype
+    def f(x: Tree[F32[N], T], y: Tree[F32[N], T]) -> Tree[F32[N]]:
+      return x
+
+    x = {"a": np.ones(3, dtype=np.float32)}
+    y = [np.ones(3, dtype=np.float32)]  # different structure
+    with pytest.raises(BeartypeCallHintParamViolation) as exc_info:
+      f(x, y)
+    # The error message should NOT contain "True ==" which would indicate
+    # the replay guard failed (validator passed on re-invocation)
+    assert "True ==" not in str(exc_info.value)
+
+  def test_plain_beartype_tree_return_mismatch_error_message(self) -> None:
+    """Return type tree mismatch must produce non-contradictory error."""
+
+    @shapix.check
+    @beartype
+    def f(x: Tree[F32[N], T]) -> Tree[F32[N], T]:
+      # Return different structure than input
+      return [np.ones(3, dtype=np.float32)]
+
+    with pytest.raises(BeartypeCallHintReturnViolation) as exc_info:
+      f({"a": np.ones(3, dtype=np.float32)})
+    assert "True ==" not in str(exc_info.value)
+
+
+# =====================================================================
 # Backend-specific Tree modules
 # =====================================================================
 

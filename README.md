@@ -799,6 +799,7 @@ However, some patterns are fundamentally runtime-only and produce type checker e
 | Arithmetic | `F32[N + 2]` | `# type: ignore` |
 | Custom dimensions | `F32[Vocab, Embed]` | `# type: ignore` or `TYPE_CHECKING` pattern |
 | `Value(...)` | `F32[Value("size")]` | `# type: ignore` |
+| Tree structure args | `Tree[F32[N], T]`, `Tree[F32[N], T, ...]` | `# type: ignore` — leaf-only `Tree[F32[N, C]]` works |
 
 ### Recommended type checker config
 

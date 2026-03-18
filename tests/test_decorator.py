@@ -208,6 +208,89 @@ class TestValueWithCheckDecorator:
     assert f(7).shape == (7,)
 
 
+class TestMemoIsolation:
+  """Explicit memo from @shapix.check must not leak to nested @beartype helpers."""
+
+  def test_check_outer_plain_beartype_inner_independent_dims(self) -> None:
+    """Outer @shapix.check binds N=4, inner plain @beartype binds N=7."""
+
+    @beartype
+    def inner(x: F32[N]) -> F32[N]:
+      return x
+
+    @shapix.check
+    @beartype
+    def outer(x: F32[N]) -> F32[N]:
+      # Call inner with a different N — must succeed independently
+      inner(np.ones(7, dtype=np.float32))
+      return x
+
+    outer(np.ones(4, dtype=np.float32))
+
+  def test_check_outer_plain_beartype_inner_value(self) -> None:
+    """Inner plain @beartype with Value resolves from its own frame."""
+
+    @beartype
+    def inner(size: int) -> F32[Value("size")]:  # type: ignore[valid-type]
+      return np.ones(size, dtype=np.float32)
+
+    @shapix.check
+    @beartype
+    def outer(dummy: int) -> F32[Value("dummy")]:  # type: ignore[valid-type]
+      inner(7)
+      return np.ones(dummy, dtype=np.float32)
+
+    outer(4)
+
+  def test_check_context_shares_memo_with_beartype_call(self) -> None:
+    """Inside check_context(), @beartype calls share the same memo (by design)."""
+
+    @beartype
+    def helper(x: F32[N]) -> F32[N]:
+      return x
+
+    with shapix.check_context():
+      from beartype.door import is_bearable
+
+      assert is_bearable(np.ones(4, dtype=np.float32), F32[N])
+      # check_context is untagged — helper shares the memo, so N=4 is bound
+      helper(np.ones(4, dtype=np.float32))  # same N — OK
+      with pytest.raises(BeartypeCallHintParamViolation):
+        helper(np.ones(7, dtype=np.float32))  # different N — fails
+
+  def test_async_check_outer_plain_beartype_inner(self) -> None:
+    """Async variant: outer @shapix.check does not leak to inner @beartype."""
+    import asyncio
+
+    @beartype
+    def inner(x: F32[N]) -> F32[N]:
+      return x
+
+    @shapix.check
+    @beartype
+    async def outer(x: F32[N]) -> F32[N]:
+      inner(np.ones(7, dtype=np.float32))
+      return x
+
+    asyncio.run(outer(np.ones(4, dtype=np.float32)))
+
+  def test_async_child_task_independent_memo(self) -> None:
+    """Child task spawned inside @shapix.check gets isolated memo after parent returns."""
+    import asyncio
+
+    @shapix.check
+    @beartype
+    async def parent(x: F32[N]) -> F32[N]:
+      return x
+
+    async def run() -> None:
+      await parent(np.ones(4, dtype=np.float32))
+      # After parent returns, a new call with different N works
+      await parent(np.ones(10, dtype=np.float32))
+
+    asyncio.run(run())
+
+
 class TestAsyncCheckContext:
   def test_async_check_context(self) -> None:
     """async with check_context() works correctly."""

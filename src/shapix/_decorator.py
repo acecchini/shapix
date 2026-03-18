@@ -59,12 +59,13 @@ def check[**P, R](
       inner = beartype(fn, conf=conf)  # type: ignore[call-overload]
 
     if inspect.iscoroutinefunction(fn):
+      inner_code = getattr(inner, "__code__", None)
 
       @functools.wraps(fn)
       async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
         bound = signature.bind_partial(*args, **kwargs)
         bound.apply_defaults()
-        push_memo(scope=dict(bound.arguments))
+        push_memo(scope=dict(bound.arguments), owner_code=inner_code)
         try:
           return await inner(*args, **kwargs)  # type: ignore[misc,no-any-return]
         finally:
@@ -72,11 +73,13 @@ def check[**P, R](
 
       return async_wrapper  # type: ignore[return-value]
 
+    inner_code = getattr(inner, "__code__", None)
+
     @functools.wraps(fn)
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
       bound = signature.bind_partial(*args, **kwargs)
       bound.apply_defaults()
-      push_memo(scope=dict(bound.arguments))
+      push_memo(scope=dict(bound.arguments), owner_code=inner_code)
       try:
         return inner(*args, **kwargs)
       finally:

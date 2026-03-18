@@ -67,3 +67,16 @@ def identity(x: Tree[object]) -> Tree[object]:
 
 def to_none(x: Tree[object]) -> None:
   pass
+
+
+# ---------------------------------------------------------------------------
+# Note: Structure args (T, S, ...) are runtime-only
+# ---------------------------------------------------------------------------
+# Multi-arg syntax like Tree[F32[N], T] or Tree[F32[N], T, ...] works at
+# runtime but is not understood by type checkers (Tree has one type param).
+# Use `# type: ignore` for structure-bearing annotations.
+# Leaf-only annotations like Tree[int] or Tree[object] work with all checkers.
+
+
+def leaf_int(x: Tree[int]) -> Tree[int]:
+  return x

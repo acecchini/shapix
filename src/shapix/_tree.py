@@ -9,6 +9,14 @@ consistency across arguments, following the same patterns as jaxtyping.
 Requires ``optree`` or ``jax`` for tree traversal. Install with
 ``pip install optree`` or ``pip install jax``.
 
+.. note::
+
+   Structure arguments (``T``, ``S``, ``...``) are **runtime-only**.
+   Type checkers see ``Tree`` as ``Tree[LeafType]`` (one type parameter)
+   and cannot validate multi-arg structure syntax like ``Tree[F32[N], T]``.
+   Leaf-only annotations such as ``Tree[F32[N, C]]`` are fully supported
+   by all type checkers.
+
 Import ``Tree`` from an explicit backend module::
 
     from shapix.optree import Tree  # backed by optree
@@ -86,7 +94,7 @@ class Structure(str):
 class _TreeChecker:
   """Beartype validator for tree leaf types and structure consistency."""
 
-  __slots__ = ("_leaf_type", "_structure_spec", "_get_ops", "_repr")
+  __slots__ = ("_leaf_type", "_structure_spec", "_get_ops", "_repr", "_fail_obj")
 
   def __init__(
     self,
@@ -98,10 +106,20 @@ class _TreeChecker:
     self._leaf_type = leaf_type
     self._structure_spec = structure_spec
     self._get_ops = get_ops
+    self._fail_obj: object | None = None
     spec_str = f", {structure_spec}" if structure_spec else ""
     self._repr = f"Tree[{leaf_type!r}{spec_str}]"
 
   def __call__(self, obj: object) -> bool:
+    # Replay guard: when beartype's error-generation code re-invokes us
+    # from a different call-stack frame, the fresh memo would lack prior
+    # bindings, causing a previously failing check to pass.  Keep replaying
+    # the failure until a successful validation with a (possibly different)
+    # object clears it.  We use ``is`` identity (not ``id()``) to avoid
+    # false matches from recycled addresses.
+    if self._fail_obj is not None and self._fail_obj is obj:
+      return False
+
     tree_ops = self._get_ops()
     from beartype.door import is_bearable
 
@@ -111,11 +129,20 @@ class _TreeChecker:
     # and can resolve ``Value(...)`` expressions against the same parameters.
     memo = get_memo(_depth=3)
     scope = get_scope(_depth=3)
+    snap = memo.snapshot()
     push_memo(memo, scope=scope)
     try:
-      return self._validate(obj, tree_ops, is_bearable, memo)
+      result = self._validate(obj, tree_ops, is_bearable, memo)
     finally:
       pop_memo()
+
+    if not result:
+      memo.restore(snap)
+      self._fail_obj = obj
+    else:
+      self._fail_obj = None
+
+    return result
 
   def _validate(
     self, obj: object, tree_ops: tp.Any, is_bearable: tp.Any, memo: ShapeMemo
