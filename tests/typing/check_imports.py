@@ -28,8 +28,8 @@ from shapix import (
   make_array_type,
 )
 
-# All pre-defined dimensions are Dimension instances
-dims: list[Dimension] = [B, C, H, L, N, P, Scalar, W, __]
+# All pre-defined dimensions are available
+dims: list[object] = [B, C, H, L, N, P, Scalar, W, __]
 
 # All pre-defined structure symbols are Structure instances
 structs: list[Structure] = [T, S]
@@ -44,51 +44,52 @@ _dtype_spec_cls = DtypeSpec
 _value_marker = Value
 
 # ---------------------------------------------------------------------------
-# Dimension arithmetic — all binary operators
+# Dimension arithmetic — runtime-only (not representable as static types)
+# These use type: ignore because Dimension arithmetic requires runtime objects
 # ---------------------------------------------------------------------------
 
-expr_add: Dimension = N + 1
-expr_radd: Dimension = 2 + N
-expr_sub: Dimension = N - 1
-expr_rsub: Dimension = 2 - N
-expr_mul: Dimension = N * 2
-expr_rmul: Dimension = 2 * N
-expr_truediv: Dimension = N / 2
-expr_rtruediv: Dimension = 2 / N
-expr_floordiv: Dimension = N // 2
-expr_rfloordiv: Dimension = 2 // N
-expr_pow: Dimension = N**2
-expr_rpow: Dimension = 2**N
-expr_mod: Dimension = N % 2
-expr_rmod: Dimension = 2 % N
-expr_neg: Dimension = -N
+expr_add = N + 1  # type: ignore[operator]
+expr_radd = 2 + N  # type: ignore[operator]
+expr_sub = N - 1  # type: ignore[operator]
+expr_rsub = 2 - N  # type: ignore[operator]
+expr_mul = N * 2  # type: ignore[operator]
+expr_rmul = 2 * N  # type: ignore[operator]
+expr_truediv = N / 2  # type: ignore[operator]
+expr_rtruediv = 2 / N  # type: ignore[operator]
+expr_floordiv = N // 2  # type: ignore[operator]
+expr_rfloordiv = 2 // N  # type: ignore[operator]
+expr_pow = N**2  # type: ignore[operator]
+expr_rpow = 2**N  # type: ignore[operator]
+expr_mod = N % 2  # type: ignore[operator]
+expr_rmod = 2 % N  # type: ignore[operator]
+expr_neg = -N  # type: ignore[operator]
 
 # ---------------------------------------------------------------------------
-# Chained / nested arithmetic
+# Chained / nested arithmetic (runtime-only)
 # ---------------------------------------------------------------------------
 
-chained_add: Dimension = N + C + 1
-chained_mul: Dimension = N * C * 2
-nested_expr: Dimension = (N + 1) * 2
-complex_expr: Dimension = (N * C) + (H - 1)
-deep_nesting: Dimension = ((N + 1) * 2) // C
+chained_add = N + C + 1  # type: ignore[operator]
+chained_mul = N * C * 2  # type: ignore[operator]
+nested_expr = (N + 1) * 2  # type: ignore[operator]
+complex_expr = (N * C) + (H - 1)  # type: ignore[operator]
+deep_nesting = ((N + 1) * 2) // C  # type: ignore[operator]
 
 # ---------------------------------------------------------------------------
-# Unary operators
+# Unary operators (runtime-only)
 # ---------------------------------------------------------------------------
 
-variadic: Dimension = ~N
-broadcastable: Dimension = +N
-anon_variadic: Dimension = ~__
+variadic = ~N  # type: ignore[operator]
+broadcastable = +N  # type: ignore[operator]
+anon_variadic = ~__  # type: ignore[operator]
 
 # Unary on other predefined dims
-variadic_b: Dimension = ~B
-broadcastable_c: Dimension = +C
-variadic_h: Dimension = ~H
+variadic_b = ~B  # type: ignore[operator]
+broadcastable_c = +C  # type: ignore[operator]
+variadic_h = ~H  # type: ignore[operator]
 
 # Double application should be idempotent / safe
-double_variadic: Dimension = ~~N
-double_broad: Dimension = ++N
+double_variadic = ~~N  # type: ignore[operator]
+double_broad = ++N  # type: ignore[operator]
 
 # ---------------------------------------------------------------------------
 # Custom dimensions
@@ -100,13 +101,13 @@ Heads = Dimension("Heads")
 SeqLen = Dimension("SeqLen")
 
 # Custom dim arithmetic
-combo: Dimension = Vocab + Embed
-scaled_heads: Dimension = Heads * 8
-half_embed: Dimension = Embed // 2
+combo = Vocab + Embed
+scaled_heads = Heads * 8
+half_embed = Embed // 2
 
 # Unary on custom dims
-variadic_vocab: Dimension = ~Vocab
-broadcastable_embed: Dimension = +Embed
+variadic_vocab = ~Vocab
+broadcastable_embed = +Embed
 
 # ---------------------------------------------------------------------------
 # Dimension from various string forms
@@ -120,6 +121,6 @@ expr_dim = Dimension("(N+1)")
 # Dimension is a str subclass
 # ---------------------------------------------------------------------------
 
-as_str: str = N
-in_fstring: str = f"dim={N}"
-concatenated: str = str(N) + str(C)
+as_str: str = Vocab
+in_fstring: str = f"dim={Vocab}"
+concatenated: str = str(Vocab) + str(Embed)

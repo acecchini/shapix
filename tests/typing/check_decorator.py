@@ -113,3 +113,17 @@ def use_check_context() -> None:
     _ = ctx
     arr = np.ones((3, 4), dtype=np.float32)
     assert arr.shape == (3, 4)
+
+
+# ---------------------------------------------------------------------------
+# @check — async function signature preserved
+# ---------------------------------------------------------------------------
+
+
+@check
+async def async_identity(x: NDArray[np.float32]) -> NDArray[np.float32]:
+  return x
+
+
+async def call_async() -> NDArray[np.float32]:
+  return await async_identity(np.ones((4,), dtype=np.float32))

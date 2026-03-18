@@ -1,10 +1,13 @@
 # pyright: reportInvalidTypeForm=false
-"""Verify F32[N, C] annotation pattern (pyright-specific).
+"""Verify F32[N, C] annotation pattern type-checks cleanly.
 
-This tests the full shapix annotation pattern including dimension-subscripted
-array types. Only pyright/Pylance supports this through TYPE_CHECKING stubs.
+Tests the full shapix annotation pattern including dimension-subscripted
+array types with pyright, mypy, and ty.
 
-Tested with: pyright only
+Patterns that are fundamentally runtime-only (arithmetic dims, Value(),
+unary operators) use targeted type: ignore comments.
+
+Tested with: pyright, mypy, ty
 """
 
 import numpy as np
@@ -178,17 +181,17 @@ def scalar_fn(x: F32[Scalar]) -> F32[Scalar]:
 
 
 # ---------------------------------------------------------------------------
-# Dimension arithmetic in subscripts
+# Dimension arithmetic in subscripts (runtime-only — not representable as types)
 # ---------------------------------------------------------------------------
 
 
 @beartype
-def pad(x: F32[N]) -> F32[N + 2]:
+def pad(x: F32[N]) -> F32[N + 2]:  # type: ignore  # noqa: F821  # arithmetic dim
   return np.pad(x, 1).astype(np.float32)
 
 
 @beartype
-def double_channels(x: F32[N, C]) -> F32[N, C * 2]:
+def double_channels(x: F32[N, C]) -> F32[N, C * 2]:  # type: ignore  # noqa: F821  # arithmetic dim
   return np.concatenate([x, x], axis=1).astype(np.float32)
 
 
@@ -197,7 +200,7 @@ FromSelf = Value("self.offset + size")
 
 
 @beartype
-def from_value(size: int) -> F32[FromSize]:
+def from_value(size: int) -> F32[FromSize]:  # type: ignore  # noqa: F821  # Value() dim
   return np.ones(size, dtype=np.float32)
 
 
@@ -205,7 +208,7 @@ class SomeClass:
   offset = 3
 
   @beartype
-  def from_self(self, size: int) -> F32[FromSelf]:
+  def from_self(self, size: int) -> F32[FromSelf]:  # type: ignore  # noqa: F821  # Value() dim
     return np.ones(self.offset + size, dtype=np.float32)
 
 
@@ -233,7 +236,7 @@ Embed = Dimension("Embed")
 
 
 @beartype
-def embed_lookup(x: I64[N], table: F32[Vocab, Embed]) -> F32[N, Embed]:
+def embed_lookup(x: I64[N], table: F32[Vocab, Embed]) -> F32[N, Embed]:  # type: ignore  # noqa: F821  # custom dim
   return table[x]
 
 

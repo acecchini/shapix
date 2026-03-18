@@ -208,35 +208,37 @@ def make_array_like_type(
 # ---------------------------------------------------------------------------
 
 if tp.TYPE_CHECKING:
-  type Bool[*Dims] = JaxArray
+  _Dims = tp.TypeVarTuple("_Dims")
 
-  type I8[*Dims] = JaxArray
-  type I16[*Dims] = JaxArray
-  type I32[*Dims] = JaxArray
-  type I64[*Dims] = JaxArray
+  Bool = tp.TypeAliasType("Bool", JaxArray, type_params=(_Dims,))
 
-  type U8[*Dims] = JaxArray
-  type U16[*Dims] = JaxArray
-  type U32[*Dims] = JaxArray
-  type U64[*Dims] = JaxArray
+  I8 = tp.TypeAliasType("I8", JaxArray, type_params=(_Dims,))
+  I16 = tp.TypeAliasType("I16", JaxArray, type_params=(_Dims,))
+  I32 = tp.TypeAliasType("I32", JaxArray, type_params=(_Dims,))
+  I64 = tp.TypeAliasType("I64", JaxArray, type_params=(_Dims,))
 
-  type F16[*Dims] = JaxArray
-  type F32[*Dims] = JaxArray
-  type F64[*Dims] = JaxArray
-  type BF16[*Dims] = JaxArray
+  U8 = tp.TypeAliasType("U8", JaxArray, type_params=(_Dims,))
+  U16 = tp.TypeAliasType("U16", JaxArray, type_params=(_Dims,))
+  U32 = tp.TypeAliasType("U32", JaxArray, type_params=(_Dims,))
+  U64 = tp.TypeAliasType("U64", JaxArray, type_params=(_Dims,))
 
-  type C64[*Dims] = JaxArray
-  type C128[*Dims] = JaxArray
+  F16 = tp.TypeAliasType("F16", JaxArray, type_params=(_Dims,))
+  F32 = tp.TypeAliasType("F32", JaxArray, type_params=(_Dims,))
+  F64 = tp.TypeAliasType("F64", JaxArray, type_params=(_Dims,))
+  BF16 = tp.TypeAliasType("BF16", JaxArray, type_params=(_Dims,))
 
-  type Int[*Dims] = JaxArray
-  type UInt[*Dims] = JaxArray
-  type Integer[*Dims] = JaxArray
-  type Float[*Dims] = JaxArray
-  type Real[*Dims] = JaxArray
-  type Complex[*Dims] = JaxArray
-  type Inexact[*Dims] = JaxArray
-  type Num[*Dims] = JaxArray
-  type Shaped[*Dims] = JaxArray
+  C64 = tp.TypeAliasType("C64", JaxArray, type_params=(_Dims,))
+  C128 = tp.TypeAliasType("C128", JaxArray, type_params=(_Dims,))
+
+  Int = tp.TypeAliasType("Int", JaxArray, type_params=(_Dims,))
+  UInt = tp.TypeAliasType("UInt", JaxArray, type_params=(_Dims,))
+  Integer = tp.TypeAliasType("Integer", JaxArray, type_params=(_Dims,))
+  Float = tp.TypeAliasType("Float", JaxArray, type_params=(_Dims,))
+  Real = tp.TypeAliasType("Real", JaxArray, type_params=(_Dims,))
+  Complex = tp.TypeAliasType("Complex", JaxArray, type_params=(_Dims,))
+  Inexact = tp.TypeAliasType("Inexact", JaxArray, type_params=(_Dims,))
+  Num = tp.TypeAliasType("Num", JaxArray, type_params=(_Dims,))
+  Shaped = tp.TypeAliasType("Shaped", JaxArray, type_params=(_Dims,))
 
 else:
   Bool = make_array_type(JaxArray, BOOL)
@@ -274,61 +276,35 @@ else:
 # ---------------------------------------------------------------------------
 
 if tp.TYPE_CHECKING:
-  from .numpy import (
-    BoolLike as BoolLikeNumpy,
-    C64Like as C64LikeNumpy,
-    C128Like as C128LikeNumpy,
-    ComplexLike as ComplexLikeNumpy,
-    F16Like as F16LikeNumpy,
-    F32Like as F32LikeNumpy,
-    F64Like as F64LikeNumpy,
-    FloatLike as FloatLikeNumpy,
-    InexactLike as InexactLikeNumpy,
-    I8Like as I8LikeNumpy,
-    I16Like as I16LikeNumpy,
-    I32Like as I32LikeNumpy,
-    I64Like as I64LikeNumpy,
-    IntegerLike as IntegerLikeNumpy,
-    IntLike as IntLikeNumpy,
-    NumLike as NumLikeNumpy,
-    RealLike as RealLikeNumpy,
-    ShapedLike as ShapedLikeNumpy,
-    U8Like as U8LikeNumpy,
-    U16Like as U16LikeNumpy,
-    U32Like as U32LikeNumpy,
-    U64Like as U64LikeNumpy,
-    UIntLike as UIntLikeNumpy,
-  )
+  BF16Like = tp.TypeAliasType("BF16Like", JaxArray, type_params=(_Dims,))
+  BoolLike = tp.TypeAliasType("BoolLike", JaxArray, type_params=(_Dims,))
 
-  type BF16Like[*Dims] = BF16[*Dims] | NumLikeNumpy[*Dims]
-  type BoolLike[*Dims] = Bool[*Dims] | BoolLikeNumpy[*Dims]
+  I8Like = tp.TypeAliasType("I8Like", JaxArray, type_params=(_Dims,))
+  I16Like = tp.TypeAliasType("I16Like", JaxArray, type_params=(_Dims,))
+  I32Like = tp.TypeAliasType("I32Like", JaxArray, type_params=(_Dims,))
+  I64Like = tp.TypeAliasType("I64Like", JaxArray, type_params=(_Dims,))
 
-  type I8Like[*Dims] = I8[*Dims] | I8LikeNumpy[*Dims]
-  type I16Like[*Dims] = I16[*Dims] | I16LikeNumpy[*Dims]
-  type I32Like[*Dims] = I32[*Dims] | I32LikeNumpy[*Dims]
-  type I64Like[*Dims] = I64[*Dims] | I64LikeNumpy[*Dims]
+  U8Like = tp.TypeAliasType("U8Like", JaxArray, type_params=(_Dims,))
+  U16Like = tp.TypeAliasType("U16Like", JaxArray, type_params=(_Dims,))
+  U32Like = tp.TypeAliasType("U32Like", JaxArray, type_params=(_Dims,))
+  U64Like = tp.TypeAliasType("U64Like", JaxArray, type_params=(_Dims,))
 
-  type U8Like[*Dims] = U8[*Dims] | U8LikeNumpy[*Dims]
-  type U16Like[*Dims] = U16[*Dims] | U16LikeNumpy[*Dims]
-  type U32Like[*Dims] = U32[*Dims] | U32LikeNumpy[*Dims]
-  type U64Like[*Dims] = U64[*Dims] | U64LikeNumpy[*Dims]
+  F16Like = tp.TypeAliasType("F16Like", JaxArray, type_params=(_Dims,))
+  F32Like = tp.TypeAliasType("F32Like", JaxArray, type_params=(_Dims,))
+  F64Like = tp.TypeAliasType("F64Like", JaxArray, type_params=(_Dims,))
 
-  type F16Like[*Dims] = F16[*Dims] | F16LikeNumpy[*Dims]
-  type F32Like[*Dims] = F32[*Dims] | F32LikeNumpy[*Dims]
-  type F64Like[*Dims] = F64[*Dims] | F64LikeNumpy[*Dims]
+  C64Like = tp.TypeAliasType("C64Like", JaxArray, type_params=(_Dims,))
+  C128Like = tp.TypeAliasType("C128Like", JaxArray, type_params=(_Dims,))
 
-  type C64Like[*Dims] = C64[*Dims] | C64LikeNumpy[*Dims]
-  type C128Like[*Dims] = C128[*Dims] | C128LikeNumpy[*Dims]
-
-  type IntLike[*Dims] = Int[*Dims] | IntLikeNumpy[*Dims]
-  type UIntLike[*Dims] = UInt[*Dims] | UIntLikeNumpy[*Dims]
-  type IntegerLike[*Dims] = Integer[*Dims] | IntegerLikeNumpy[*Dims]
-  type FloatLike[*Dims] = Float[*Dims] | FloatLikeNumpy[*Dims]
-  type RealLike[*Dims] = Real[*Dims] | RealLikeNumpy[*Dims]
-  type ComplexLike[*Dims] = Complex[*Dims] | ComplexLikeNumpy[*Dims]
-  type InexactLike[*Dims] = Inexact[*Dims] | InexactLikeNumpy[*Dims]
-  type NumLike[*Dims] = Num[*Dims] | NumLikeNumpy[*Dims]
-  type ShapedLike[*Dims] = Shaped[*Dims] | ShapedLikeNumpy[*Dims]
+  IntLike = tp.TypeAliasType("IntLike", JaxArray, type_params=(_Dims,))
+  UIntLike = tp.TypeAliasType("UIntLike", JaxArray, type_params=(_Dims,))
+  IntegerLike = tp.TypeAliasType("IntegerLike", JaxArray, type_params=(_Dims,))
+  FloatLike = tp.TypeAliasType("FloatLike", JaxArray, type_params=(_Dims,))
+  RealLike = tp.TypeAliasType("RealLike", JaxArray, type_params=(_Dims,))
+  ComplexLike = tp.TypeAliasType("ComplexLike", JaxArray, type_params=(_Dims,))
+  InexactLike = tp.TypeAliasType("InexactLike", JaxArray, type_params=(_Dims,))
+  NumLike = tp.TypeAliasType("NumLike", JaxArray, type_params=(_Dims,))
+  ShapedLike = tp.TypeAliasType("ShapedLike", JaxArray, type_params=(_Dims,))
 
 else:
   BF16Like = make_array_like_type(BFLOAT16, name="BF16Like")

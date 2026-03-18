@@ -54,6 +54,20 @@ def check[**P, R](
 
       inner = beartype(fn, conf=conf)  # type: ignore[arg-type]
 
+    if inspect.iscoroutinefunction(fn):
+
+      @functools.wraps(fn)
+      async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+        bound = signature.bind_partial(*args, **kwargs)
+        bound.apply_defaults()
+        push_memo(scope=dict(bound.arguments))
+        try:
+          return await inner(*args, **kwargs)  # type: ignore[misc]
+        finally:
+          pop_memo()
+
+      return async_wrapper  # type: ignore[return-value]
+
     @functools.wraps(fn)
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
       bound = signature.bind_partial(*args, **kwargs)

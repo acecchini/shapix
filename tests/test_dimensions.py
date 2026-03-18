@@ -363,3 +363,49 @@ class TestValueArithmetic:
     from shapix._dimensions import _ValueExpr
 
     assert not isinstance(r, _ValueExpr)
+
+
+class TestMixedScalarRejection:
+  """Scalar must be the only shape token — mixed use must raise."""
+
+  def test_n_scalar_raises(self) -> None:
+    from shapix import N, Scalar
+    from shapix.numpy import F32
+
+    with pytest.raises(TypeError, match="Scalar must be the only shape token"):
+      F32[N, Scalar]
+
+  def test_scalar_n_raises(self) -> None:
+    from shapix import N, Scalar
+    from shapix.numpy import F32
+
+    with pytest.raises(TypeError, match="Scalar must be the only shape token"):
+      F32[Scalar, N]
+
+  def test_ellipsis_scalar_raises(self) -> None:
+    from shapix import Scalar
+    from shapix.numpy import F32
+
+    with pytest.raises(TypeError, match="Scalar must be the only shape token"):
+      F32[..., Scalar]
+
+  def test_scalar_ellipsis_raises(self) -> None:
+    from shapix import Scalar
+    from shapix.numpy import F32
+
+    with pytest.raises(TypeError, match="Scalar must be the only shape token"):
+      F32[Scalar, ...]
+
+  def test_scalar_int_raises(self) -> None:
+    from shapix import Scalar
+    from shapix.numpy import F32
+
+    with pytest.raises(TypeError, match="Scalar must be the only shape token"):
+      F32[Scalar, 3]
+
+  def test_scalar_alone_works(self) -> None:
+    from shapix import Scalar
+    from shapix.numpy import F32
+
+    hint = F32[Scalar]
+    assert hasattr(hint, "__metadata__")

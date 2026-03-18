@@ -263,6 +263,37 @@ class TestShapedVoidAndStructured:
     assert not spec.matches(np.zeros(2, dtype=dt_xz))
 
 
+class TestDatetimeTimedelta:
+  @pytest.mark.parametrize(
+    "dtype_str, expected",
+    [
+      ("datetime64[ns]", "datetime64"),
+      ("datetime64[D]", "datetime64"),
+      ("datetime64[us]", "datetime64"),
+      ("datetime64", "datetime64"),
+      ("timedelta64[ms]", "timedelta64"),
+      ("timedelta64[s]", "timedelta64"),
+      ("timedelta64[ns]", "timedelta64"),
+      ("timedelta64", "timedelta64"),
+    ],
+  )
+  def test_extract_datetime_timedelta(self, dtype_str: str, expected: str) -> None:
+    arr = np.zeros(2, dtype=dtype_str)
+    assert extract_dtype_str(arr) == expected
+
+  def test_datetime64_spec_matches_unit_qualified(self) -> None:
+    from shapix._dtypes import DATETIME64
+
+    assert DATETIME64.matches(np.zeros(2, dtype="datetime64[ns]"))
+    assert DATETIME64.matches(np.zeros(2, dtype="datetime64[D]"))
+
+  def test_timedelta64_spec_matches_unit_qualified(self) -> None:
+    from shapix._dtypes import TIMEDELTA64
+
+    assert TIMEDELTA64.matches(np.zeros(2, dtype="timedelta64[ms]"))
+    assert TIMEDELTA64.matches(np.zeros(2, dtype="timedelta64[s]"))
+
+
 class TestDtypeEdgeCases:
   def test_shaped_matches_bfloat16(self) -> None:
     torch = pytest.importorskip("torch")

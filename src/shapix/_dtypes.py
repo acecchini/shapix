@@ -265,6 +265,10 @@ def extract_dtype_str(obj: object) -> str:
       return "bytes"
     if dtype_name.startswith("str"):
       return "str"
+    if dtype_name.startswith("datetime64"):
+      return "datetime64"
+    if dtype_name.startswith("timedelta64"):
+      return "timedelta64"
     return dtype_name
 
   # NumPy / JAX: dtype.type.__name__ (e.g. "float32")

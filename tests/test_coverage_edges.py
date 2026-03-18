@@ -427,6 +427,51 @@ finally:
     assert result.stdout.strip() == "True False"
 
 
+class TestVersionFallback:
+  def test_version_fallback_when_metadata_missing(self) -> None:
+    """__version__ should be '0+unknown' when package metadata is unavailable."""
+    script = """
+import builtins
+import pathlib
+import sys
+
+sys.path.insert(0, str(pathlib.Path('.').resolve() / 'src'))
+real_import = builtins.__import__
+
+def fake_import(name, globals=None, locals=None, fromlist=(), level=0):
+    if name == 'numpy' or name.startswith('numpy.'):
+        raise ModuleNotFoundError("No module named 'numpy'")
+    return real_import(name, globals, locals, fromlist, level)
+
+builtins.__import__ = fake_import
+
+import importlib.metadata
+_real_version = importlib.metadata.version
+def _fake_version(name):
+    if name == 'shapix':
+        raise importlib.metadata.PackageNotFoundError(name)
+    return _real_version(name)
+
+importlib.metadata.version = _fake_version
+
+try:
+    import shapix
+    print(shapix.__version__)
+finally:
+    builtins.__import__ = real_import
+    importlib.metadata.version = _real_version
+"""
+    result = subprocess.run(
+      [sys.executable, "-c", script],
+      capture_output=True,
+      text=True,
+      cwd=Path(__file__).resolve().parents[1],
+      check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "0+unknown"
+
+
 class TestNewDimensionSymbols:
   def test_d_and_k_available(self) -> None:
     from shapix import D, K

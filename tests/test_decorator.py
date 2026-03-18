@@ -206,3 +206,74 @@ class TestValueWithCheckDecorator:
       return np.ones(size, dtype=np.float32)
 
     assert f(7).shape == (7,)
+
+
+class TestAsyncCheckDecorator:
+  def test_async_basic(self) -> None:
+    """Decorated async fn still works, iscoroutinefunction is True."""
+    import asyncio
+    import inspect
+
+    @shapix.check
+    @beartype
+    async def f(x: F32[N, C], y: F32[N, C]) -> F32[N, C]:
+      return x + y
+
+    assert inspect.iscoroutinefunction(f)
+    result = asyncio.run(
+      f(np.ones((4, 3), dtype=np.float32), np.ones((4, 3), dtype=np.float32))
+    )
+    assert result.shape == (4, 3)
+
+  def test_async_cross_arg_mismatch(self) -> None:
+    """Shape mismatch raises for async functions."""
+    import asyncio
+
+    @shapix.check
+    @beartype
+    async def f(x: F32[N], y: F32[N]) -> F32[N]:
+      return x + y
+
+    with pytest.raises(BeartypeCallHintParamViolation):
+      asyncio.run(f(np.ones((3,), dtype=np.float32), np.ones((5,), dtype=np.float32)))
+
+  def test_async_return_mismatch(self) -> None:
+    """Return shape violation raises for async functions."""
+    import asyncio
+
+    from beartype.roar import BeartypeCallHintReturnViolation
+
+    @shapix.check
+    @beartype
+    async def f(x: F32[N]) -> F32[N]:
+      return np.ones(999, dtype=np.float32)
+
+    with pytest.raises(BeartypeCallHintReturnViolation):
+      asyncio.run(f(np.ones(3, dtype=np.float32)))
+
+  def test_async_with_conf(self) -> None:
+    """@check(conf=BeartypeConf()) on async function."""
+    import asyncio
+    import inspect
+
+    from beartype import BeartypeConf
+
+    @shapix.check(conf=BeartypeConf())
+    async def f(x: F32[N]) -> F32[N]:
+      return x
+
+    assert inspect.iscoroutinefunction(f)
+    result = asyncio.run(f(np.ones((5,), dtype=np.float32)))
+    assert result.shape == (5,)
+
+  def test_async_value_resolution(self) -> None:
+    """Value("size") resolves during await."""
+    import asyncio
+
+    @shapix.check
+    @beartype
+    async def f(size: int) -> F32[Value("size")]:  # type: ignore[valid-type]
+      return np.ones(size, dtype=np.float32)
+
+    result = asyncio.run(f(4))
+    assert result.shape == (4,)

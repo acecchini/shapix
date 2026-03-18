@@ -16,7 +16,7 @@ from beartype.roar import (
 )
 
 import shapix
-from shapix import B, C, N, __, Dimension  # noqa: F811 — B used in ~B annotations
+from shapix import B, C, N, Value, __, Dimension  # noqa: F811 — B used in ~B annotations
 from shapix.torch import (
   BF16,
   BF16Like,
@@ -562,3 +562,33 @@ class TestTorchLikeCastingVariants:
     T = make_array_like_type(FLOAT32, casting="no")
     assert is_bearable(torch.ones(3, dtype=torch.float32), T[...])
     assert not is_bearable(torch.ones(3, dtype=torch.float64), T[...])
+
+
+class TestTorchValueResolution:
+  def test_value_with_check(self) -> None:
+    """Value("size") resolves under @check with Torch tensors."""
+
+    @shapix.check
+    @beartype
+    def f(size: int) -> F32[Value("size")]:  # type: ignore[valid-type]
+      return torch.ones(size, dtype=torch.float32)
+
+    assert f(4).shape == (4,)
+
+  def test_value_cross_arg(self) -> None:
+    """Value + dim under @check with Torch tensors."""
+
+    @shapix.check
+    @beartype
+    def f(x: F32[N], pad: int) -> F32[N + Value("pad")]:  # type: ignore[valid-type]
+      return torch.ones(x.shape[0] + pad, dtype=torch.float32)
+
+    result = f(torch.ones(4, dtype=torch.float32), 2)
+    assert result.shape == (6,)
+
+
+class TestTorchNumericScalarBoolRejection:
+  def test_i64_scalar_rejects_bool(self) -> None:
+    from shapix.torch import I64ScalarLike
+
+    assert not is_bearable(True, I64ScalarLike)

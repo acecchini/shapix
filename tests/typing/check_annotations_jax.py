@@ -1,9 +1,9 @@
 # pyright: reportMissingImports=false, reportInvalidTypeForm=false
-"""Verify JAX array type annotations (pyright-specific).
+"""Verify JAX array type annotations type-check cleanly.
 
 Tests the full shapix annotation pattern with JAX backend types.
 
-Tested with: pyright only
+Tested with: pyright, mypy, ty
 """
 
 from beartype import beartype
@@ -111,10 +111,10 @@ Vocab = Dimension("Vocab")
 
 
 @beartype
-def vocab_fn(x: I64[N, Vocab]) -> I64[N, Vocab]:
+def vocab_fn(x: I64[N, Vocab]) -> I64[N, Vocab]:  # type: ignore  # noqa: F821  # custom dim
   return x
 
 
 @beartype
-def pad(x: F32[N]) -> F32[N + 2]:
+def pad(x: F32[N]) -> F32[N + 2]:  # type: ignore  # noqa: F821  # arithmetic dim
   return x

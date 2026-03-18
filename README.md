@@ -18,7 +18,7 @@ Shapix turns array shape annotations into **Python objects** that beartype valid
 
 - **Zero boilerplate** — works with standard `@beartype` decorators and `beartype.claw` import hooks. No custom decorator required.
 - **Cross-argument consistency** — named dimensions are enforced across all parameters and the return value within a single function call.
-- **Static type checker friendly** — under `TYPE_CHECKING`, array types resolve to proper `NDArray` / `Array` / `Tensor` aliases. Pyright sees real types.
+- **Static type checker friendly** — under `TYPE_CHECKING`, array types resolve to proper `NDArray` / `Array` / `Tensor` aliases. Works with pyright, mypy, and ty.
 - **Readable annotations** — `F32[N, C, H, W]` reads like documentation.
 - **Full `BeartypeConf` support** — unlike jaxtyping, shapix doesn't replace your beartype configuration.
 - **Thread-safe** — each thread gets independent dimension bindings.
@@ -265,6 +265,8 @@ def dot(x: F32[N], y: F32[N]) -> F32[Scalar]:
     return np.dot(x, y)  # returns shape ()
 ```
 
+> **Note:** `Scalar` must be the only shape token. Mixed forms like `F32[N, Scalar]` or `F32[Scalar, ...]` raise `TypeError` at hint construction time.
+
 ### Custom dimensions
 
 Create your own with `Dimension`:
@@ -327,6 +329,8 @@ from shapix.numpy import F32, I64, Shaped  # and many more
 **Category dtypes:** `Int` (signed), `UInt` (unsigned), `Integer` (all int), `Float`, `Real` (int + float), `Complex`, `Inexact` (float + complex), `Num` (all numeric), `Shaped` (any dtype)
 
 **Additional dtypes:** `V` (void), `Str` (string), `Bytes` (bytes), `Obj` (object), `DT64` (datetime64), `TD64` (timedelta64)
+
+> `DT64` and `TD64` accept unit-qualified NumPy dtypes such as `datetime64[ns]`, `datetime64[D]`, `timedelta64[ms]`, etc.
 
 ### JAX
 
@@ -428,7 +432,9 @@ from shapix.torch import F32Like   # accepts Tensor, ndarray, scalars, sequences
 
 ### ScalarLike types (range-validated scalars)
 
-ScalarLike types validate individual scalar values with range checking — no shape, just value:
+ScalarLike types validate individual scalar values with range checking — no shape, just value.
+
+> **Note:** Numeric scalar aliases (`I8ScalarLike`, `F32ScalarLike`, `NumScalarLike`, etc.) reject `bool` and `np.bool_` values. Python `bool` is a subclass of `int`, but shapix treats booleans as non-numeric. Use `BoolScalarLike` for boolean scalars.
 
 ```python
 from shapix.numpy import I8ScalarLike, F32ScalarLike, U8ScalarLike
@@ -701,6 +707,8 @@ def f(x: F32[N, C], y: F32[N, C]) -> F32[N, C]: ...
 
 If you want a guarantee that cross-argument checking works regardless of how your code is called (by test runners, async frameworks, deep middleware stacks), `@shapix.check` removes all dependence on call-stack structure.
 
+`@shapix.check` supports both sync and async functions. For async functions, the memo scope covers the full awaited execution, and `inspect.iscoroutinefunction()` is preserved on the decorated function.
+
 **When you don't need it:** If you're using plain `@beartype` and your tests pass, the frame-based detection is working. Most applications never need `@shapix.check`.
 
 ### Manual checks with `check_context`
@@ -733,61 +741,58 @@ Shapix uses three key mechanisms:
 
 3. **Thread-local storage** — Each thread gets its own memo stack via `threading.local()`, ensuring thread safety.
 
-## Static type checkers (pyright / Pylance)
+## Static type checkers (pyright, mypy, ty)
 
-Shapix's pre-defined dimension symbols (`N`, `C`, `H`, `W`, ...) work out of the box with pyright and Pylance — under `TYPE_CHECKING` they resolve to `int` type aliases, so annotations like `F32[N, C]` are fully valid type expressions.
+Shapix supports **pyright**, **mypy**, and **ty**. Under `TYPE_CHECKING`, pre-defined dimension symbols (`N`, `C`, `H`, `W`, …) resolve to `TypeVar` and array types resolve to `TypeAliasType`, so core annotations like `F32[N, C]` are valid type expressions across all three checkers.
 
-However, some patterns produce type checker errors because they place **runtime values** where pyright expects **types**:
+However, some patterns are fundamentally runtime-only and produce type checker errors regardless of the checker:
 
-| Pattern | Example | Pyright rule |
-|---------|---------|--------------|
-| Integer literals | `F32[N, 3, H, W]` | `reportGeneralTypeIssues` |
-| Unary operators | `F32[~B, C]`, `F32[+N, C]` | `reportInvalidTypeForm` |
-| Arithmetic | `F32[N + 2]` | `reportInvalidTypeForm` |
-| Custom dimensions | `F32[Vocab, Embed]` | `reportInvalidTypeForm` (or use `TYPE_CHECKING` pattern) |
+| Pattern | Example | Workaround |
+|---------|---------|------------|
+| Integer literals | `F32[N, 3, H, W]` | Wrap in `Dimension("3")` |
+| Unary operators | `F32[~B, C]`, `F32[+N, C]` | `# type: ignore` |
+| Arithmetic | `F32[N + 2]` | `# type: ignore` |
+| Custom dimensions | `F32[Vocab, Embed]` | `# type: ignore` or `TYPE_CHECKING` pattern |
+| `Value(...)` | `F32[Value("size")]` | `# type: ignore` |
 
-### Option A — Suppress `reportInvalidTypeForm` and wrap integers (recommended)
+### Recommended pyright config
 
-Add one line to your pyright config to silence operators, custom dimensions, and arithmetic globally. Then wrap bare integer literals in `Dimension()` to shift them to the same suppressed rule:
-
-```jsonc
-// pyrightconfig.json (recommended — Pylance always reads this)
-{ "reportInvalidTypeForm": false }
-```
-
-Or equivalently in `pyproject.toml`:
+Add to your `pyproject.toml` or `pyrightconfig.json` to suppress the most common shapix-related diagnostics:
 
 ```toml
 [tool.pyright]
 reportInvalidTypeForm = false
 ```
 
-```python
-from shapix import N, H, W, Dimension
+### Inline `# type: ignore`
 
-# Integer literals — wrap in Dimension() to avoid reportGeneralTypeIssues
+For patterns that all three checkers reject (arithmetic dims, Value(), custom dims), use blanket `# type: ignore`:
+
+```python
 @beartype
-def rgb_to_gray(x: F32[N, Dimension("3"), H, W]) -> F32[N, Dimension("1"), H, W]:
+def pad(x: F32[N]) -> F32[N + 2]:  # type: ignore
     ...
 
-# Operators, arithmetic, custom dimensions — all covered by the suppression
 @beartype
-def pad(x: F32[N]) -> F32[N + 2]:
+def f(x: F32[~B, C]) -> F32[~B, C]:  # type: ignore
     ...
 ```
 
-### Option B — Inline `# type: ignore`
+### Custom dimensions under TYPE_CHECKING
 
-If you prefer not to change your pyright config, silence individual lines:
+Custom dimensions created with `Dimension()` are runtime objects. To make them work with all type checkers, use the `TYPE_CHECKING` pattern:
 
 ```python
-@beartype
-def rgb_to_gray(x: F32[N, 3, H, W]) -> F32[N, 1, H, W]:  # type: ignore[reportGeneralTypeIssues]
-    ...
+import typing as tp
+from shapix import Dimension
 
-@beartype
-def f(x: F32[~B, C]) -> F32[~B, C]:  # type: ignore[reportInvalidTypeForm]
-    ...
+if tp.TYPE_CHECKING:
+    import typing as _tp
+    Vocab = _tp.TypeVar("Vocab")
+    Embed = _tp.TypeVar("Embed")
+else:
+    Vocab = Dimension("Vocab")
+    Embed = Dimension("Embed")
 ```
 
 ## Compared to jaxtyping
@@ -835,17 +840,22 @@ def f(x: F32[~B, C]) -> F32[~B, C]:  # type: ignore[reportInvalidTypeForm]
 
 Most NumPy array types, plus `BF16` and `BF16Like`. NumPy-only extended-precision array aliases such as `F128` / `C256` stay in `shapix.numpy`. Both export `Like` types, `ScalarLike` types (re-exported from numpy), and `make_scalar_like_type`. JAX also exports `Tree`.
 
-### Factories (`shapix`)
+### Factories
+
+From `shapix` (root):
 
 `make_array_type(array_class, dtype_spec)` — custom array type
 `make_array_like_type(dtype_spec, *, casting="same_kind", name="ArrayLike")` — custom Like type
-`make_scalar_like_type(target_dtype, *, casting="same_kind", name="ScalarLike")` — custom ScalarLike type
 `DtypeSpec(name, allowed)` — custom dtype specification
 `DtypeSpec.structured(fields)` — structured dtype specification
 
+From `shapix.numpy` (requires NumPy):
+
+`make_scalar_like_type(target_dtype, *, casting="same_kind", name="ScalarLike")` — custom ScalarLike type
+
 ### Decorators & context managers (`shapix`)
 
-`@shapix.check` — explicit memo management
+`@shapix.check` — explicit memo management (supports both sync and async functions)
 `@shapix.check(conf=BeartypeConf())` — combined memo + beartype
 `shapix.check_context()` — context manager for manual checks
 

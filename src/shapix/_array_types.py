@@ -29,7 +29,7 @@ from typing import Annotated
 
 from beartype.vale import Is
 
-from ._dimensions import Dimension, _ValueExpr
+from ._dimensions import Dimension, Scalar, _ValueExpr
 from ._dtypes import DtypeSpec
 from ._dtypes import extract_dtype_str as extract_dtype_str
 from ._memo import ShapeMemo as ShapeMemo
@@ -406,6 +406,11 @@ def make_array_like_type(
 
 def _to_shape_spec(dims: tuple[object, ...]) -> tuple[DimSpec, ...]:
   """Convert a tuple of user-facing dim objects to internal DimSpec."""
+  if any(d is Scalar for d in dims) and len(dims) > 1:
+    msg = (
+      "Scalar must be the only shape token; mixed use like F32[N, Scalar] is invalid"
+    )
+    raise TypeError(msg)
   specs: list[DimSpec] = []
   for d in dims:
     if d is Ellipsis:

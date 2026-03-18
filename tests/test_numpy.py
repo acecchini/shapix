@@ -1732,3 +1732,72 @@ class TestScalarLikeCastingVariants:
 
   def test_make_scalar_like_type_not_reexported_from_init(self) -> None:
     assert not hasattr(shapix, "make_scalar_like_type")
+
+
+class TestNumericScalarBooleanRejection:
+  """Numeric scalar aliases must reject booleans."""
+
+  @pytest.mark.parametrize(
+    "alias_name",
+    [
+      "I8ScalarLike",
+      "I16ScalarLike",
+      "I32ScalarLike",
+      "I64ScalarLike",
+      "U8ScalarLike",
+      "U16ScalarLike",
+      "U32ScalarLike",
+      "U64ScalarLike",
+      "F16ScalarLike",
+      "F32ScalarLike",
+      "F64ScalarLike",
+      "F128ScalarLike",
+      "C64ScalarLike",
+      "C128ScalarLike",
+      "C256ScalarLike",
+      "IntScalarLike",
+      "UIntScalarLike",
+      "IntegerScalarLike",
+      "FloatScalarLike",
+      "RealScalarLike",
+      "ComplexScalarLike",
+      "InexactScalarLike",
+      "NumScalarLike",
+    ],
+  )
+  def test_numeric_alias_rejects_bool(self, alias_name: str) -> None:
+    import shapix.numpy as snp
+
+    alias = getattr(snp, alias_name)
+    assert not is_bearable(True, alias), f"{alias_name} should reject True"
+    assert not is_bearable(False, alias), f"{alias_name} should reject False"
+    assert not is_bearable(np.bool_(True), alias), (
+      f"{alias_name} should reject np.bool_(True)"
+    )
+
+  def test_bool_scalar_like_accepts_booleans(self) -> None:
+    from shapix.numpy import BoolScalarLike
+
+    assert is_bearable(True, BoolScalarLike)
+    assert is_bearable(False, BoolScalarLike)
+
+  def test_shaped_scalar_like_accepts_booleans(self) -> None:
+    from shapix.numpy import ShapedScalarLike
+
+    assert is_bearable(True, ShapedScalarLike)
+    assert is_bearable(False, ShapedScalarLike)
+
+  def test_make_scalar_like_type_rejects_bool_for_numeric(self) -> None:
+    from shapix.numpy import make_scalar_like_type
+
+    T = make_scalar_like_type(np.uint8)
+    assert not is_bearable(True, T)
+
+    T2 = make_scalar_like_type(np.float32)
+    assert not is_bearable(True, T2)
+
+  def test_make_scalar_like_type_accepts_bool_for_bool_target(self) -> None:
+    from shapix.numpy import make_scalar_like_type
+
+    T = make_scalar_like_type(np.bool_)
+    assert is_bearable(True, T)

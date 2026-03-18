@@ -47,6 +47,7 @@ Functions
     :func:`make_array_like_type` — create subscriptable array-like type
     factories with configurable dtype casting.
     :func:`check` — optional decorator for explicit memo management.
+    Supports both sync and async functions.
     Also supports combined mode: ``@check(conf=BeartypeConf())``.
 
 Context managers
@@ -54,9 +55,12 @@ Context managers
     ``is_bearable()`` checks.
 """
 
-from importlib.metadata import version
+from importlib.metadata import PackageNotFoundError, version
 
-__version__ = version("shapix")
+try:
+  __version__ = version("shapix")
+except PackageNotFoundError:
+  __version__ = "0+unknown"
 
 __all__ = [
   # Dimension symbols

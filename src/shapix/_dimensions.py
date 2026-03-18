@@ -311,17 +311,17 @@ if tp.TYPE_CHECKING:
 
     def __pos__(self) -> Dimension: ...
 
-  Scalar: Dimension
-  B: Dimension
-  N: Dimension
-  P: Dimension
-  L: Dimension
-  C: Dimension
-  D: Dimension
-  K: Dimension
-  H: Dimension
-  W: Dimension
-  __: Dimension
+  Scalar = tp.TypeVar("Scalar")
+  B = tp.TypeVar("B")
+  N = tp.TypeVar("N")
+  P = tp.TypeVar("P")
+  L = tp.TypeVar("L")
+  C = tp.TypeVar("C")
+  D = tp.TypeVar("D")
+  K = tp.TypeVar("K")
+  H = tp.TypeVar("H")
+  W = tp.TypeVar("W")
+  __ = tp.TypeVar("__")
 else:
 
   class Value(_ValueExpr):

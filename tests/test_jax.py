@@ -17,7 +17,7 @@ from beartype.roar import (
 )
 
 import shapix
-from shapix import B, C, N, __, Dimension  # noqa: F811 — B used in ~B annotations
+from shapix import B, C, N, Value, __, Dimension  # noqa: F811 — B used in ~B annotations
 from shapix.jax import (
   BF16,
   BF16Like,
@@ -565,3 +565,33 @@ class TestJaxLikeCastingVariants:
     T = make_array_like_type(FLOAT32, casting="no")
     assert is_bearable(jnp.ones(3, dtype=jnp.float32), T[...])
     assert not is_bearable(jnp.ones(3, dtype=jnp.int32), T[...])
+
+
+class TestJaxValueResolution:
+  def test_value_with_check(self) -> None:
+    """Value("size") resolves under @check with JAX arrays."""
+
+    @shapix.check
+    @beartype
+    def f(size: int) -> F32[Value("size")]:  # type: ignore[valid-type]
+      return jnp.ones(size, dtype=jnp.float32)
+
+    assert f(4).shape == (4,)
+
+  def test_value_cross_arg(self) -> None:
+    """Value + dim under @check with JAX arrays."""
+
+    @shapix.check
+    @beartype
+    def f(x: F32[N], pad: int) -> F32[N + Value("pad")]:  # type: ignore[valid-type]
+      return jnp.ones(x.shape[0] + pad, dtype=jnp.float32)
+
+    result = f(jnp.ones(4, dtype=jnp.float32), 2)
+    assert result.shape == (6,)
+
+
+class TestJaxNumericScalarBoolRejection:
+  def test_i64_scalar_rejects_bool(self) -> None:
+    from shapix.jax import I64ScalarLike
+
+    assert not is_bearable(True, I64ScalarLike)

@@ -1,13 +1,9 @@
 """Type-checker compatibility tests.
 
 Runs pyright, mypy, and ty on sample files under ``tests/typing/`` to verify
-that shapix's public API type-checks cleanly across multiple checkers.
+that shapix's public API type-checks cleanly across all three checkers.
 
-Test matrix:
-- **Common files** (all checkers): imports, decorator, like types, make_array_type
-- **Pyright-only files**: full F32[N, C] annotations (TYPE_CHECKING stubs)
-
-These tests require ``pyright``, ``mypy``, and ``ty`` to be installed.
+All flagship annotation files are tested by all checkers.
 """
 
 from __future__ import annotations
@@ -21,20 +17,15 @@ import pytest
 TYPING_DIR = Path(__file__).parent / "typing"
 
 # ---------------------------------------------------------------------------
-# File categories
+# All files tested by all three checkers
 # ---------------------------------------------------------------------------
 
-# Files that should pass cleanly on ALL type checkers
-COMMON_FILES = [
+ALL_FILES = [
   "check_imports.py",
   "check_decorator.py",
   "check_like_types.py",
   "check_make_array_type.py",
   "check_tree.py",
-]
-
-# Files that only pyright supports (F32[N, C] subscript annotations)
-PYRIGHT_ONLY_FILES = [
   "check_annotations.py",
   "check_annotations_jax.py",
   "check_annotations_torch.py",
@@ -58,13 +49,13 @@ def _skip_if_missing(tool: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Pyright — common + pyright-only files
+# Pyright
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.typecheck
 class TestPyright:
-  @pytest.mark.parametrize("filename", COMMON_FILES + PYRIGHT_ONLY_FILES)
+  @pytest.mark.parametrize("filename", ALL_FILES)
   def test_pyright(self, filename: str) -> None:
     _skip_if_missing("pyright")
     result = _run(["pyright", str(TYPING_DIR / filename)])
@@ -74,13 +65,13 @@ class TestPyright:
 
 
 # ---------------------------------------------------------------------------
-# Mypy — common files only
+# Mypy
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.typecheck
 class TestMypy:
-  @pytest.mark.parametrize("filename", COMMON_FILES)
+  @pytest.mark.parametrize("filename", ALL_FILES)
   def test_mypy(self, filename: str) -> None:
     _skip_if_missing("mypy")
     result = _run(["mypy", str(TYPING_DIR / filename)])
@@ -90,13 +81,13 @@ class TestMypy:
 
 
 # ---------------------------------------------------------------------------
-# ty — common files only
+# ty
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.typecheck
 class TestTy:
-  @pytest.mark.parametrize("filename", COMMON_FILES)
+  @pytest.mark.parametrize("filename", ALL_FILES)
   def test_ty(self, filename: str) -> None:
     _skip_if_missing("ty")
     result = _run(["ty", "check", str(TYPING_DIR / filename)])
