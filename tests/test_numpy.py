@@ -24,14 +24,18 @@ from shapix._dtypes import COMPLEX256, FLOAT32, FLOAT128, DtypeSpec
 from shapix.numpy import (
   Bool,
   BoolLike,
+  Bytes,
+  DT64,
   F16,
   F32,
   F32Like,
+  F32ScalarLike,
   F64,
   F128,
   F128Like,
   Float,
   I8ScalarLike,
+  I16ScalarLike,
   I32,
   I64,
   I64ScalarLike,
@@ -39,9 +43,16 @@ from shapix.numpy import (
   InexactScalarLike,
   Int,
   Num,
+  Obj,
   Shaped,
+  Str,
+  StringLike,
+  TD64,
   U8,
   U8ScalarLike,
+  U16ScalarLike,
+  U64ScalarLike,
+  V,
   C256,
   C256Like,
 )
@@ -1801,3 +1812,270 @@ class TestNumericScalarBooleanRejection:
 
     T = make_scalar_like_type(np.bool_)
     assert is_bearable(True, T)
+
+
+# =====================================================================
+# DT64 / TD64 runtime integration
+# =====================================================================
+
+
+class TestDatetimeTimedelta:
+  """Full @beartype pipeline for DT64 and TD64 array types."""
+
+  def test_dt64_accepts_datetime64_ns(self) -> None:
+    arr = np.array(["2021-01-01", "2021-06-15"], dtype="datetime64[ns]")
+    assert is_bearable(arr, DT64[N])
+
+  def test_dt64_accepts_datetime64_D(self) -> None:
+    arr = np.array(["2021-01-01", "2021-06-15"], dtype="datetime64[D]")
+    assert is_bearable(arr, DT64[N])
+
+  def test_dt64_rejects_float32(self) -> None:
+    arr = np.ones(3, dtype=np.float32)
+    assert not is_bearable(arr, DT64[N])
+
+  def test_dt64_rejects_int64(self) -> None:
+    arr = np.ones(3, dtype=np.int64)
+    assert not is_bearable(arr, DT64[N])
+
+  def test_td64_accepts_timedelta64_ms(self) -> None:
+    arr = np.array([1, 2, 3], dtype="timedelta64[ms]")
+    assert is_bearable(arr, TD64[N])
+
+  def test_td64_accepts_timedelta64_s(self) -> None:
+    arr = np.array([10, 20], dtype="timedelta64[s]")
+    assert is_bearable(arr, TD64[N])
+
+  def test_td64_rejects_float32(self) -> None:
+    arr = np.ones(3, dtype=np.float32)
+    assert not is_bearable(arr, TD64[N])
+
+  def test_td64_rejects_int64(self) -> None:
+    arr = np.ones(3, dtype=np.int64)
+    assert not is_bearable(arr, TD64[N])
+
+  def test_dt64_cross_arg_consistency(self) -> None:
+    """N binds correctly across two DT64 args."""
+
+    @beartype
+    def f(x: DT64[N], y: DT64[N]) -> None:
+      pass
+
+    a = np.array(["2021-01-01", "2021-06-15"], dtype="datetime64[ns]")
+    b = np.array(["2022-03-01", "2022-12-31"], dtype="datetime64[D]")
+    f(a, b)  # same N=2
+
+  def test_dt64_cross_arg_mismatch_raises(self) -> None:
+    @beartype
+    def f(x: DT64[N], y: DT64[N]) -> None:
+      pass
+
+    a = np.array(["2021-01-01", "2021-06-15"], dtype="datetime64[ns]")
+    b = np.array(["2022-03-01"], dtype="datetime64[D]")
+    with pytest.raises(BeartypeCallHintParamViolation):
+      f(a, b)  # N=2 vs N=1
+
+  def test_td64_shape_checking(self) -> None:
+    @beartype
+    def f(x: TD64[N, C]) -> None:
+      pass
+
+    f(np.ones((3, 4), dtype="timedelta64[ms]"))
+    with pytest.raises(BeartypeCallHintParamViolation):
+      f(np.ones(3, dtype="timedelta64[ms]"))
+
+
+# =====================================================================
+# V / Str / Bytes / Obj runtime integration
+# =====================================================================
+
+
+class TestSpecialDtypes:
+  """Full @beartype pipeline for V, Str, Bytes, and Obj array types."""
+
+  def test_void_accepts_void_array(self) -> None:
+    arr = np.zeros(3, dtype="V8")
+    assert is_bearable(arr, V[N])
+
+  def test_void_rejects_float(self) -> None:
+    assert not is_bearable(np.ones(3, dtype=np.float32), V[N])
+
+  def test_str_accepts_str_array(self) -> None:
+    arr = np.array(["a", "b", "c"], dtype=np.str_)
+    assert is_bearable(arr, Str[N])
+
+  def test_str_rejects_float(self) -> None:
+    assert not is_bearable(np.ones(3, dtype=np.float32), Str[N])
+
+  def test_bytes_accepts_bytes_array(self) -> None:
+    arr = np.array([b"a", b"b"], dtype=np.bytes_)
+    assert is_bearable(arr, Bytes[N])
+
+  def test_bytes_rejects_float(self) -> None:
+    assert not is_bearable(np.ones(3, dtype=np.float32), Bytes[N])
+
+  def test_obj_accepts_object_array(self) -> None:
+    arr = np.array([object(), object()], dtype=object)
+    assert is_bearable(arr, Obj[N])
+
+  def test_obj_rejects_float(self) -> None:
+    assert not is_bearable(np.ones(3, dtype=np.float32), Obj[N])
+
+  def test_str_shape_checking(self) -> None:
+    @beartype
+    def f(x: Str[N, C]) -> None:
+      pass
+
+    f(np.array([["a", "b"], ["c", "d"]], dtype=np.str_))
+    with pytest.raises(BeartypeCallHintParamViolation):
+      f(np.array(["a", "b"], dtype=np.str_))
+
+
+# =====================================================================
+# Endianness @beartype integration
+# =====================================================================
+
+
+class TestEndiannessBeartype:
+  """Endianness variants through the full @beartype decorator pipeline."""
+
+  def test_f32le_accepts_little_endian(self) -> None:
+    from shapix._dtypes import FLOAT32_LE
+
+    T = make_array_type(np.ndarray, FLOAT32_LE)
+
+    @beartype
+    def f(x: T[N]) -> None:  # type: ignore[valid-type]
+      pass
+
+    f(np.ones(3, dtype="<f4"))
+
+  def test_f32le_rejects_big_endian(self) -> None:
+    from shapix._dtypes import FLOAT32_LE
+
+    T = make_array_type(np.ndarray, FLOAT32_LE)
+
+    @beartype
+    def f(x: T[N]) -> None:  # type: ignore[valid-type]
+      pass
+
+    with pytest.raises(BeartypeCallHintParamViolation):
+      f(np.ones(3, dtype=">f4"))
+
+  def test_f32be_accepts_big_endian(self) -> None:
+    from shapix._dtypes import FLOAT32_BE
+
+    T = make_array_type(np.ndarray, FLOAT32_BE)
+
+    @beartype
+    def f(x: T[N]) -> None:  # type: ignore[valid-type]
+      pass
+
+    f(np.ones(3, dtype=">f4"))
+
+  def test_f32be_rejects_little_endian(self) -> None:
+    from shapix._dtypes import FLOAT32_BE
+
+    T = make_array_type(np.ndarray, FLOAT32_BE)
+
+    @beartype
+    def f(x: T[N]) -> None:  # type: ignore[valid-type]
+      pass
+
+    with pytest.raises(BeartypeCallHintParamViolation):
+      f(np.ones(3, dtype="<f4"))
+
+  def test_f32n_accepts_native_endian(self) -> None:
+    from shapix._dtypes import FLOAT32_N
+
+    T = make_array_type(np.ndarray, FLOAT32_N)
+
+    @beartype
+    def f(x: T[N]) -> None:  # type: ignore[valid-type]
+      pass
+
+    f(np.ones(3, dtype=np.float32))
+
+  def test_endianness_cross_arg(self) -> None:
+    """N binds correctly across endian-constrained args."""
+    from shapix._dtypes import FLOAT32_LE
+
+    T = make_array_type(np.ndarray, FLOAT32_LE)
+
+    @beartype
+    def f(x: T[N], y: T[N]) -> None:  # type: ignore[valid-type]
+      pass
+
+    f(np.ones(5, dtype="<f4"), np.ones(5, dtype="<f4"))
+    with pytest.raises(BeartypeCallHintParamViolation):
+      f(np.ones(5, dtype="<f4"), np.ones(3, dtype="<f4"))
+
+
+# =====================================================================
+# ScalarLike extended boundary tests
+# =====================================================================
+
+
+class TestScalarLikeBoundariesExtended:
+  """Boundary-value tests for ScalarLike types beyond I8/U8."""
+
+  def test_i16_scalar_like_boundaries(self) -> None:
+    assert is_bearable(-32768, I16ScalarLike)
+    assert is_bearable(32767, I16ScalarLike)
+    assert not is_bearable(-32769, I16ScalarLike)
+    assert not is_bearable(32768, I16ScalarLike)
+
+  def test_i64_scalar_like_boundaries(self) -> None:
+    min_val = np.iinfo(np.int64).min
+    max_val = np.iinfo(np.int64).max
+    assert is_bearable(min_val, I64ScalarLike)
+    assert is_bearable(max_val, I64ScalarLike)
+    assert not is_bearable(min_val - 1, I64ScalarLike)
+    assert not is_bearable(max_val + 1, I64ScalarLike)
+
+  def test_u16_scalar_like_boundaries(self) -> None:
+    assert is_bearable(0, U16ScalarLike)
+    assert is_bearable(65535, U16ScalarLike)
+    assert not is_bearable(-1, U16ScalarLike)
+    assert not is_bearable(65536, U16ScalarLike)
+
+  def test_u64_scalar_like_boundaries(self) -> None:
+    max_val = np.iinfo(np.uint64).max
+    assert is_bearable(0, U64ScalarLike)
+    assert is_bearable(max_val, U64ScalarLike)
+    assert not is_bearable(-1, U64ScalarLike)
+    assert not is_bearable(max_val + 1, U64ScalarLike)
+
+  def test_f32_scalar_like_boundaries(self) -> None:
+    min_val = float(np.finfo(np.float32).min)
+    max_val = float(np.finfo(np.float32).max)
+    assert is_bearable(min_val, F32ScalarLike)
+    assert is_bearable(max_val, F32ScalarLike)
+    assert is_bearable(0.0, F32ScalarLike)
+
+  def test_i16_numpy_scalar(self) -> None:
+    assert is_bearable(np.int16(100), I16ScalarLike)
+    assert not is_bearable(np.float32(1.0), I16ScalarLike)
+
+  def test_u64_numpy_scalar(self) -> None:
+    assert is_bearable(np.uint64(42), U64ScalarLike)
+    assert not is_bearable(np.float64(1.0), U64ScalarLike)
+
+
+# =====================================================================
+# StringLike smoke tests
+# =====================================================================
+
+
+class TestStringLike:
+  def test_accepts_python_str(self) -> None:
+    assert is_bearable("hello", StringLike)
+
+  def test_accepts_numpy_str(self) -> None:
+    assert is_bearable(np.str_("hi"), StringLike)
+
+  def test_rejects_int(self) -> None:
+    assert not is_bearable(42, StringLike)
+
+  def test_rejects_bytes(self) -> None:
+    assert not is_bearable(b"hello", StringLike)

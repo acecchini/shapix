@@ -424,6 +424,9 @@ def _to_shape_spec(dims: tuple[object, ...]) -> tuple[DimSpec, ...]:
       "Scalar must be the only shape token; mixed use like F32[N, Scalar] is invalid"
     )
     raise TypeError(msg)
+  if not dims:
+    msg = "Empty shape spec is not allowed; use F32[...] for any-rank matching"
+    raise TypeError(msg)
   specs: list[DimSpec] = []
   for d in dims:
     if d is Ellipsis:
@@ -433,6 +436,9 @@ def _to_shape_spec(dims: tuple[object, ...]) -> tuple[DimSpec, ...]:
     elif d is ANONYMOUS_VARIADIC:
       specs.append(ANONYMOUS_VARIADIC)
     elif isinstance(d, int):
+      if d < 0:
+        msg = f"Negative dimension {d} is invalid; array shapes are non-negative"
+        raise TypeError(msg)
       specs.append(FixedDim(d))
     elif isinstance(d, (FixedDim, NamedDim, SymbolicDim, ValueDim, VariadicDim)):
       specs.append(d)

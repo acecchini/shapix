@@ -339,6 +339,8 @@ def _check_expected_value(label: str, expected: object, size: int) -> str:
   return ""
 
 
+# 512 entries covers typical usage; in long-running processes with many unique
+# expressions, eviction causes minor re-parse overhead but no correctness issue.
 @functools.lru_cache(maxsize=512)
 def _parse_expr(expr: str, *, allow_attr: bool) -> ast.Expression:
   try:
