@@ -147,7 +147,11 @@ class _StructChecker:
 
     if not result:
       memo.restore(snap)
-      if any(snap):  # prior bindings from other params
+      # Only arm the replay guard in tagged contexts (@shapix.check).
+      # In untagged contexts (check_context), is_bearable() just returns
+      # False — no beartype error-gen re-invocations will consume the budget,
+      # so arming would poison later standalone validation.
+      if any(snap) and not has_untagged_memo():  # prior bindings from other params
         self._fail_obj = obj
         self._fail_memo = memo
         self._fail_replays = 2
@@ -298,7 +302,7 @@ class _ArrayLikeChecker:
     shape = getattr(obj, "shape", None)
     if shape is not None and getattr(obj, "dtype", None) is not None:
       result = self._check(obj, tuple(shape), memo, scope)
-      if not result and has_prior:
+      if not result and has_prior and not has_untagged_memo():
         self._fail_obj = obj
         self._fail_memo = memo
         self._fail_replays = 2
@@ -313,7 +317,7 @@ class _ArrayLikeChecker:
       return False
 
     result = self._check(arr, tuple(arr.shape), memo, scope)  # type: ignore[attr-defined]
-    if not result and has_prior:
+    if not result and has_prior and not has_untagged_memo():
       self._fail_obj = obj
       self._fail_memo = memo
       self._fail_replays = 2

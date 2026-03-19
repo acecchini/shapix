@@ -162,7 +162,7 @@ class _TreeChecker:
 
     if not result:
       memo.restore(snap)
-      if any(snap):  # prior bindings from other params
+      if any(snap) and not has_untagged_memo():  # prior bindings from other params
         self._fail_obj = obj
         self._fail_memo = memo
         self._fail_replays = 2

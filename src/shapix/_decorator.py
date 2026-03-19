@@ -5,7 +5,7 @@ automatically with ``@beartype``.  These are provided for:
 
 - Guaranteed correctness in exotic call-stack scenarios
 - Combining memo management with ``BeartypeConf`` in a single decorator
-- Manual ``isinstance`` checks at module scope
+- Manual ``is_bearable()`` checks at module scope
 """
 
 from __future__ import annotations
@@ -93,16 +93,18 @@ def check[**P, R](
 
 
 class check_context:
-  """Context manager for manual ``isinstance`` checks with shared memo.
+  """Context manager for manual ``is_bearable()`` checks with shared memo.
 
   Supports both sync and async contexts::
 
+      from beartype.door import is_bearable
+
       with shapix.check_context():
-        assert isinstance(x, Float32Array[N, C])
-        assert isinstance(y, Float32Array[N])  # same N
+        assert is_bearable(x, Float32Array[N, C])
+        assert is_bearable(y, Float32Array[N])  # same N
 
       async with shapix.check_context():
-        assert isinstance(x, Float32Array[N, C])
+        assert is_bearable(x, Float32Array[N, C])
 
   .. note::
      Child async tasks spawned inside an active context inherit the same

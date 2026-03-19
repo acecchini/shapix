@@ -767,3 +767,52 @@ class TestReplayGuardReusedHint:
       pair({"a": np.ones(3, dtype=np.float32)}, y)
 
     assert is_bearable(y, Hint)  # must pass: T unbound, list structure OK
+
+
+class TestReplayGuardCheckContext:
+  """Prebuilt hint must not poison standalone validation after check_context failure."""
+
+  def test_struct_check_context_standalone(self) -> None:
+    """is_bearable passes standalone after check_context cross-dim failure."""
+    from beartype.door import is_bearable
+
+    Hint = F32[N]
+    arr = np.ones(4, dtype=np.float32)
+
+    with shapix.check_context():
+      assert is_bearable(np.ones(3, dtype=np.float32), Hint)  # binds N=3
+      assert not is_bearable(arr, Hint)  # fails: N=3 vs (4,)
+
+    assert is_bearable(arr, Hint)  # must pass: N unbound, shape (4,) binds N=4
+
+  def test_arraylike_check_context_standalone(self) -> None:
+    """ArrayLike object passes standalone after check_context failure."""
+    from beartype.door import is_bearable
+
+    from shapix.numpy import F32Like
+
+    Hint = F32Like[N]
+    lst = [1.0, 2.0, 3.0, 4.0]
+
+    with shapix.check_context():
+      assert is_bearable([1.0, 2.0, 3.0], Hint)  # binds N=3
+      assert not is_bearable(lst, Hint)  # fails: N=3 vs len 4
+
+    assert is_bearable(lst, Hint)  # must pass
+
+  def test_tree_check_context_standalone(self) -> None:
+    """Tree object passes standalone after check_context structure failure."""
+    pytest.importorskip("optree")
+    from beartype.door import is_bearable
+
+    from shapix.optree import Tree
+
+    Hint = Tree[F32[N], T]  # type: ignore[type-arg]
+    y = [np.ones(3, dtype=np.float32)]
+
+    with shapix.check_context():
+      x_dict = {"a": np.ones(3, dtype=np.float32)}
+      assert is_bearable(x_dict, Hint)  # binds T=dict
+      assert not is_bearable(y, Hint)  # fails: list != dict
+
+    assert is_bearable(y, Hint)  # must pass: T unbound
