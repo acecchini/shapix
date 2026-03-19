@@ -101,6 +101,7 @@ class _TreeChecker:
     "_repr",
     "_fail_obj",
     "_fail_memo",
+    "_fail_replays",
   )
 
   def __init__(
@@ -115,6 +116,7 @@ class _TreeChecker:
     self._get_ops = get_ops
     self._fail_obj: object | None = None
     self._fail_memo: object | None = None
+    self._fail_replays: int = 0
     spec_str = f", {structure_spec}" if structure_spec else ""
     self._repr = f"Tree[{leaf_type!r}{spec_str}]"
 
@@ -135,6 +137,11 @@ class _TreeChecker:
           self._fail_obj = None
           self._fail_memo = None
         else:
+          # Error-gen replay (see _StructChecker comment).
+          self._fail_replays -= 1
+          if self._fail_replays <= 0:
+            self._fail_obj = None
+            self._fail_memo = None
           return False
 
     tree_ops = self._get_ops()
@@ -158,6 +165,7 @@ class _TreeChecker:
       if any(snap):  # prior bindings from other params
         self._fail_obj = obj
         self._fail_memo = memo
+        self._fail_replays = 2
     else:
       self._fail_obj = None
       self._fail_memo = None

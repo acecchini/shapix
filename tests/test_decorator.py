@@ -709,3 +709,61 @@ class TestReplayGuardCrossArg:
       pass
 
     g(y)  # must pass
+
+
+class TestReplayGuardReusedHint:
+  """Prebuilt hint must not poison standalone validation after cross-arg failure."""
+
+  def test_struct_reused_hint_standalone(self) -> None:
+    """is_bearable passes for reused F32[N] hint after cross-arg failure."""
+    from beartype.door import is_bearable
+
+    Hint = F32[N]
+    b = np.ones(3, dtype=np.float32)
+
+    @shapix.check
+    @beartype
+    def pair(a: Hint, b: Hint) -> None:
+      pass
+
+    with pytest.raises(BeartypeCallHintParamViolation):
+      pair(np.ones(4, dtype=np.float32), b)  # b fails: N=4 vs shape (3,)
+
+    assert is_bearable(b, Hint)  # must pass: N unbound, shape (3,) binds N=3
+
+  def test_arraylike_reused_hint_standalone(self) -> None:
+    """is_bearable passes for reused F32Like[N] hint after cross-arg failure."""
+    from beartype.door import is_bearable
+    from shapix.numpy import F32Like
+
+    Hint = F32Like[N]
+    lst = [1.0, 2.0, 3.0]
+
+    @shapix.check
+    @beartype
+    def pair(a: Hint, b: Hint) -> None:
+      pass
+
+    with pytest.raises(BeartypeCallHintParamViolation):
+      pair([1.0, 2.0, 3.0, 4.0], lst)  # lst fails: N=4 vs len 3
+
+    assert is_bearable(lst, Hint)  # must pass
+
+  def test_tree_reused_hint_standalone(self) -> None:
+    """is_bearable passes for reused Tree hint after cross-structure failure."""
+    pytest.importorskip("optree")
+    from beartype.door import is_bearable
+    from shapix.optree import Tree
+
+    Hint = Tree[F32[N], T]  # type: ignore[type-arg]
+    y = [np.ones(3, dtype=np.float32)]
+
+    @shapix.check
+    @beartype
+    def pair(x: Hint, y: Hint) -> None:  # type: ignore[valid-type]
+      pass
+
+    with pytest.raises(BeartypeCallHintParamViolation):
+      pair({"a": np.ones(3, dtype=np.float32)}, y)
+
+    assert is_bearable(y, Hint)  # must pass: T unbound, list structure OK

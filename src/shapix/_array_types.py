@@ -64,13 +64,21 @@ class _StructChecker:
   ``Float32Array[N, C]``) and reused across all functions that share it.
   """
 
-  __slots__ = ("_dtype_spec", "_shape_spec", "_repr", "_fail_obj", "_fail_memo")
+  __slots__ = (
+    "_dtype_spec",
+    "_shape_spec",
+    "_repr",
+    "_fail_obj",
+    "_fail_memo",
+    "_fail_replays",
+  )
 
   def __init__(self, dtype_spec: DtypeSpec, shape_spec: tuple[DimSpec, ...]) -> None:
     self._dtype_spec = dtype_spec
     self._shape_spec = shape_spec
     self._fail_obj: object | None = None
     self._fail_memo: object | None = None
+    self._fail_replays: int = 0
 
     # Pre-compute repr for beartype error messages
     dims = ", ".join(repr(d) for d in shape_spec)
@@ -95,6 +103,9 @@ class _StructChecker:
     #   - Different memo WITH prior bindings → fresh @beartype call where
     #     earlier params already bound dims → clear guard and re-validate.
     #   - Different memo, empty → beartype error-gen → replay failure.
+    #     Beartype re-invokes twice per failing param (is_valid + get_diagnosis).
+    #     A countdown (_fail_replays) clears the guard after those 2 replays so
+    #     later standalone is_bearable() with the same object can re-validate.
     #   - Untagged explicit memo (check_context) → always re-validate.
     if self._fail_obj is not None and self._fail_obj is obj:
       if has_untagged_memo():
@@ -113,7 +124,10 @@ class _StructChecker:
           self._fail_memo = None
         else:
           # Different memo, empty = beartype error-gen.  Replay failure.
-          # Stay armed for additional error-gen re-invocations.
+          self._fail_replays -= 1
+          if self._fail_replays <= 0:
+            self._fail_obj = None
+            self._fail_memo = None
           return False
 
     # Dtype check
@@ -136,6 +150,7 @@ class _StructChecker:
       if any(snap):  # prior bindings from other params
         self._fail_obj = obj
         self._fail_memo = memo
+        self._fail_replays = 2
 
     return result
 
@@ -230,6 +245,7 @@ class _ArrayLikeChecker:
     "_repr",
     "_fail_obj",
     "_fail_memo",
+    "_fail_replays",
   )
 
   def __init__(
@@ -247,6 +263,7 @@ class _ArrayLikeChecker:
     self._asarray = asarray
     self._fail_obj: object | None = None
     self._fail_memo: object | None = None
+    self._fail_replays: int = 0
 
     dims = ", ".join(repr(d) for d in shape_spec)
     self._repr = f"{name}[{dims}]"
@@ -266,6 +283,11 @@ class _ArrayLikeChecker:
           self._fail_obj = None
           self._fail_memo = None
         else:
+          # Error-gen replay (see _StructChecker comment).
+          self._fail_replays -= 1
+          if self._fail_replays <= 0:
+            self._fail_obj = None
+            self._fail_memo = None
           return False
 
     memo = get_memo(_depth=3)
@@ -279,6 +301,7 @@ class _ArrayLikeChecker:
       if not result and has_prior:
         self._fail_obj = obj
         self._fail_memo = memo
+        self._fail_replays = 2
       return result
 
     # Slow path: convert scalar / sequence / protocol object to array.
@@ -293,6 +316,7 @@ class _ArrayLikeChecker:
     if not result and has_prior:
       self._fail_obj = obj
       self._fail_memo = memo
+      self._fail_replays = 2
     return result
 
   def _convert(self, obj: object) -> object | None:
