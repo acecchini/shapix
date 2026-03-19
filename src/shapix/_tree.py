@@ -100,7 +100,7 @@ class _TreeChecker:
     "_get_ops",
     "_repr",
     "_fail_obj",
-    "_fail_replays",
+    "_fail_memo",
   )
 
   def __init__(
@@ -114,29 +114,24 @@ class _TreeChecker:
     self._structure_spec = structure_spec
     self._get_ops = get_ops
     self._fail_obj: object | None = None
-    self._fail_replays: int = 0
+    self._fail_memo: object | None = None
     spec_str = f", {structure_spec}" if structure_spec else ""
     self._repr = f"Tree[{leaf_type!r}{spec_str}]"
 
   def __call__(self, obj: object) -> bool:
-    # Replay guard: beartype's error-generation code re-invokes validators
-    # up to 2 times after the initial failure.  Without this guard, the
-    # fresh memo during replay would lack prior bindings, causing a
-    # previously failing check to erroneously pass.  We allow exactly 2
-    # replays, then clear so the same object can be re-checked in a fresh
-    # context without being permanently poisoned.
-    #
-    # Exception: when an untagged explicit memo is active (check_context),
-    # the real memo with bindings is still visible during re-invocation,
-    # so the guard is unnecessary.  Clear stale state and re-validate.
+    # Replay guard (same mechanism as _StructChecker — see comment there).
     if self._fail_obj is not None and self._fail_obj is obj:
-      if not has_untagged_memo():
-        self._fail_replays -= 1
-        if self._fail_replays <= 0:
-          self._fail_obj = None
-        return False
-      self._fail_obj = None  # clear stale guard; real validation runs below
-      self._fail_replays = 0
+      if has_untagged_memo():
+        self._fail_obj = None
+        self._fail_memo = None
+      else:
+        from ._memo import get_memo
+
+        current_memo = get_memo(_depth=3)
+        if current_memo is not self._fail_memo:
+          return False
+        self._fail_obj = None
+        self._fail_memo = None
 
     tree_ops = self._get_ops()
     from beartype.door import is_bearable
@@ -156,10 +151,12 @@ class _TreeChecker:
 
     if not result:
       memo.restore(snap)
-      self._fail_obj = obj
-      self._fail_replays = 2
+      if any(snap):  # prior bindings from other params
+        self._fail_obj = obj
+        self._fail_memo = memo
     else:
       self._fail_obj = None
+      self._fail_memo = None
 
     return result
 

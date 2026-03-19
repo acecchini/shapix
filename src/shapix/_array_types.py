@@ -64,33 +64,51 @@ class _StructChecker:
   ``Float32Array[N, C]``) and reused across all functions that share it.
   """
 
-  __slots__ = ("_dtype_spec", "_shape_spec", "_repr", "_fail_obj")
+  __slots__ = ("_dtype_spec", "_shape_spec", "_repr", "_fail_obj", "_fail_memo")
 
   def __init__(self, dtype_spec: DtypeSpec, shape_spec: tuple[DimSpec, ...]) -> None:
     self._dtype_spec = dtype_spec
     self._shape_spec = shape_spec
     self._fail_obj: object | None = None
+    self._fail_memo: object | None = None
 
     # Pre-compute repr for beartype error messages
     dims = ", ".join(repr(d) for d in shape_spec)
     self._repr = f"{dtype_spec.name}[{dims}]"
 
   def __call__(self, obj: object) -> bool:
-    # When beartype's error-generation code re-invokes us, it does so
-    # from a different call-stack frame, which creates a fresh memo.
-    # That memo lacks the bindings from prior params, so a previously
-    # failing check would incorrectly pass.  To stay consistent, replay
-    # the failure for one re-check, then clear it.  We use ``is`` identity
-    # (not ``id()``) to avoid false matches from recycled addresses.
+    # Replay guard for beartype error-generation re-invocations.
     #
-    # Exception: when an untagged explicit memo is active (check_context),
-    # the real memo with bindings is still visible during re-invocation,
-    # so the guard is unnecessary.  Clear stale state and re-validate.
+    # When beartype generates an error message, it re-invokes validators
+    # from a different frame, creating a fresh memo that lacks bindings
+    # from prior parameters.  Without a guard, a cross-argument failure
+    # (e.g. N=3 vs shape (5,)) would incorrectly pass during error-gen.
+    #
+    # The guard is only armed when the failure occurred with a non-empty
+    # memo (prior bindings from other params).  Single-parameter failures
+    # (wrong dtype, wrong rank, wrong FixedDim) are intrinsic and will
+    # fail again under any memo, so no guard is needed.
+    #
+    # When the guard fires, we compare the current memo with the stored
+    # _fail_memo to distinguish error-gen (different memo) from same-context
+    # rechecks (same memo, e.g. sequential is_bearable() calls):
+    #   - Different memo → beartype error-gen → replay failure, stay armed.
+    #   - Same memo → same call context → clear guard and re-validate.
+    #   - Untagged explicit memo (check_context) → always re-validate.
     if self._fail_obj is not None and self._fail_obj is obj:
-      if not has_untagged_memo():
+      if has_untagged_memo():
         self._fail_obj = None
-        return False
-      self._fail_obj = None  # clear stale guard; real validation runs below
+        self._fail_memo = None
+      else:
+        current_memo = get_memo(_depth=3)
+        if current_memo is not self._fail_memo:
+          # Different memo = beartype error-gen (fresh memo lacking prior
+          # bindings).  Replay the failure.  Keep guard armed so additional
+          # error-gen re-invocations are also handled.
+          return False
+        # Same memo = same call context — re-validate.
+        self._fail_obj = None
+        self._fail_memo = None
 
     # Dtype check
     if not self._dtype_spec.matches(obj):
@@ -109,7 +127,9 @@ class _StructChecker:
 
     if not result:
       memo.restore(snap)
-      self._fail_obj = obj
+      if any(snap):  # prior bindings from other params
+        self._fail_obj = obj
+        self._fail_memo = memo
 
     return result
 
@@ -203,6 +223,7 @@ class _ArrayLikeChecker:
     "_asarray",
     "_repr",
     "_fail_obj",
+    "_fail_memo",
   )
 
   def __init__(
@@ -219,28 +240,35 @@ class _ArrayLikeChecker:
     self._casting = casting
     self._asarray = asarray
     self._fail_obj: object | None = None
+    self._fail_memo: object | None = None
 
     dims = ", ".join(repr(d) for d in shape_spec)
     self._repr = f"{name}[{dims}]"
 
   def __call__(self, obj: object) -> bool:
-    # Replay failure for beartype error-generation re-invocation
-    # (same pattern as _StructChecker).
+    # Replay guard (same mechanism as _StructChecker — see comment there).
     if self._fail_obj is not None and self._fail_obj is obj:
-      if not has_untagged_memo():
+      if has_untagged_memo():
         self._fail_obj = None
-        return False
-      self._fail_obj = None  # clear stale guard; real validation runs below
+        self._fail_memo = None
+      else:
+        current_memo = get_memo(_depth=3)
+        if current_memo is not self._fail_memo:
+          return False
+        self._fail_obj = None
+        self._fail_memo = None
 
     memo = get_memo(_depth=3)
     scope = get_scope(_depth=3)
+    has_prior = bool(memo.single or memo.variadic or memo.structures)
 
     # Fast path: obj already has shape + dtype (np.ndarray, Tensor, jax.Array)
     shape = getattr(obj, "shape", None)
     if shape is not None and getattr(obj, "dtype", None) is not None:
       result = self._check(obj, tuple(shape), memo, scope)
-      if not result:
+      if not result and has_prior:
         self._fail_obj = obj
+        self._fail_memo = memo
       return result
 
     # Slow path: convert scalar / sequence / protocol object to array.
@@ -248,12 +276,13 @@ class _ArrayLikeChecker:
     # then fall back to np.asarray for scalars and nested sequences.
     arr = self._convert(obj)
     if arr is None:
-      self._fail_obj = obj
+      # Conversion failure is intrinsic — error-gen will reproduce it.
       return False
 
     result = self._check(arr, tuple(arr.shape), memo, scope)  # type: ignore[attr-defined]
-    if not result:
+    if not result and has_prior:
       self._fail_obj = obj
+      self._fail_memo = memo
     return result
 
   def _convert(self, obj: object) -> object | None:

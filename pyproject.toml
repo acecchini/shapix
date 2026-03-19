@@ -6,7 +6,7 @@ readme = "README.md"
 license = "MIT"
 authors = [{ name = "acecchini", email = "ale.cecchini.valette@gmail.com" }]
 requires-python = ">=3.12"
-dependencies = ["beartype>=0.20,<1"]  # Tested with 0.20-0.22; see tox.toml
+dependencies = ["beartype>=0.20,<0.23"] # Tested with 0.20-0.22; see tox.toml
 keywords = [
   "type-checking",
   "shape",
@@ -38,17 +38,8 @@ Issues = "https://github.com/acecchini/shapix/issues"
 [dependency-groups]
 # Backends are CPU-only for dev/CI. Shapix is device-agnostic — it checks
 # .shape and .dtype only. Users install their own numpy/jax/torch/optree.
-optional = [
-  "numpy>=2.2.0",
-  "torch>=2.6.0",
-  "jax[cpu]>=0.5.0",
-  "optree>=0.14.0",
-]
-static = [
-  "pyright>=1.1.408",
-  "mypy>=1.19.1",
-  "ty>=0.0.20",
-]
+optional = ["numpy>=2.2.0", "torch>=2.6.0", "jax[cpu]>=0.5.0", "optree>=0.14.0"]
+static = ["pyright>=1.1.408", "mypy>=1.19.1", "ty>=0.0.20"]
 dev = [
   "ruff>=0.15.4",
   "pytest>=9.0.2",

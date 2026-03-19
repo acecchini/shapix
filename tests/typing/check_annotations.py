@@ -9,6 +9,8 @@ unary operators) use targeted type: ignore comments.
 Tested with: pyright, mypy, ty
 """
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 from beartype import beartype
 
@@ -230,12 +232,16 @@ def with_anon(x: F32[__, C]) -> F32[__, C]:
 # Custom dimensions in annotations
 # ---------------------------------------------------------------------------
 
-Vocab = Dimension("Vocab")
-Embed = Dimension("Embed")
+if TYPE_CHECKING:
+  type Vocab = int
+  type Embed = int
+else:
+  Vocab = Dimension("Vocab")
+  Embed = Dimension("Embed")
 
 
 @beartype
-def embed_lookup(x: I64[N], table: F32[Vocab, Embed]) -> F32[N, Embed]:  # type: ignore  # noqa: F821  # custom dim
+def embed_lookup(x: I64[N], table: F32[Vocab, Embed]) -> F32[N, Embed]:
   return table[x]
 
 

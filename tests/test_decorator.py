@@ -610,3 +610,42 @@ class TestCheckContextFreshRecheck:
     # Context 2: fresh memo — y_list should pass (T unbound)
     with shapix.check_context():
       assert is_bearable(y_list, hint)  # must not be poisoned
+
+
+class TestReplayGuardRevalidation:
+  """Replay guard must not prevent revalidation of mutated objects."""
+
+  def test_struct_checker_revalidates_mutated_object(self) -> None:
+    """Array that fails then is resized must pass on recheck."""
+    from beartype.door import is_bearable
+
+    hint = F32[3]
+    arr = np.ones(4, dtype=np.float32)
+    assert not is_bearable(arr, hint)
+    arr.resize((3,), refcheck=False)
+    assert is_bearable(arr, hint)
+
+  def test_arraylike_checker_revalidates_mutated_object(self) -> None:
+    """List that fails then is shortened must pass on recheck."""
+    from beartype.door import is_bearable
+
+    from shapix.numpy import F32Like
+
+    hint = F32Like[3]
+    lst = [1.0, 2.0, 3.0, 4.0]
+    assert not is_bearable(lst, hint)
+    lst.pop()
+    assert is_bearable(lst, hint)
+
+  def test_tree_checker_revalidates_mutated_object(self) -> None:
+    """Tree with bad leaves that are replaced must pass on recheck."""
+    pytest.importorskip("optree")
+    from beartype.door import is_bearable
+
+    from shapix.optree import Tree
+
+    hint = Tree[F32[3]]  # type: ignore[type-arg]
+    tree = {"a": np.ones(4, dtype=np.float32)}
+    assert not is_bearable(tree, hint)
+    tree["a"] = np.ones(3, dtype=np.float32)
+    assert is_bearable(tree, hint)
