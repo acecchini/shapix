@@ -9,7 +9,7 @@ from beartype import beartype
 from beartype.roar import BeartypeCallHintParamViolation
 
 import shapix
-from shapix import N, C, Value  # noqa: F401
+from shapix import N, C, T, Value  # noqa: F401
 from shapix.numpy import F32
 
 
@@ -649,3 +649,63 @@ class TestReplayGuardRevalidation:
     assert not is_bearable(tree, hint)
     tree["a"] = np.ones(3, dtype=np.float32)
     assert is_bearable(tree, hint)
+
+
+class TestReplayGuardCrossArg:
+  """Guard must not block revalidation in fresh @beartype calls after cross-arg failure."""
+
+  def test_struct_checker_cross_arg_revalidation(self) -> None:
+    """Object that fails cross-arg check passes in a fresh call with compatible binding."""
+    b = np.ones(3, dtype=np.float32)  # shape (3,)
+
+    @shapix.check
+    @beartype
+    def f(a: F32[N], b: F32[N]) -> None:
+      pass
+
+    # a binds N=4, b has shape (3,) → cross-arg failure, guard arms on b.
+    with pytest.raises(BeartypeCallHintParamViolation):
+      f(np.ones(4, dtype=np.float32), b)
+
+    # Fresh call: a binds N=3, b has shape (3,) → must pass.
+    f(np.ones(3, dtype=np.float32), b)
+
+  def test_arraylike_checker_cross_arg_revalidation(self) -> None:
+    """ArrayLike object that fails cross-arg passes after mutation in a fresh call."""
+    from shapix.numpy import F32Like
+
+    lst = [1.0, 2.0, 3.0, 4.0]
+
+    @shapix.check
+    @beartype
+    def f(a: F32Like[N], b: F32Like[N]) -> None:
+      pass
+
+    with pytest.raises(BeartypeCallHintParamViolation):
+      f([1.0, 2.0, 3.0], lst)
+
+    lst.pop()
+    f([1.0, 2.0, 3.0], lst)  # must pass
+
+  def test_tree_checker_cross_arg_revalidation(self) -> None:
+    """Tree that fails cross-structure check passes in a fresh call."""
+    pytest.importorskip("optree")
+    from shapix.optree import Tree
+
+    y = [np.ones(3, dtype=np.float32)]
+
+    @shapix.check
+    @beartype
+    def f(x: Tree[F32[N], T], y: Tree[F32[N], T]) -> None:  # type: ignore[valid-type]
+      pass
+
+    with pytest.raises(BeartypeCallHintParamViolation):
+      f({"a": np.ones(3, dtype=np.float32)}, y)  # y fails: list != dict
+
+    # Same y object, but in a fresh call where T is unbound — should pass
+    @shapix.check
+    @beartype
+    def g(x: Tree[F32[N], T]) -> None:  # type: ignore[valid-type]
+      pass
+
+    g(y)  # must pass

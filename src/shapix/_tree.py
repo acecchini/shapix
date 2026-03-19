@@ -128,10 +128,14 @@ class _TreeChecker:
         from ._memo import get_memo
 
         current_memo = get_memo(_depth=3)
-        if current_memo is not self._fail_memo:
+        if current_memo is self._fail_memo:
+          self._fail_obj = None
+          self._fail_memo = None
+        elif current_memo.single or current_memo.variadic or current_memo.structures:
+          self._fail_obj = None
+          self._fail_memo = None
+        else:
           return False
-        self._fail_obj = None
-        self._fail_memo = None
 
     tree_ops = self._get_ops()
     from beartype.door import is_bearable

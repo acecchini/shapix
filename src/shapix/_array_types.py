@@ -90,10 +90,11 @@ class _StructChecker:
     # fail again under any memo, so no guard is needed.
     #
     # When the guard fires, we compare the current memo with the stored
-    # _fail_memo to distinguish error-gen (different memo) from same-context
-    # rechecks (same memo, e.g. sequential is_bearable() calls):
-    #   - Different memo → beartype error-gen → replay failure, stay armed.
+    # _fail_memo to distinguish error-gen from fresh @beartype calls:
     #   - Same memo → same call context → clear guard and re-validate.
+    #   - Different memo WITH prior bindings → fresh @beartype call where
+    #     earlier params already bound dims → clear guard and re-validate.
+    #   - Different memo, empty → beartype error-gen → replay failure.
     #   - Untagged explicit memo (check_context) → always re-validate.
     if self._fail_obj is not None and self._fail_obj is obj:
       if has_untagged_memo():
@@ -101,14 +102,19 @@ class _StructChecker:
         self._fail_memo = None
       else:
         current_memo = get_memo(_depth=3)
-        if current_memo is not self._fail_memo:
-          # Different memo = beartype error-gen (fresh memo lacking prior
-          # bindings).  Replay the failure.  Keep guard armed so additional
-          # error-gen re-invocations are also handled.
+        if current_memo is self._fail_memo:
+          # Same memo = same call context — re-validate.
+          self._fail_obj = None
+          self._fail_memo = None
+        elif current_memo.single or current_memo.variadic or current_memo.structures:
+          # Different memo WITH prior bindings = fresh @beartype call where
+          # earlier params already bound dims — re-validate.
+          self._fail_obj = None
+          self._fail_memo = None
+        else:
+          # Different memo, empty = beartype error-gen.  Replay failure.
+          # Stay armed for additional error-gen re-invocations.
           return False
-        # Same memo = same call context — re-validate.
-        self._fail_obj = None
-        self._fail_memo = None
 
     # Dtype check
     if not self._dtype_spec.matches(obj):
@@ -253,10 +259,14 @@ class _ArrayLikeChecker:
         self._fail_memo = None
       else:
         current_memo = get_memo(_depth=3)
-        if current_memo is not self._fail_memo:
+        if current_memo is self._fail_memo:
+          self._fail_obj = None
+          self._fail_memo = None
+        elif current_memo.single or current_memo.variadic or current_memo.structures:
+          self._fail_obj = None
+          self._fail_memo = None
+        else:
           return False
-        self._fail_obj = None
-        self._fail_memo = None
 
     memo = get_memo(_depth=3)
     scope = get_scope(_depth=3)

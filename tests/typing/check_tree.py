@@ -7,7 +7,8 @@ from __future__ import annotations
 
 import typing as tp
 
-from shapix import Dimension, Structure
+from shapix import C, N, Structure
+from shapix.numpy import F32
 from shapix.optree import Tree
 
 # ---------------------------------------------------------------------------
@@ -16,17 +17,6 @@ from shapix.optree import Tree
 
 _pt = Tree  # Tree should be importable
 _st = Structure  # Structure should be importable
-
-# ---------------------------------------------------------------------------
-# Custom dimensions for type-level usage
-# ---------------------------------------------------------------------------
-
-if tp.TYPE_CHECKING:
-  N: Dimension
-  C: Dimension
-else:
-  N = Dimension("N")
-  C = Dimension("C")
 
 # ---------------------------------------------------------------------------
 # Structure symbols
@@ -79,4 +69,17 @@ def to_none(x: Tree[object]) -> None:
 
 
 def leaf_int(x: Tree[int]) -> Tree[int]:
+  return x
+
+
+# ---------------------------------------------------------------------------
+# Typed-array leaf annotations
+# ---------------------------------------------------------------------------
+
+
+def typed_leaf_1d(x: Tree[F32[N]]) -> Tree[F32[N]]:
+  return x
+
+
+def typed_leaf_2d(x: Tree[F32[N, C]]) -> Tree[F32[N, C]]:
   return x

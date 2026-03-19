@@ -785,7 +785,7 @@ Shapix uses three key mechanisms:
 
 2. **Frame-based memo** — beartype's `Is[validator]` call stack is deterministic: `validator -> _is_valid_bool -> beartype_wrapper`. All parameter checks for one function call share the same wrapper frame. Shapix identifies this frame via `sys._getframe()` and associates a dimension memo (name -> size bindings) with it. This is how cross-argument consistency works with zero boilerplate.
 
-3. **Thread and async safety** — Frame-based auto-detection uses `threading.local()` for thread isolation. The explicit memo stack (`@shapix.check`, `check_context()`) uses `contextvars.ContextVar`, making it both thread-safe and async-task-safe.
+3. **Thread and async safety** — Frame-based auto-detection uses `threading.local()` for thread isolation. The explicit memo stack (`@shapix.check`, `check_context()`) uses `contextvars.ContextVar`, making it both thread-safe and async-task-safe. Note that child tasks inheriting an active parent context share the same live memo by reference; for full task isolation, each task should enter its own `check_context()`.
 
 ## Static type checkers (pyright, mypy, ty)
 
