@@ -512,6 +512,11 @@ def _to_shape_spec(dims: tuple[object, ...]) -> tuple[DimSpec, ...]:
     elif isinstance(d, Dimension):
       spec = d._dim_spec  # noqa: SLF001
       if spec is not None:
+        if isinstance(spec, FixedDim) and spec.size < 0:
+          msg = (
+            f"Negative dimension {spec.size} is invalid; array shapes are non-negative"
+          )
+          raise TypeError(msg)
         specs.append(spec)
     elif isinstance(d, _ValueExpr):
       specs.append(d._dim_spec)  # noqa: SLF001

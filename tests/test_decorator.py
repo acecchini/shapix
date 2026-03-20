@@ -816,3 +816,37 @@ class TestReplayGuardCheckContext:
       assert not is_bearable(y, Hint)  # fails: list != dict
 
     assert is_bearable(y, Hint)  # must pass: T unbound
+
+
+class TestCheckRejectsGenerators:
+  def test_rejects_sync_generator(self) -> None:
+    with pytest.raises(TypeError, match="generator"):
+
+      @shapix.check
+      def f(x: F32[N]) -> F32[N]:  # type: ignore[misc]
+        yield x
+
+  def test_rejects_async_generator(self) -> None:
+    with pytest.raises(TypeError, match="async generator"):
+
+      @shapix.check
+      async def f(x: F32[N]) -> F32[N]:  # type: ignore[misc]
+        yield x
+
+  def test_rejects_sync_generator_with_conf(self) -> None:
+    from beartype import BeartypeConf
+
+    with pytest.raises(TypeError, match="generator"):
+
+      @shapix.check(conf=BeartypeConf())
+      def f(x: F32[N]) -> F32[N]:  # type: ignore[misc]
+        yield x
+
+  def test_rejects_async_generator_with_conf(self) -> None:
+    from beartype import BeartypeConf
+
+    with pytest.raises(TypeError, match="async generator"):
+
+      @shapix.check(conf=BeartypeConf())
+      async def f(x: F32[N]) -> F32[N]:  # type: ignore[misc]
+        yield x

@@ -443,3 +443,24 @@ class TestMixedScalarRejection:
 
     hint = F32[Dimension("")]
     assert hasattr(hint, "__metadata__")
+
+  def test_negative_fixed_dim_rejected_in_shape_spec(self) -> None:
+    """Dimension('-3') must be rejected when used in array shape spec."""
+    from shapix._array_types import _to_shape_spec
+
+    with pytest.raises(TypeError, match="Negative dimension"):
+      _to_shape_spec((Dimension("-3"),))
+
+  def test_negative_dim_in_mixed_spec_rejected(self) -> None:
+    """Dimension('-1') mixed with named dims is rejected."""
+    from shapix._array_types import _to_shape_spec
+
+    with pytest.raises(TypeError, match="Negative dimension"):
+      _to_shape_spec((Dimension("-1"), Dimension("N")))
+
+  def test_array_factory_rejects_negative_dimension(self) -> None:
+    """F32[Dimension('-3')] must raise TypeError like F32[-3]."""
+    from shapix.numpy import F32
+
+    with pytest.raises(TypeError, match="Negative dimension"):
+      F32[Dimension("-3")]

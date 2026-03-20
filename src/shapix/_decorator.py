@@ -48,9 +48,20 @@ def check[**P, R](
       # Memo + beartype combined
       @shapix.check(conf=BeartypeConf(strategy=BeartypeStrategy.On))
       def f(x: Float32Array[N, C]) -> Float32Array[N, C]: ...
+
+  .. note::
+     Generator functions (sync and async) are not supported.
+     Decorate regular functions or coroutine functions only.
   """
 
   def decorator(fn: Callable[P, R]) -> Callable[P, R]:
+    if inspect.isasyncgenfunction(fn):
+      msg = "@shapix.check does not support async generator functions"
+      raise TypeError(msg)
+    if inspect.isgeneratorfunction(fn):
+      msg = "@shapix.check does not support generator functions"
+      raise TypeError(msg)
+
     inner = fn
     signature = inspect.signature(fn)
     if conf is not None:
