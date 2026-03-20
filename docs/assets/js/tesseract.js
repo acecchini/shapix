@@ -5,18 +5,30 @@
 ;(function () {
   'use strict'
 
-  var el = document.getElementById('shapix-visual')
-  if (!el) return
+  function init() {
+    var el = document.getElementById('shapix-visual')
+    if (!el) { console.warn('[shapix] #shapix-visual not found'); return }
 
-  var canvas = document.createElement('canvas')
-  canvas.style.cssText = 'display:block;width:100%;border-radius:16px;'
-  el.appendChild(canvas)
+    // Ensure element has layout dimensions before proceeding
+    if (!el.offsetWidth) {
+      console.log('[shapix] waiting for layout...')
+      requestAnimationFrame(function () { setTimeout(init, 50) })
+      return
+    }
 
-  var gl = canvas.getContext('webgl2', { antialias: false, alpha: true, premultipliedAlpha: false })
-  if (!gl) {
-    el.style.cssText = 'height:400px;border-radius:16px;background:linear-gradient(135deg,#7c4dff,#b388ff,#ea80fc);'
-    return
-  }
+    console.log('[shapix] init, container:', el.offsetWidth, 'x', el.offsetHeight)
+
+    var canvas = document.createElement('canvas')
+    canvas.style.cssText = 'display:block;width:100%;border-radius:16px;'
+    el.appendChild(canvas)
+
+    var gl = canvas.getContext('webgl2', { antialias: false, alpha: true, premultipliedAlpha: false })
+    if (!gl) {
+      console.warn('[shapix] WebGL2 not available, using fallback')
+      el.style.cssText = 'height:400px;border-radius:16px;background:linear-gradient(135deg,#7c4dff,#b388ff,#ea80fc);'
+      return
+    }
+    console.log('[shapix] WebGL2 context created')
 
   /* ── Shaders ─────────────────────────────────────────────────────── */
   var VERT = '#version 300 es\nin vec2 p;void main(){gl_Position=vec4(p,0,1);}'
@@ -168,10 +180,12 @@ void main(){
   var vs = mkShader(gl.VERTEX_SHADER, VERT)
   var fs = mkShader(gl.FRAGMENT_SHADER, FRAG)
   if (!vs || !fs) {
-    console.error('[shapix] shader compilation failed')
+    console.error('[shapix] shader compilation failed — falling back to gradient')
+    canvas.remove()
     el.style.cssText = 'height:400px;border-radius:16px;background:linear-gradient(135deg,#7c4dff,#b388ff,#ea80fc);'
     return
   }
+  console.log('[shapix] shaders compiled successfully')
 
   var pg = gl.createProgram()
   gl.attachShader(pg, vs)
@@ -179,10 +193,12 @@ void main(){
   gl.linkProgram(pg)
   if (!gl.getProgramParameter(pg, gl.LINK_STATUS)) {
     console.error('[shapix] link error:', gl.getProgramInfoLog(pg))
+    canvas.remove()
     el.style.cssText = 'height:400px;border-radius:16px;background:linear-gradient(135deg,#7c4dff,#b388ff,#ea80fc);'
     return
   }
   gl.useProgram(pg)
+  console.log('[shapix] program linked, starting render loop')
 
   /* ── Fullscreen quad ─────────────────────────────────────────────── */
   var buf = gl.createBuffer()
@@ -243,5 +259,14 @@ void main(){
       if (e[0].isIntersecting) { if (!aid) aid = requestAnimationFrame(frame) }
       else { if (aid) { cancelAnimationFrame(aid); aid = null } }
     }).observe(el)
+  }
+  } // end init
+
+  // Ensure DOM is ready and layout has occurred before initializing
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init)
+  } else {
+    // DOM already parsed but might not be laid out yet
+    requestAnimationFrame(function () { init() })
   }
 })()
