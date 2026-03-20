@@ -1,0 +1,132 @@
+site_name: Shapix
+site_url: https://acecchini.github.io/shapix/
+site_description: "Elegant runtime shape and dtype checking for NumPy, JAX, and PyTorch arrays — powered by beartype."
+site_author: acecchini
+copyright: "Copyright &copy; 2025 – 2026 Shapix contributors"
+repo_url: https://github.com/acecchini/shapix
+repo_name: acecchini/shapix
+edit_uri: edit/main/docs/
+
+docs_dir: docs
+site_dir: site
+
+extra_css:
+  - stylesheets/extra.css
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - getting-started/index.md
+    - getting-started/installation.md
+    - getting-started/quickstart.md
+  - Features:
+    - features/index.md
+    - features/dimensions.md
+    - features/array-types.md
+    - features/like-types.md
+    - features/tree-annotations.md
+    - features/decorator.md
+    - features/claw.md
+  - API Reference:
+    - api/index.md
+    - api/shapix.md
+    - api/numpy.md
+    - api/jax.md
+    - api/torch.md
+    - api/optree.md
+    - api/claw.md
+  - Examples:
+    - examples/index.md
+  - GitHub: https://github.com/acecchini/shapix
+
+theme:
+  name: material
+  custom_dir: overrides
+  language: en
+  features:
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.instant.progress
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.path
+    - navigation.indexes
+    - navigation.top
+    - navigation.footer
+    - toc.follow
+    - content.code.annotate
+    - content.code.copy
+    - content.code.select
+    - content.tabs.link
+    - content.tooltips
+    - content.footnote.tooltips
+    - content.action.edit
+    - content.action.view
+    - search.highlight
+    - header.autohide
+  font:
+    text: Inter
+    code: JetBrains Mono
+  icon:
+    logo: material/cube-outline
+    repo: fontawesome/brands/github
+    edit: material/pencil
+    view: material/eye
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep purple
+      accent: deep purple
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep purple
+      accent: deep purple
+      toggle:
+        icon: material/weather-night
+        name: Switch to light mode
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/acecchini/shapix
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/shapix/
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+      toc_depth: 3
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde

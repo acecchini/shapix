@@ -13,3 +13,4 @@ wheels/
 .claude/
 !.claude/skills/
 !.claude/commands/
+site/
