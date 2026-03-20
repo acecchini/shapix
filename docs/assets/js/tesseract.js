@@ -1,20 +1,27 @@
 /**
- * Shapix Tesseract — A rotating 4D hypercube visualization.
+ * Shapix Tesseract — Immersive 4D hypercube visualization.
  *
- * The tesseract represents multi-dimensional arrays (N, C, H, W):
- * each axis of the 4D cube maps to a dimension that shapix validates.
+ * A rotating tesseract rendered with Three.js + UnrealBloomPass,
+ * representing the multi-dimensional arrays (N, C, H, W) that shapix validates.
  */
-;(function () {
+;(async function () {
   'use strict'
 
-  const canvas = document.getElementById('shapix-tesseract')
-  if (!canvas) return
+  const container = document.getElementById('shapix-tesseract')
+  if (!container) return
 
-  const ctx = canvas.getContext('2d')
-  let W, H, dpr
-  let animId = null
-  let mouseX = 0.5, mouseY = 0.5  // normalized 0–1
-  let isHovering = false
+  // ── Dynamic Three.js imports ──────────────────────────────────────
+  const THREE = await import('three')
+  const { EffectComposer } = await import('three/addons/postprocessing/EffectComposer.js')
+  const { RenderPass } = await import('three/addons/postprocessing/RenderPass.js')
+  const { UnrealBloomPass } = await import('three/addons/postprocessing/UnrealBloomPass.js')
+  const { OutputPass } = await import('three/addons/postprocessing/OutputPass.js')
+
+  // ── Brand palette ─────────────────────────────────────────────────
+  const PURPLE = new THREE.Color(0x7c4dff)
+  const LILAC  = new THREE.Color(0xb388ff)
+  const PINK   = new THREE.Color(0xea80fc)
+  const WHITE  = new THREE.Color(0xffffff)
 
   // ── Theme detection ───────────────────────────────────────────────
   function isDark() {
@@ -22,21 +29,41 @@
     return el && el.getAttribute('data-md-color-scheme') === 'slate'
   }
 
-  // Brand palette
-  const COLORS = {
-    purple:  [124, 77, 255],   // #7c4dff
-    lilac:   [179, 136, 255],  // #b388ff
-    pink:    [234, 128, 252],  // #ea80fc
-    white:   [255, 255, 255],
-  }
+  // ── Scene setup ───────────────────────────────────────────────────
+  const scene = new THREE.Scene()
+  const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 100)
+  camera.position.set(0, 0, 6)
 
-  function rgba(c, a) { return `rgba(${c[0]},${c[1]},${c[2]},${a})` }
+  const renderer = new THREE.WebGLRenderer({
+    antialias: true,
+    alpha: true,
+    powerPreference: 'high-performance',
+  })
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+  renderer.toneMapping = THREE.ACESFilmicToneMapping
+  renderer.toneMappingExposure = 1.2
+  container.appendChild(renderer.domElement)
+  renderer.domElement.style.display = 'block'
+  renderer.domElement.style.cursor = 'crosshair'
+
+  // ── Postprocessing (bloom) ────────────────────────────────────────
+  const composer = new EffectComposer(renderer)
+  composer.addPass(new RenderPass(scene, camera))
+
+  const bloomPass = new UnrealBloomPass(
+    new THREE.Vector2(window.innerWidth, window.innerHeight),
+    1.8,   // strength
+    0.6,   // radius
+    0.15,  // threshold
+  )
+  composer.addPass(bloomPass)
+  composer.addPass(new OutputPass())
 
   // ── 4D Hypercube geometry ─────────────────────────────────────────
-  // 16 vertices: every combination of (±1, ±1, ±1, ±1)
-  const verts = []
+  // 16 vertices of (±1, ±1, ±1, ±1)
+  const verts4D = []
   for (let i = 0; i < 16; i++) {
-    verts.push([
+    verts4D.push([
       (i & 1) ? 1 : -1,
       (i & 2) ? 1 : -1,
       (i & 4) ? 1 : -1,
@@ -45,257 +72,347 @@
   }
 
   // 32 edges: pairs differing in exactly 1 coordinate
-  const edges = []
+  const edgePairs = []
   for (let i = 0; i < 16; i++) {
     for (let j = i + 1; j < 16; j++) {
       let d = 0
-      for (let k = 0; k < 4; k++) if (verts[i][k] !== verts[j][k]) d++
-      if (d === 1) edges.push([i, j])
+      for (let k = 0; k < 4; k++) if (verts4D[i][k] !== verts4D[j][k]) d++
+      if (d === 1) edgePairs.push([i, j])
     }
   }
 
-  // Dimension labels on 4 selected vertices (the +1 end of each axis)
-  // vertex 1  = (+1,-1,-1,-1) → N
-  // vertex 2  = (-1,+1,-1,-1) → C
-  // vertex 4  = (-1,-1,+1,-1) → H
-  // vertex 8  = (-1,-1,-1,+1) → W
+  // Dimension labels
   const dimLabels = [
-    { idx: 0b0001, label: 'N' },
-    { idx: 0b0010, label: 'C' },
-    { idx: 0b0100, label: 'H' },
-    { idx: 0b1000, label: 'W' },
+    { idx: 0b0001, label: 'N', color: PURPLE },
+    { idx: 0b0010, label: 'C', color: LILAC },
+    { idx: 0b0100, label: 'H', color: PINK },
+    { idx: 0b1000, label: 'W', color: WHITE },
   ]
 
   // ── 4D Rotation ───────────────────────────────────────────────────
-  function rot4(v, aXW, aYZ, aXY, aZW) {
+  function rotate4D(v, aXW, aYZ, aXY, aZW) {
     let [x, y, z, w] = v
     let c, s
 
-    c = Math.cos(aXW); s = Math.sin(aXW);
-    [x, w] = [x * c - w * s, x * s + w * c]
+    c = Math.cos(aXW); s = Math.sin(aXW)
+    ;[x, w] = [x * c - w * s, x * s + w * c]
 
-    c = Math.cos(aYZ); s = Math.sin(aYZ);
-    [y, z] = [y * c - z * s, y * s + z * c]
+    c = Math.cos(aYZ); s = Math.sin(aYZ)
+    ;[y, z] = [y * c - z * s, y * s + z * c]
 
-    c = Math.cos(aXY); s = Math.sin(aXY);
-    [x, y] = [x * c - y * s, x * s + y * c]
+    c = Math.cos(aXY); s = Math.sin(aXY)
+    ;[x, y] = [x * c - y * s, x * s + y * c]
 
-    c = Math.cos(aZW); s = Math.sin(aZW);
-    [z, w] = [z * c - w * s, z * s + w * c]
+    c = Math.cos(aZW); s = Math.sin(aZW)
+    ;[z, w] = [z * c - w * s, z * s + w * c]
 
     return [x, y, z, w]
   }
 
-  // ── Projection 4D → 2D (two-stage perspective) ───────────────────
-  function project(v4) {
-    const d4 = 3.2  // 4D camera distance
-    const d3 = 3.2  // 3D camera distance
-
-    const w4 = 1 / (d4 - v4[3])
-    const x3 = v4[0] * w4
-    const y3 = v4[1] * w4
-    const z3 = v4[2] * w4
-
-    const w3 = 1 / (d3 - z3)
-    return {
-      x: x3 * w3,
-      y: y3 * w3,
-      depth: w4 * d4,  // normalized depth (0.5 = near, 1.5 = far)
-    }
+  function project4Dto3D(v4) {
+    const d = 3.0
+    const scale = 1 / (d - v4[3])
+    return new THREE.Vector3(v4[0] * scale, v4[1] * scale, v4[2] * scale)
   }
 
-  // ── Resize handler ────────────────────────────────────────────────
+  // ── Build edge lines (BufferGeometry updated each frame) ──────────
+  const edgePositions = new Float32Array(edgePairs.length * 6)
+  const edgeColors = new Float32Array(edgePairs.length * 6)
+  const edgeGeom = new THREE.BufferGeometry()
+  edgeGeom.setAttribute('position', new THREE.BufferAttribute(edgePositions, 3))
+  edgeGeom.setAttribute('color', new THREE.BufferAttribute(edgeColors, 3))
+
+  const edgeMat = new THREE.LineBasicMaterial({
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.9,
+    linewidth: 1,
+  })
+  const edgeMesh = new THREE.LineSegments(edgeGeom, edgeMat)
+  scene.add(edgeMesh)
+
+  // ── Vertex spheres (emissive, contribute to bloom) ────────────────
+  const vertSpheres = []
+  const sphereGeom = new THREE.SphereGeometry(0.04, 12, 12)
+
+  for (let i = 0; i < 16; i++) {
+    const mat = new THREE.MeshBasicMaterial({ color: LILAC, transparent: true })
+    const mesh = new THREE.Mesh(sphereGeom, mat)
+    scene.add(mesh)
+    vertSpheres.push(mesh)
+  }
+
+  // ── Glow spheres (larger, faint, for bloom contribution) ──────────
+  const glowSpheres = []
+  const glowGeom = new THREE.SphereGeometry(0.12, 8, 8)
+
+  for (let i = 0; i < 16; i++) {
+    const mat = new THREE.MeshBasicMaterial({
+      color: PURPLE,
+      transparent: true,
+      opacity: 0.25,
+    })
+    const mesh = new THREE.Mesh(glowGeom, mat)
+    scene.add(mesh)
+    glowSpheres.push(mesh)
+  }
+
+  // ── Particle field (ambient floating particles) ───────────────────
+  const PARTICLE_COUNT = 600
+  const particlePositions = new Float32Array(PARTICLE_COUNT * 3)
+  const particleSizes = new Float32Array(PARTICLE_COUNT)
+  const particleVelocities = []
+
+  for (let i = 0; i < PARTICLE_COUNT; i++) {
+    particlePositions[i * 3] = (Math.random() - 0.5) * 12
+    particlePositions[i * 3 + 1] = (Math.random() - 0.5) * 8
+    particlePositions[i * 3 + 2] = (Math.random() - 0.5) * 8
+    particleSizes[i] = Math.random() * 3 + 0.5
+    particleVelocities.push({
+      x: (Math.random() - 0.5) * 0.003,
+      y: (Math.random() - 0.5) * 0.003,
+      z: (Math.random() - 0.5) * 0.003,
+    })
+  }
+
+  const particleGeom = new THREE.BufferGeometry()
+  particleGeom.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3))
+  particleGeom.setAttribute('size', new THREE.BufferAttribute(particleSizes, 1))
+
+  const particleMat = new THREE.PointsMaterial({
+    color: LILAC,
+    size: 0.03,
+    transparent: true,
+    opacity: 0.4,
+    sizeAttenuation: true,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  })
+  const particles = new THREE.Points(particleGeom, particleMat)
+  scene.add(particles)
+
+  // ── Dimension label sprites ───────────────────────────────────────
+  const labelSprites = []
+
+  function createLabelSprite(text, color) {
+    const canvas = document.createElement('canvas')
+    const size = 128
+    canvas.width = size
+    canvas.height = size
+    const c = canvas.getContext('2d')
+
+    // Background pill
+    c.fillStyle = 'rgba(0, 0, 0, 0.5)'
+    c.beginPath()
+    c.roundRect(size * 0.15, size * 0.25, size * 0.7, size * 0.5, 12)
+    c.fill()
+
+    // Border
+    c.strokeStyle = `rgba(${Math.round(color.r * 255)}, ${Math.round(color.g * 255)}, ${Math.round(color.b * 255)}, 0.6)`
+    c.lineWidth = 2
+    c.stroke()
+
+    // Text
+    c.fillStyle = '#ffffff'
+    c.font = 'bold 48px Inter, SF Pro, system-ui, sans-serif'
+    c.textAlign = 'center'
+    c.textBaseline = 'middle'
+    c.fillText(text, size / 2, size / 2)
+
+    const texture = new THREE.CanvasTexture(canvas)
+    texture.minFilter = THREE.LinearFilter
+    const mat = new THREE.SpriteMaterial({
+      map: texture,
+      transparent: true,
+      depthTest: false,
+      blending: THREE.NormalBlending,
+    })
+    const sprite = new THREE.Sprite(mat)
+    sprite.scale.set(0.5, 0.5, 1)
+    return sprite
+  }
+
+  dimLabels.forEach(function (dl) {
+    const sprite = createLabelSprite(dl.label, dl.color)
+    scene.add(sprite)
+    labelSprites.push({ sprite: sprite, idx: dl.idx })
+  })
+
+  // ── Connecting lines for labels ───────────────────────────────────
+  const labelLinePositions = new Float32Array(dimLabels.length * 6)
+  const labelLineGeom = new THREE.BufferGeometry()
+  labelLineGeom.setAttribute('position', new THREE.BufferAttribute(labelLinePositions, 3))
+
+  const labelLineMat = new THREE.LineBasicMaterial({
+    color: LILAC,
+    transparent: true,
+    opacity: 0.2,
+  })
+  // Use THREE.LineSegments for pairs of points
+  const labelLines = new THREE.LineSegments(labelLineGeom, labelLineMat)
+  scene.add(labelLines)
+
+  // ── Mouse tracking ────────────────────────────────────────────────
+  let mouseX = 0, mouseY = 0
+  let targetMouseX = 0, targetMouseY = 0
+
+  container.addEventListener('mousemove', function (e) {
+    const rect = container.getBoundingClientRect()
+    targetMouseX = ((e.clientX - rect.left) / rect.width - 0.5) * 2
+    targetMouseY = ((e.clientY - rect.top) / rect.height - 0.5) * 2
+  })
+  container.addEventListener('mouseleave', function () {
+    targetMouseX = 0
+    targetMouseY = 0
+  })
+
+  // ── Resize ────────────────────────────────────────────────────────
   function resize() {
-    const rect = canvas.parentElement.getBoundingClientRect()
-    dpr = window.devicePixelRatio || 1
-    W = rect.width
-    H = Math.min(420, Math.max(280, rect.width * 0.55))
-    canvas.width = W * dpr
-    canvas.height = H * dpr
-    canvas.style.width = W + 'px'
-    canvas.style.height = H + 'px'
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    const rect = container.getBoundingClientRect()
+    const w = rect.width
+    const h = Math.min(520, Math.max(340, w * 0.55))
+    container.style.height = h + 'px'
+    camera.aspect = w / h
+    camera.updateProjectionMatrix()
+    renderer.setSize(w, h)
+    composer.setSize(w, h)
   }
 
-  // ── Mouse interaction ─────────────────────────────────────────────
-  canvas.addEventListener('mousemove', function (e) {
-    const rect = canvas.getBoundingClientRect()
-    mouseX = (e.clientX - rect.left) / rect.width
-    mouseY = (e.clientY - rect.top) / rect.height
-    isHovering = true
-  })
-  canvas.addEventListener('mouseleave', function () {
-    isHovering = false
-  })
-
-  // ── Render loop ───────────────────────────────────────────────────
-  function render(time) {
-    const t = time * 0.001
-    const dark = isDark()
-
-    ctx.clearRect(0, 0, W, H)
-
-    const scale = Math.min(W, H) * 0.3
-    const cx = W / 2
-    const cy = H / 2
-
-    // Base rotation speeds + subtle mouse influence
-    let mxOff = 0, myOff = 0
-    if (isHovering) {
-      mxOff = (mouseX - 0.5) * 0.3
-      myOff = (mouseY - 0.5) * 0.3
-    }
-
-    const aXW = t * 0.31 + mxOff
-    const aYZ = t * 0.23 + myOff
-    const aXY = t * 0.17
-    const aZW = t * 0.13
-
-    // Project all vertices
-    const pts = verts.map(function (v) {
-      const r = rot4(v, aXW, aYZ, aXY, aZW)
-      const p = project(r)
-      return {
-        x: cx + p.x * scale,
-        y: cy + p.y * scale,
-        depth: p.depth,
-      }
-    })
-
-    // Sort edges by average depth (far first → painter's algorithm)
-    const sortedEdges = edges.slice().sort(function (a, b) {
-      return (pts[a[0]].depth + pts[a[1]].depth) - (pts[b[0]].depth + pts[b[1]].depth)
-    })
-
-    // ── Draw edges ──────────────────────────────────────────────
-    sortedEdges.forEach(function (e) {
-      const p0 = pts[e[0]]
-      const p1 = pts[e[1]]
-      const d = (p0.depth + p1.depth) / 2
-      const alpha = Math.max(0.06, Math.min(0.8, d * 0.5))
-
-      // Glow layer
-      ctx.save()
-      ctx.shadowColor = rgba(COLORS.lilac, alpha * 0.5)
-      ctx.shadowBlur = 8 + d * 6
-
-      const grad = ctx.createLinearGradient(p0.x, p0.y, p1.x, p1.y)
-      grad.addColorStop(0, rgba(COLORS.purple, alpha))
-      grad.addColorStop(0.5, rgba(COLORS.lilac, alpha))
-      grad.addColorStop(1, rgba(COLORS.pink, alpha))
-
-      ctx.beginPath()
-      ctx.moveTo(p0.x, p0.y)
-      ctx.lineTo(p1.x, p1.y)
-      ctx.strokeStyle = grad
-      ctx.lineWidth = 1 + d * 1.5
-      ctx.stroke()
-      ctx.restore()
-    })
-
-    // ── Draw vertices ───────────────────────────────────────────
-    // Sort vertices by depth (far first)
-    const sortedVerts = pts.map(function (p, i) { return { p: p, i: i } })
-      .sort(function (a, b) { return a.p.depth - b.p.depth })
-
-    sortedVerts.forEach(function (item) {
-      const p = item.p
-      const r = 1.5 + p.depth * 2.5
-      const alpha = Math.max(0.1, Math.min(1, p.depth * 0.6))
-
-      // Outer glow
-      const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r * 5)
-      glow.addColorStop(0, rgba(COLORS.lilac, alpha * 0.3))
-      glow.addColorStop(1, rgba(COLORS.lilac, 0))
-      ctx.beginPath()
-      ctx.arc(p.x, p.y, r * 5, 0, Math.PI * 2)
-      ctx.fillStyle = glow
-      ctx.fill()
-
-      // Core dot
-      ctx.beginPath()
-      ctx.arc(p.x, p.y, r, 0, Math.PI * 2)
-      ctx.fillStyle = rgba(COLORS.pink, alpha)
-      ctx.fill()
-    })
-
-    // ── Dimension labels ────────────────────────────────────────
-    const labelColor = dark
-      ? rgba(COLORS.white, 0.85)
-      : rgba([50, 20, 80], 0.85)
-
-    const labelBg = dark
-      ? 'rgba(13, 17, 23, 0.7)'
-      : 'rgba(255, 255, 255, 0.7)'
-
-    dimLabels.forEach(function (dl) {
-      const p = pts[dl.idx]
-      const alpha = Math.max(0.15, Math.min(1, p.depth * 0.7))
-
-      ctx.save()
-      ctx.globalAlpha = alpha
-      ctx.font = '700 14px "Inter", "SF Pro", system-ui, sans-serif'
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'middle'
-
-      const tx = p.x + 14
-      const ty = p.y - 14
-
-      // Background pill
-      const m = ctx.measureText(dl.label)
-      const pw = m.width + 12
-      const ph = 20
-      ctx.fillStyle = labelBg
-      ctx.beginPath()
-      ctx.roundRect(tx - pw / 2, ty - ph / 2, pw, ph, 6)
-      ctx.fill()
-
-      // Border
-      ctx.strokeStyle = rgba(COLORS.lilac, 0.4)
-      ctx.lineWidth = 1
-      ctx.stroke()
-
-      // Text
-      ctx.fillStyle = labelColor
-      ctx.fillText(dl.label, tx, ty)
-
-      // Connecting line
-      ctx.beginPath()
-      ctx.moveTo(p.x, p.y)
-      ctx.lineTo(tx - pw / 2, ty)
-      ctx.strokeStyle = rgba(COLORS.lilac, alpha * 0.3)
-      ctx.lineWidth = 1
-      ctx.setLineDash([3, 3])
-      ctx.stroke()
-      ctx.setLineDash([])
-
-      ctx.restore()
-    })
-
-    animId = requestAnimationFrame(render)
-  }
-
-  // ── Init ──────────────────────────────────────────────────────────
   resize()
   window.addEventListener('resize', resize)
-  animId = requestAnimationFrame(render)
 
-  // Pause when off-screen for performance
+  // ── Animation loop ────────────────────────────────────────────────
+  let animId = null
+
+  function animate(time) {
+    const t = time * 0.001
+
+    // Smooth mouse follow
+    mouseX += (targetMouseX - mouseX) * 0.05
+    mouseY += (targetMouseY - mouseY) * 0.05
+
+    // Background color based on theme
+    const dark = isDark()
+    scene.background = dark
+      ? new THREE.Color(0x0d1117)
+      : new THREE.Color(0xfafafa)
+
+    // Bloom adjustments per theme
+    bloomPass.strength = dark ? 2.0 : 1.2
+    bloomPass.threshold = dark ? 0.1 : 0.3
+
+    // 4D rotation angles (base + mouse influence)
+    const aXW = t * 0.25 + mouseX * 0.3
+    const aYZ = t * 0.19 + mouseY * 0.3
+    const aXY = t * 0.13
+    const aZW = t * 0.09
+
+    // Compute projected 3D positions
+    const pts = verts4D.map(function (v) {
+      const r = rotate4D(v, aXW, aYZ, aXY, aZW)
+      return project4Dto3D(r)
+    })
+
+    // Update edge positions and colors
+    for (let e = 0; e < edgePairs.length; e++) {
+      const [i, j] = edgePairs[e]
+      const p0 = pts[i], p1 = pts[j]
+
+      edgePositions[e * 6] = p0.x
+      edgePositions[e * 6 + 1] = p0.y
+      edgePositions[e * 6 + 2] = p0.z
+      edgePositions[e * 6 + 3] = p1.x
+      edgePositions[e * 6 + 4] = p1.y
+      edgePositions[e * 6 + 5] = p1.z
+
+      // Gradient: purple → pink based on position
+      const mix0 = (p0.y + 1.5) / 3
+      const mix1 = (p1.y + 1.5) / 3
+      const c0 = PURPLE.clone().lerp(PINK, Math.max(0, Math.min(1, mix0)))
+      const c1 = PURPLE.clone().lerp(PINK, Math.max(0, Math.min(1, mix1)))
+
+      edgeColors[e * 6] = c0.r
+      edgeColors[e * 6 + 1] = c0.g
+      edgeColors[e * 6 + 2] = c0.b
+      edgeColors[e * 6 + 3] = c1.r
+      edgeColors[e * 6 + 4] = c1.g
+      edgeColors[e * 6 + 5] = c1.b
+    }
+
+    edgeGeom.attributes.position.needsUpdate = true
+    edgeGeom.attributes.color.needsUpdate = true
+
+    // Update vertex spheres
+    for (let i = 0; i < 16; i++) {
+      const p = pts[i]
+      vertSpheres[i].position.copy(p)
+      glowSpheres[i].position.copy(p)
+
+      // Pulsing glow
+      const pulse = 0.15 + Math.sin(t * 2 + i * 0.4) * 0.1
+      glowSpheres[i].material.opacity = pulse
+      glowSpheres[i].scale.setScalar(1 + Math.sin(t * 1.5 + i * 0.7) * 0.3)
+
+      // Color variation
+      const mix = (p.y + 1.5) / 3
+      vertSpheres[i].material.color.copy(LILAC).lerp(PINK, Math.max(0, Math.min(1, mix)))
+    }
+
+    // Update label sprites
+    for (let l = 0; l < labelSprites.length; l++) {
+      const ls = labelSprites[l]
+      const p = pts[ls.idx]
+      const offset = 0.4
+      ls.sprite.position.set(p.x + offset, p.y + offset, p.z)
+
+      // Fade based on depth
+      const depth = p.z
+      ls.sprite.material.opacity = Math.max(0.2, Math.min(1, 0.7 + depth * 0.5))
+
+      // Update connecting line
+      labelLinePositions[l * 6] = p.x
+      labelLinePositions[l * 6 + 1] = p.y
+      labelLinePositions[l * 6 + 2] = p.z
+      labelLinePositions[l * 6 + 3] = p.x + offset * 0.7
+      labelLinePositions[l * 6 + 4] = p.y + offset * 0.7
+      labelLinePositions[l * 6 + 5] = p.z
+    }
+    labelLineGeom.attributes.position.needsUpdate = true
+
+    // Animate particles
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      particlePositions[i * 3] += particleVelocities[i].x
+      particlePositions[i * 3 + 1] += particleVelocities[i].y
+      particlePositions[i * 3 + 2] += particleVelocities[i].z
+
+      // Wrap around
+      for (let k = 0; k < 3; k++) {
+        const bound = k === 0 ? 6 : 4
+        if (particlePositions[i * 3 + k] > bound) particlePositions[i * 3 + k] = -bound
+        if (particlePositions[i * 3 + k] < -bound) particlePositions[i * 3 + k] = bound
+      }
+    }
+    particleGeom.attributes.position.needsUpdate = true
+
+    // Subtle camera movement with mouse
+    camera.position.x = mouseX * 0.5
+    camera.position.y = -mouseY * 0.3
+    camera.lookAt(0, 0, 0)
+
+    composer.render()
+    animId = requestAnimationFrame(animate)
+  }
+
+  animId = requestAnimationFrame(animate)
+
+  // Pause when off-screen
   if (typeof IntersectionObserver !== 'undefined') {
     new IntersectionObserver(function (entries) {
       if (entries[0].isIntersecting) {
-        if (!animId) animId = requestAnimationFrame(render)
+        if (!animId) animId = requestAnimationFrame(animate)
       } else {
         if (animId) { cancelAnimationFrame(animId); animId = null }
       }
-    }).observe(canvas)
+    }).observe(container)
   }
-
-  // Re-render on theme toggle
-  new MutationObserver(function () {
-    // theme changed — next frame will pick up isDark()
-  }).observe(document.querySelector('[data-md-color-scheme]') || document.body, {
-    attributes: true,
-    attributeFilter: ['data-md-color-scheme'],
-  })
 })()
