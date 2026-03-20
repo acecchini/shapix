@@ -26,26 +26,40 @@ hide:
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
+  gap: 0.8rem;
   margin-bottom: 0.5rem;
+  perspective: 800px;
 }
 
-.hero__logo img {
-  width: 64px;
-  height: 64px;
-  filter: drop-shadow(0 0 12px rgba(124, 77, 255, 0.4));
+.hero__logo canvas {
+  filter: drop-shadow(0 0 16px rgba(124, 77, 255, 0.5));
 }
 
 .hero__title {
-  font-size: 3.6rem;
+  display: flex;
+  gap: 0;
+  perspective: 600px;
+}
+
+.hero__letter {
+  display: inline-block;
+  font-size: 4rem;
   font-weight: 800;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
   background: linear-gradient(135deg, #7c4dff 0%, #b388ff 40%, #ea80fc 70%, #7c4dff 100%);
-  background-size: 200% 200%;
-  animation: shimmer 6s ease-in-out infinite;
+  background-size: 300% 300%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  animation: letterWave 3s ease-in-out infinite, shimmer 4s ease-in-out infinite;
+  transform-style: preserve-3d;
+  filter: drop-shadow(0 4px 8px rgba(124, 77, 255, 0.3));
+}
+
+@keyframes letterWave {
+  0%, 100% { transform: translateY(0) rotateX(0deg) rotateY(0deg); }
+  25% { transform: translateY(-8px) rotateX(10deg) rotateY(-5deg); }
+  75% { transform: translateY(4px) rotateX(-5deg) rotateY(3deg); }
 }
 
 @keyframes shimmer {
@@ -148,8 +162,8 @@ hide:
 <div class="hero__visual" id="shapix-visual"></div>
 
 <div class="hero__logo">
-<img src="assets/logo.svg" alt="Shapix">
-<div class="hero__title">shapix</div>
+<canvas id="shapix-logo" width="80" height="80"></canvas>
+<div class="hero__title" id="shapix-title">Shapix</div>
 </div>
 
 <div class="hero__tagline">Runtime shape checking for the array age</div>
