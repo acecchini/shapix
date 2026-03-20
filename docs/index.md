@@ -11,27 +11,56 @@ hide:
 
 .hero {
   text-align: center;
-  padding: 1rem 1rem 2rem;
+  padding: 0 1rem 2rem;
 }
 
 .hero__visual {
-  position: relative;
   width: 100%;
   max-width: 960px;
-  margin: 0 auto 1rem;
+  margin: 0 auto 2rem;
   border-radius: 16px;
   overflow: hidden;
 }
 
-.hero__title {
-  font-size: 3.2rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+.hero__logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
   margin-bottom: 0.5rem;
-  background: linear-gradient(135deg, #7c4dff 0%, #b388ff 50%, #ea80fc 100%);
+}
+
+.hero__logo img {
+  width: 64px;
+  height: 64px;
+  filter: drop-shadow(0 0 12px rgba(124, 77, 255, 0.4));
+}
+
+.hero__title {
+  font-size: 3.6rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  background: linear-gradient(135deg, #7c4dff 0%, #b388ff 40%, #ea80fc 70%, #7c4dff 100%);
+  background-size: 200% 200%;
+  animation: shimmer 6s ease-in-out infinite;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+@keyframes shimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.hero__tagline {
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--md-primary-fg-color);
+  margin-bottom: 1rem;
+  opacity: 0.7;
 }
 
 .hero__subtitle {
@@ -116,14 +145,17 @@ hide:
 
 <div class="hero" markdown>
 
-<div class="hero__visual">
-<div id="shapix-tesseract"></div>
+<div class="hero__visual" id="shapix-visual"></div>
+
+<div class="hero__logo">
+<img src="assets/logo.svg" alt="Shapix">
+<div class="hero__title">shapix</div>
 </div>
 
-<div class="hero__title">Shapix</div>
+<div class="hero__tagline">Runtime shape checking for the array age</div>
 
 <p class="hero__subtitle">
-Elegant runtime shape and dtype checking for NumPy, JAX, and PyTorch arrays — powered by <a href="https://github.com/beartype/beartype">beartype</a>.
+Elegant shape and dtype validation for NumPy, JAX, and PyTorch arrays — powered by <a href="https://github.com/beartype/beartype">beartype</a>.
 </p>
 
 <div class="hero__actions">

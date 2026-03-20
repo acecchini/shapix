@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <!-- Outer cube -->
+  <path d="M8 14L24 6L40 14V34L24 42L8 34V14Z" stroke="url(#g1)" stroke-width="2" stroke-linejoin="round"/>
+  <!-- Inner cube (4D projection) -->
+  <path d="M16 18L24 14L32 18V30L24 34L16 30V18Z" stroke="url(#g2)" stroke-width="2" stroke-linejoin="round" opacity="0.8"/>
+  <!-- Connecting edges (4D depth lines) -->
+  <line x1="8" y1="14" x2="16" y2="18" stroke="url(#g1)" stroke-width="1.5" opacity="0.5"/>
+  <line x1="40" y1="14" x2="32" y2="18" stroke="url(#g1)" stroke-width="1.5" opacity="0.5"/>
+  <line x1="24" y1="6" x2="24" y2="14" stroke="url(#g1)" stroke-width="1.5" opacity="0.5"/>
+  <line x1="8" y1="34" x2="16" y2="30" stroke="url(#g2)" stroke-width="1.5" opacity="0.5"/>
+  <line x1="40" y1="34" x2="32" y2="30" stroke="url(#g2)" stroke-width="1.5" opacity="0.5"/>
+  <line x1="24" y1="42" x2="24" y2="34" stroke="url(#g2)" stroke-width="1.5" opacity="0.5"/>
+  <!-- Vertex dots -->
+  <circle cx="24" cy="6" r="2" fill="#b388ff"/>
+  <circle cx="8" cy="14" r="2" fill="#7c4dff"/>
+  <circle cx="40" cy="14" r="2" fill="#7c4dff"/>
+  <circle cx="24" cy="14" r="1.5" fill="#ea80fc"/>
+  <circle cx="16" cy="18" r="1.5" fill="#b388ff" opacity="0.8"/>
+  <circle cx="32" cy="18" r="1.5" fill="#b388ff" opacity="0.8"/>
+  <defs>
+    <linearGradient id="g1" x1="8" y1="6" x2="40" y2="42" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7c4dff"/>
+      <stop offset="1" stop-color="#ea80fc"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="16" y1="14" x2="32" y2="34" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#b388ff"/>
+      <stop offset="1" stop-color="#ea80fc"/>
+    </linearGradient>
+  </defs>
+</svg>

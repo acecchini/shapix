@@ -72,8 +72,8 @@ theme:
   font:
     text: Inter
     code: JetBrains Mono
+  logo: assets/logo.svg
   icon:
-    logo: material/cube-outline
     repo: fontawesome/brands/github
     edit: material/pencil
     view: material/eye
