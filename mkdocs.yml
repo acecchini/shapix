@@ -13,6 +13,9 @@ site_dir: site
 extra_css:
   - stylesheets/extra.css
 
+extra_javascript:
+  - assets/js/tesseract.js
+
 nav:
   - Home: index.md
   - Getting Started:

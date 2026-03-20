@@ -2663,7 +2663,6 @@ dev = [
     { name = "codespell" },
     { name = "ipykernel" },
     { name = "matplotlib" },
-    { name = "mkdocs-material" },
     { name = "pre-commit" },
     { name = "pytest" },
     { name = "pytest-cov" },
@@ -2672,6 +2671,9 @@ dev = [
     { name = "tox" },
     { name = "tox-uv" },
     { name = "zensical" },
+]
+docs = [
+    { name = "mkdocs-material" },
 ]
 optional = [
     { name = "jax", version = "0.6.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
@@ -2696,7 +2698,6 @@ dev = [
     { name = "codespell", specifier = ">=2.4.1" },
     { name = "ipykernel", specifier = ">=7.2.0" },
     { name = "matplotlib", specifier = ">=3.10.8" },
-    { name = "mkdocs-material", specifier = ">=9.7.4" },
     { name = "pre-commit", specifier = ">=4.5.1" },
     { name = "pytest", specifier = ">=9.0.2" },
     { name = "pytest-cov", specifier = ">=6.0.0" },
@@ -2706,6 +2707,7 @@ dev = [
     { name = "tox-uv", specifier = ">=1.33.1" },
     { name = "zensical", specifier = ">=0.0.24" },
 ]
+docs = [{ name = "mkdocs-material", specifier = ">=9.7.6" }]
 optional = [
     { name = "jax", extras = ["cpu"], specifier = ">=0.5.0" },
     { name = "numpy", specifier = ">=2.2.0" },

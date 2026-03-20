@@ -56,7 +56,9 @@ dev = [
   "ipykernel>=7.2.0",
   "matplotlib>=3.10.8",
   "zensical>=0.0.24",
-  "mkdocs-material>=9.7.4",
+]
+docs = [
+    "mkdocs-material>=9.7.6",
 ]
 
 [tool.uv.sources]

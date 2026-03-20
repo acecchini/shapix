@@ -11,7 +11,20 @@ hide:
 
 .hero {
   text-align: center;
-  padding: 3rem 1rem 2rem;
+  padding: 1rem 1rem 2rem;
+}
+
+.hero__visual {
+  position: relative;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto 0.5rem;
+}
+
+.hero__visual canvas {
+  display: block;
+  width: 100%;
+  cursor: crosshair;
 }
 
 .hero__title {
@@ -106,6 +119,10 @@ hide:
 </style>
 
 <div class="hero" markdown>
+
+<div class="hero__visual">
+<canvas id="shapix-tesseract"></canvas>
+</div>
 
 <div class="hero__title">Shapix</div>
 
