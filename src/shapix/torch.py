@@ -267,7 +267,7 @@ else:
   Shaped = make_array_type(Tensor, SHAPED)
 
 # ---------------------------------------------------------------------------
-# Like types (scalar | tensor | nested sequences — for input validation)
+# Like types — runtime: scalar | tensor | nested sequences; static: Tensor
 # ---------------------------------------------------------------------------
 
 if tp.TYPE_CHECKING:

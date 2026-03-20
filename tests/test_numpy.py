@@ -795,6 +795,21 @@ class TestBroadcastableDims:
     hint = F32[+D3]
     assert not is_bearable(np.ones(5, dtype=np.float32), hint)
 
+  def test_broadcastable_symbolic_accepts_1(self) -> None:
+    hint = F32[N, +(N + 1)]
+    arr = np.ones((5, 1), dtype=np.float32)
+    assert is_bearable(arr, hint)
+
+  def test_broadcastable_symbolic_accepts_matching(self) -> None:
+    hint = F32[N, +(N + 1)]
+    arr = np.ones((5, 6), dtype=np.float32)
+    assert is_bearable(arr, hint)
+
+  def test_broadcastable_symbolic_rejects_mismatch(self) -> None:
+    hint = F32[N, +(N + 1)]
+    arr = np.ones((5, 7), dtype=np.float32)
+    assert not is_bearable(arr, hint)
+
   def test_variadic_on_fixed_raises(self) -> None:
     D3 = Dimension(3)
     with pytest.raises(TypeError, match="Cannot apply ~ .* fixed numeric"):

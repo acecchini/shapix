@@ -94,6 +94,9 @@ class Dimension(str):
   """
 
   def __new__(cls, value: str | int, /) -> Dimension:
+    if isinstance(value, bool):
+      msg = f"Dimension does not accept bool ({value!r}); use an int or str"
+      raise TypeError(msg)
     return str.__new__(cls, str(value) if isinstance(value, int) else value)
 
   # ------------------------------------------------------------------
@@ -153,6 +156,9 @@ class Dimension(str):
     if raw.lstrip("-").isdigit():
       msg = f"Cannot apply ~ (variadic) to a fixed numeric dimension {raw!r}"
       raise TypeError(msg)
+    if not raw.isidentifier() and not (raw.startswith("+") and raw[1:].isidentifier()):
+      msg = f"Cannot apply ~ (variadic) to expression {raw!r}; variadic requires a named dimension"
+      raise TypeError(msg)
     return Dimension(f"~{raw}")
 
   def __pos__(self) -> Dimension:
@@ -192,9 +198,15 @@ class Dimension(str):
         if name.lstrip("-").isdigit():
           msg = f"Cannot use variadic (~) with fixed numeric dimension {name!r}"
           raise TypeError(msg)
+        if not name.isidentifier():
+          msg = f"Cannot use variadic (~) with expression {name!r}; variadic requires a named dimension"
+          raise TypeError(msg)
         return VariadicDim(name, broadcastable=True)
       if rest.lstrip("-").isdigit():
         msg = f"Cannot use variadic (~) with fixed numeric dimension {rest!r}"
+        raise TypeError(msg)
+      if not rest.isidentifier():
+        msg = f"Cannot use variadic (~) with expression {rest!r}; variadic requires a named dimension"
         raise TypeError(msg)
       return VariadicDim(rest, broadcastable=False)
 
@@ -207,7 +219,9 @@ class Dimension(str):
           msg = f"Negative dimension {size} is invalid; array shapes are non-negative"
           raise TypeError(msg)
         return FixedDim(size, broadcastable=True)
-      return NamedDim(rest, broadcastable=True)
+      if rest.isidentifier():
+        return NamedDim(rest, broadcastable=True)
+      return SymbolicDim(rest, broadcastable=True)
 
     # Pure integer
     if raw.lstrip("-").isdigit():

@@ -86,7 +86,8 @@ class SymbolicDim:
   broadcastable: bool = False
 
   def __repr__(self) -> str:
-    return self.expr
+    prefix = "+" if self.broadcastable else ""
+    return f"{prefix}{self.expr}"
 
 
 @dataclass(frozen=True, slots=True)

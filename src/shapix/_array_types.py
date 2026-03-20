@@ -502,6 +502,9 @@ def _to_shape_spec(dims: tuple[object, ...]) -> tuple[DimSpec, ...]:
       specs.append(ANONYMOUS)
     elif d is ANONYMOUS_VARIADIC:
       specs.append(ANONYMOUS_VARIADIC)
+    elif isinstance(d, bool):
+      msg = f"bool ({d!r}) is not a valid shape token; use an int or Dimension"
+      raise TypeError(msg)
     elif isinstance(d, int):
       if d < 0:
         msg = f"Negative dimension {d} is invalid; array shapes are non-negative"

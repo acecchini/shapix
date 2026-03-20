@@ -271,6 +271,65 @@ class TestDimSpecEdgeCases:
     assert spec.size == 3
 
 
+class TestUnaryOnSymbolicExpressions:
+  """Unary +/~ on arithmetic expressions must produce correct types or reject."""
+
+  def test_pos_on_symbolic_produces_broadcastable_symbolic(self) -> None:
+    d = +(Dimension("N") + 1)
+    spec = d._dim_spec
+    assert isinstance(spec, SymbolicDim)
+    assert spec.expr == "(N+1)"
+    assert spec.broadcastable is True
+
+  def test_invert_on_symbolic_raises(self) -> None:
+    with pytest.raises(TypeError, match="variadic requires a named dimension"):
+      ~(Dimension("N") + 1)
+
+  def test_dim_spec_variadic_symbolic_raises(self) -> None:
+    with pytest.raises(TypeError, match="variadic requires a named dimension"):
+      Dimension("~(N+1)")._dim_spec  # noqa: B018, SLF001
+
+  def test_dim_spec_variadic_broadcastable_symbolic_raises(self) -> None:
+    with pytest.raises(TypeError, match="variadic requires a named dimension"):
+      Dimension("~+(N+1)")._dim_spec  # noqa: B018, SLF001
+
+  def test_dim_spec_broadcastable_symbolic(self) -> None:
+    spec = Dimension("+(N+1)")._dim_spec
+    assert isinstance(spec, SymbolicDim)
+    assert spec.expr == "(N+1)"
+    assert spec.broadcastable is True
+
+
+class TestBooleanDimRejection:
+  """Dimension(bool) and F32[bool] must raise."""
+
+  def test_rejects_bool_true(self) -> None:
+    with pytest.raises(TypeError, match="Dimension does not accept bool"):
+      Dimension(True)  # type: ignore[arg-type]
+
+  def test_rejects_bool_false(self) -> None:
+    with pytest.raises(TypeError, match="Dimension does not accept bool"):
+      Dimension(False)  # type: ignore[arg-type]
+
+  def test_shape_spec_rejects_true(self) -> None:
+    from shapix.numpy import F32
+
+    with pytest.raises(TypeError, match="bool.*is not a valid shape token"):
+      F32[True]
+
+  def test_shape_spec_rejects_false(self) -> None:
+    from shapix.numpy import F32
+
+    with pytest.raises(TypeError, match="bool.*is not a valid shape token"):
+      F32[False]
+
+  def test_shape_spec_rejects_bool_mixed(self) -> None:
+    from shapix.numpy import F32
+
+    with pytest.raises(TypeError, match="bool.*is not a valid shape token"):
+      F32[Dimension("N"), True]
+
+
 class TestValueExpressions:
   def test_value_expr_requires_string(self) -> None:
     with pytest.raises(TypeError, match=r"Value\(\.\.\.\) expects a string expression"):

@@ -454,6 +454,9 @@ from shapix.jax import F32Like  # accepts jax.Array, ndarray, scalars, sequences
 from shapix.torch import F32Like  # accepts Tensor, ndarray, scalars, sequences
 ```
 
+> **Typing note:** JAX and PyTorch Like types resolve to `jax.Array` / `torch.Tensor`
+> for static checkers. The broader scalar/sequence acceptance is runtime-only.
+
 ### ScalarLike types (range-validated scalars)
 
 ScalarLike types validate individual scalar values with range checking — no shape, just value.

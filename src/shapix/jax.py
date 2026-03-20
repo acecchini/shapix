@@ -272,7 +272,7 @@ else:
   Shaped = make_array_type(JaxArray, SHAPED)
 
 # ---------------------------------------------------------------------------
-# Like types (scalar | array | nested sequences — for input validation)
+# Like types — runtime: scalar | array | nested sequences; static: JaxArray
 # ---------------------------------------------------------------------------
 
 if tp.TYPE_CHECKING:
