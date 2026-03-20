@@ -6,18 +6,29 @@ hide:
   - toc
 ---
 
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+
 <style>
 .md-typeset h1 { display: none; }
 
-/* ── Hero: full viewport with visual background ── */
+/* Hide edit/view source on homepage */
+.md-content__button { display: none !important; }
+
+/* Reset content wrapper for full-bleed hero */
+.md-content__inner { padding: 0; margin: 0; max-width: none; }
+html { overflow-x: hidden; }
+
+/* ── Hero: full viewport, edge to edge ── */
 .hero {
   position: relative;
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 2rem 1rem;
+  padding: 4rem 1rem 2rem;
   overflow: hidden;
 }
 
@@ -38,13 +49,13 @@ hide:
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.8rem;
+  gap: 1rem;
   margin-bottom: 0.5rem;
   perspective: 800px;
 }
 
 .hero__logo canvas {
-  filter: drop-shadow(0 0 20px rgba(124, 77, 255, 0.6));
+  filter: drop-shadow(0 0 25px rgba(124, 77, 255, 0.5));
 }
 
 .hero__title {
@@ -53,49 +64,60 @@ hide:
   perspective: 600px;
 }
 
+/* ── 3D semi-transparent glass letters ── */
 .hero__letter {
   display: inline-block;
-  font-size: 4.2rem;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 5.5rem;
   font-weight: 800;
-  letter-spacing: -0.02em;
-  background: linear-gradient(135deg, #7c4dff 0%, #b388ff 40%, #ea80fc 70%, #7c4dff 100%);
-  background-size: 300% 300%;
+  letter-spacing: -0.03em;
+  background: linear-gradient(
+    180deg,
+    rgba(179, 136, 255, 0.45) 0%,
+    rgba(124, 77, 255, 0.2) 45%,
+    rgba(234, 128, 252, 0.35) 100%
+  );
+  background-size: 100% 100%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  animation: letterWave 3s ease-in-out infinite, shimmer 4s ease-in-out infinite;
+  -webkit-text-stroke: 0.8px rgba(179, 136, 255, 0.35);
+  filter:
+    drop-shadow(0 1px 0 rgba(124, 77, 255, 0.12))
+    drop-shadow(0 3px 1px rgba(124, 77, 255, 0.08))
+    drop-shadow(0 6px 3px rgba(124, 77, 255, 0.06))
+    drop-shadow(0 0 40px rgba(124, 77, 255, 0.35))
+    drop-shadow(0 0 80px rgba(179, 136, 255, 0.15));
+  animation: letterWave 3s ease-in-out infinite;
   transform-style: preserve-3d;
-  filter: drop-shadow(0 4px 12px rgba(124, 77, 255, 0.4));
 }
 
 @keyframes letterWave {
-  0%, 100% { transform: translateY(0) rotateX(0deg); }
-  25% { transform: translateY(-10px) rotateX(12deg); }
-  75% { transform: translateY(5px) rotateX(-6deg); }
-}
-
-@keyframes shimmer {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
+  0%, 100% { transform: translateY(0) rotateX(0deg) rotateY(0deg); }
+  25% { transform: translateY(-10px) rotateX(12deg) rotateY(-3deg); }
+  75% { transform: translateY(5px) rotateX(-6deg) rotateY(2deg); }
 }
 
 /* ── Tagline & Subtitle ── */
 .hero__tagline {
+  font-family: 'Space Grotesk', sans-serif;
   font-size: 0.85rem;
   font-weight: 600;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--md-primary-fg-color);
   margin-bottom: 1rem;
-  opacity: 0.7;
+  opacity: 0.6;
 }
 
 .hero__subtitle {
-  font-size: 1.25rem;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 500;
   color: var(--md-default-fg-color--light);
-  max-width: 640px;
-  margin: 0 auto 2rem;
-  line-height: 1.6;
+  max-width: 580px;
+  margin: 0 auto 2.5rem;
+  line-height: 1.7;
 }
 
 /* ── Buttons ── */
@@ -104,23 +126,24 @@ hide:
   gap: 1rem;
   justify-content: center;
   flex-wrap: wrap;
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
 }
 
 .hero__actions .md-button {
-  font-size: 1rem;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
   padding: 0.7rem 2rem;
   border-radius: 2rem;
 }
 
-/* ── Code block ── */
-.hero__code {
-  max-width: 640px;
+/* ── Features grid ── */
+.features-section {
+  max-width: 61rem;
   margin: 0 auto;
-  text-align: left;
+  padding: 0 1.5rem;
 }
 
-/* ── Features grid ── */
 .features-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -154,7 +177,9 @@ hide:
 /* ── Backends ── */
 .backends {
   text-align: center;
-  padding: 2rem 0;
+  padding: 2rem 0 3rem;
+  max-width: 61rem;
+  margin: 0 auto;
 }
 
 .backends__logos {
@@ -163,15 +188,40 @@ hide:
   justify-content: center;
   align-items: center;
   flex-wrap: wrap;
-  margin-top: 1rem;
+  margin-top: 1.5rem;
 }
 
-.backends__logos span {
-  font-size: 1.3rem;
+.backend-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  filter: grayscale(100%) brightness(0.7);
+  opacity: 0.5;
+  transition: all 0.3s ease;
+  cursor: default;
+}
+
+.backend-logo:hover {
+  filter: grayscale(0%) brightness(1);
+  opacity: 1;
+  transform: translateY(-2px);
+}
+
+.backend-logo svg {
+  width: 32px;
+  height: 32px;
+}
+
+.backend-logo span {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.15rem;
   font-weight: 600;
-  color: var(--md-default-fg-color--light);
   letter-spacing: 0.02em;
 }
+
+.backend-logo--numpy span { color: #4DABCF; }
+.backend-logo--jax span { color: #5B4B8A; }
+.backend-logo--torch span { color: #EE4C2C; }
 </style>
 
 <div class="hero">
@@ -179,7 +229,7 @@ hide:
 <div class="hero__content" markdown>
 
 <div class="hero__logo">
-<canvas id="shapix-logo" width="80" height="80"></canvas>
+<canvas id="shapix-logo" width="140" height="140"></canvas>
 <div class="hero__title" id="shapix-title">Shapix</div>
 </div>
 
@@ -197,24 +247,12 @@ Elegant shape and dtype validation for NumPy, JAX, and PyTorch arrays — powere
 
 </div>
 
-<div class="hero__code">
-
-```python
-from beartype import beartype
-from shapix import N, C, H, W
-from shapix.numpy import F32
-
-@beartype
-def conv2d(x: F32[N, C, H, W], weight: F32[C, C, 3, 3]) -> F32[N, C, H, W]:
-    ...
-```
-
-</div>
-
 </div>
 </div>
 
 ---
+
+<div class="features-section" markdown>
 
 <div class="features-grid" markdown>
 
@@ -268,6 +306,8 @@ Each thread gets independent dimension bindings via `threading.local()`. Safe fo
 
 </div>
 
+</div>
+
 ---
 
 <div class="backends" markdown>
@@ -275,9 +315,22 @@ Each thread gets independent dimension bindings via `threading.local()`. Safe fo
 ### Supported Backends
 
 <div class="backends__logos">
+
+<div class="backend-logo backend-logo--numpy">
+<svg viewBox="0 0 128 128" fill="#4DABCF"><path d="M54.7 26.5L37 17.2 18.5 27.5l17.8 9.3 18.4-10.3zm3.7 1.8L40 38.5v43.3l18.4-10.3V28.3zm-22 10.2L18.5 48.8v43.3l17.9-10.3V38.5zm40.2-33L58.7 4.2l-18 10.1 17.8 9.3 18-8.6zm3.7 1.8L62.4 17.5v43.3l17.9-10.3V7.3zm-22 10.2L40.4 27.8v43.3l17.9-10.3V17.5z"/></svg>
 <span>NumPy</span>
+</div>
+
+<div class="backend-logo backend-logo--jax">
+<svg viewBox="0 0 128 128" fill="#5B4B8A"><path d="M30 32h14l20 32-20 32H30l20-32-20-32zm34 0h14l20 32-20 32H64l20-32-20-32z"/></svg>
 <span>JAX</span>
+</div>
+
+<div class="backend-logo backend-logo--torch">
+<svg viewBox="0 0 128 128" fill="#EE4C2C"><path d="M64 8L48 28v12c-14 8-24 24-24 42 0 26.5 21.5 48 48 48s48-21.5 48-48c0-30-24-52-48-68l-8-6zm4 24a6 6 0 110 12 6 6 0 010-12z"/></svg>
 <span>PyTorch</span>
+</div>
+
 </div>
 
 </div>
