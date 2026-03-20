@@ -71,9 +71,11 @@ class FixedDim:
   """A dimension that must match an exact size."""
 
   size: int
+  broadcastable: bool = False
 
   def __repr__(self) -> str:
-    return str(self.size)
+    prefix = "+" if self.broadcastable else ""
+    return f"{prefix}{self.size}"
 
 
 @dataclass(frozen=True, slots=True)
@@ -258,6 +260,8 @@ def _check_one(
     return ""
 
   if isinstance(dim, FixedDim):
+    if dim.broadcastable and size == 1:
+      return ""
     if dim.size != size:
       return f"dimension expected {dim.size} but got {size}"
     return ""

@@ -780,6 +780,26 @@ class TestBroadcastableDims:
     with pytest.raises(BeartypeCallHintReturnViolation):
       f(np.ones((4, 5), dtype=np.float32))
 
+  def test_broadcastable_fixed_dim_accepts_1(self) -> None:
+    D3 = Dimension(3)
+    hint = F32[+D3]
+    assert is_bearable(np.ones(1, dtype=np.float32), hint)
+
+  def test_broadcastable_fixed_dim_accepts_exact(self) -> None:
+    D3 = Dimension(3)
+    hint = F32[+D3]
+    assert is_bearable(np.ones(3, dtype=np.float32), hint)
+
+  def test_broadcastable_fixed_dim_rejects_other(self) -> None:
+    D3 = Dimension(3)
+    hint = F32[+D3]
+    assert not is_bearable(np.ones(5, dtype=np.float32), hint)
+
+  def test_variadic_on_fixed_raises(self) -> None:
+    D3 = Dimension(3)
+    with pytest.raises(TypeError, match="Cannot apply ~ .* fixed numeric"):
+      F32[~D3]  # type: ignore[operator]
+
 
 # =====================================================================
 # Anonymous dimensions

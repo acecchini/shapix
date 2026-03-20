@@ -194,6 +194,28 @@ class TestUnaryOperators:
     assert spec.name == "Batch"
     assert spec.broadcastable is True
 
+  def test_invert_rejects_fixed_dim(self) -> None:
+    with pytest.raises(TypeError, match="Cannot apply ~ .* fixed numeric"):
+      ~Dimension("3")
+
+  def test_invert_rejects_fixed_dim_int(self) -> None:
+    with pytest.raises(TypeError, match="Cannot apply ~ .* fixed numeric"):
+      ~Dimension(3)
+
+  def test_pos_on_fixed_dim(self) -> None:
+    d = +Dimension("3")
+    spec = d._dim_spec
+    assert isinstance(spec, FixedDim)
+    assert spec.size == 3
+    assert spec.broadcastable is True
+
+  def test_pos_on_fixed_dim_int(self) -> None:
+    d = +Dimension(3)
+    spec = d._dim_spec
+    assert isinstance(spec, FixedDim)
+    assert spec.size == 3
+    assert spec.broadcastable is True
+
 
 class TestDimSpecEdgeCases:
   def test_zero_fixed_dim(self) -> None:
@@ -221,6 +243,32 @@ class TestDimSpecEdgeCases:
     spec = d._dim_spec
     assert isinstance(spec, SymbolicDim)
     assert spec.expr == "(N+C)"
+
+  def test_dim_spec_variadic_rejects_numeric(self) -> None:
+    with pytest.raises(TypeError, match="Cannot use variadic"):
+      Dimension("~3")._dim_spec  # noqa: B018, SLF001
+
+  def test_dim_spec_variadic_broadcastable_rejects_numeric(self) -> None:
+    with pytest.raises(TypeError, match="Cannot use variadic"):
+      Dimension("~+3")._dim_spec  # noqa: B018, SLF001
+
+  def test_dim_spec_broadcastable_fixed(self) -> None:
+    spec = Dimension("+3")._dim_spec
+    assert isinstance(spec, FixedDim)
+    assert spec.size == 3
+    assert spec.broadcastable is True
+
+  def test_dim_spec_broadcastable_negative_rejected(self) -> None:
+    with pytest.raises(TypeError, match="Negative dimension"):
+      Dimension("+-3")._dim_spec  # noqa: B018, SLF001
+
+  def test_dimension_accepts_int(self) -> None:
+    d = Dimension(3)
+    assert str(d) == "3"
+    assert isinstance(d, Dimension)
+    spec = d._dim_spec
+    assert isinstance(spec, FixedDim)
+    assert spec.size == 3
 
 
 class TestValueExpressions:

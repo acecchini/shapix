@@ -93,6 +93,9 @@ class Dimension(str):
       Dimension('(2*N)')
   """
 
+  def __new__(cls, value: str | int, /) -> Dimension:
+    return str.__new__(cls, str(value) if isinstance(value, int) else value)
+
   # ------------------------------------------------------------------
   # Arithmetic → symbolic dimension expressions
   # ------------------------------------------------------------------
@@ -147,6 +150,9 @@ class Dimension(str):
     raw = str(self)
     if raw.startswith("~"):
       return self
+    if raw.lstrip("-").isdigit():
+      msg = f"Cannot apply ~ (variadic) to a fixed numeric dimension {raw!r}"
+      raise TypeError(msg)
     return Dimension(f"~{raw}")
 
   def __pos__(self) -> Dimension:
@@ -182,12 +188,26 @@ class Dimension(str):
       if rest == "__":
         return ANONYMOUS_VARIADIC
       if rest.startswith("+"):
-        return VariadicDim(rest[1:], broadcastable=True)
+        name = rest[1:]
+        if name.lstrip("-").isdigit():
+          msg = f"Cannot use variadic (~) with fixed numeric dimension {name!r}"
+          raise TypeError(msg)
+        return VariadicDim(name, broadcastable=True)
+      if rest.lstrip("-").isdigit():
+        msg = f"Cannot use variadic (~) with fixed numeric dimension {rest!r}"
+        raise TypeError(msg)
       return VariadicDim(rest, broadcastable=False)
 
-    # Broadcastable: +name
+    # Broadcastable: +name or +number
     if raw.startswith("+"):
-      return NamedDim(raw[1:], broadcastable=True)
+      rest = raw[1:]
+      if rest.lstrip("-").isdigit():
+        size = int(rest)
+        if size < 0:
+          msg = f"Negative dimension {size} is invalid; array shapes are non-negative"
+          raise TypeError(msg)
+        return FixedDim(size, broadcastable=True)
+      return NamedDim(rest, broadcastable=True)
 
     # Pure integer
     if raw.lstrip("-").isdigit():

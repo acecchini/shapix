@@ -9,7 +9,23 @@ Tested with: pyright, mypy, ty
 from beartype import beartype
 
 from shapix import B, C, Dimension, H, N, Scalar, W, __, check
-from shapix.jax import BF16, Bool, F16, F32, F64, I32, I64, Int, Num, Shaped, U8
+from shapix.jax import (
+  BF16,
+  BF16Like,
+  Bool,
+  BoolLike,
+  F16,
+  F32,
+  F32Like,
+  F64,
+  I32,
+  I64,
+  I64Like,
+  Int,
+  Num,
+  Shaped,
+  U8,
+)
 
 # ---------------------------------------------------------------------------
 # Basic typed functions
@@ -117,4 +133,29 @@ def vocab_fn(x: I64[N, Vocab]) -> I64[N, Vocab]:  # type: ignore  # noqa: F821  
 
 @beartype
 def pad(x: F32[N]) -> F32[N + 2]:  # type: ignore  # noqa: F821  # arithmetic dim
+  return x
+
+
+# ---------------------------------------------------------------------------
+# Like types — verify import, subscript, and annotation usage
+# ---------------------------------------------------------------------------
+
+
+@beartype
+def like_fn(x: F32Like[N, C]) -> F32Like[N, C]:
+  return x
+
+
+@beartype
+def bf16_like_fn(x: BF16Like[N]) -> BF16Like[N]:
+  return x
+
+
+@beartype
+def i64_like_fn(x: I64Like[N]) -> I64Like[N]:
+  return x
+
+
+@beartype
+def bool_like_fn(x: BoolLike[N]) -> BoolLike[N]:
   return x
