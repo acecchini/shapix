@@ -14,8 +14,7 @@ extra_css:
   - stylesheets/extra.css
 
 extra_javascript:
-  - path: assets/js/tesseract.js
-    type: module
+  - assets/js/tesseract.js
 
 nav:
   - Home: index.md
