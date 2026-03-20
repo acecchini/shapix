@@ -490,6 +490,10 @@ from shapix.jax import U8ScalarLike  # re-exported
 from shapix.torch import U8ScalarLike  # re-exported
 ```
 
+> **Note:** Backend ScalarLike types validate Python and NumPy scalar values.
+> For backend-native 0-D arrays (`jnp.array(1.0)`, `torch.tensor(1.0)`),
+> use the corresponding `Like` type with `Scalar` instead (e.g. `F32Like[Scalar]`).
+
 For custom casting rules, use `make_scalar_like_type`:
 
 ```python

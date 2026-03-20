@@ -173,7 +173,7 @@ from .numpy import UIntScalarLike as UIntScalarLike
 from .numpy import make_scalar_like_type as make_scalar_like_type
 
 # ---------------------------------------------------------------------------
-# Backend-specific conversion (supports __torch_function__ protocol)
+# Backend-specific conversion (tensors, ndarray, scalars, sequences)
 # ---------------------------------------------------------------------------
 
 
@@ -192,8 +192,8 @@ def make_array_like_type(
 ) -> tp.Any:
   """Torch-aware version of :func:`shapix.make_array_like_type`.
 
-  Defaults to ``torch.as_tensor`` for the slow path, so objects implementing
-  ``__torch_function__`` are accepted in addition to standard array-likes.
+  Defaults to ``torch.as_tensor`` for the slow path, so tensors, NumPy arrays,
+  Python scalars, and nested sequences are accepted.
   """
   return _make_array_like_type(dtype_spec, casting=casting, name=name, asarray=asarray)  # type: ignore[arg-type]
 

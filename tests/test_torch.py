@@ -359,6 +359,18 @@ class TestTorchAsarrayFallback:
 
     assert not is_bearable(Unconvertible(), F32Like[...])
 
+  def test_torch_function_protocol_not_accepted(self) -> None:
+    """__torch_function__ alone does not make an object Like-convertible."""
+
+    class TorchFuncObj:
+      @classmethod
+      def __torch_function__(  # noqa: PLW3201
+        cls, func: object, types: object, args: object = (), kwargs: object = None
+      ) -> object:
+        return NotImplemented
+
+    assert not is_bearable(TorchFuncObj(), F32Like[...])
+
 
 class TestTorchLikeEdgeCases:
   def test_deep_nesting(self) -> None:
@@ -539,6 +551,12 @@ class TestTorchScalarLikeReexports:
     assert is_bearable(-128, I8ScalarLike)
     assert is_bearable(127, I8ScalarLike)
     assert not is_bearable(128, I8ScalarLike)
+
+  def test_0d_torch_tensor_not_scalar_like(self) -> None:
+    """Backend 0-D tensors are not ScalarLike (use Like[Scalar] instead)."""
+    from shapix.torch import F32ScalarLike
+
+    assert not is_bearable(torch.tensor(1.0, dtype=torch.float32), F32ScalarLike)
 
 
 # =====================================================================

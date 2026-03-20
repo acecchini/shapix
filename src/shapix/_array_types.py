@@ -237,8 +237,8 @@ class _ArrayLikeChecker:
 
   The optional *asarray* callable allows backends to provide their own
   conversion function (e.g. ``jnp.asarray``, ``torch.as_tensor``) so that
-  objects implementing backend-specific protocols (``__jax_array__``,
-  ``__torch_function__``) are accepted.
+  backend-specific inputs (e.g. ``__jax_array__`` protocol objects) are
+  accepted.
   """
 
   __slots__ = (
@@ -453,7 +453,7 @@ def make_array_like_type(
       Optional callable ``(obj) -> array`` for backend-specific conversion.
       When provided, it is tried before ``np.asarray`` on the slow path
       (objects without ``.shape`` / ``.dtype``).  Use this to support
-      protocols like ``__jax_array__`` or ``__torch_function__``.
+      backend-specific protocols like ``__jax_array__``.
 
   Returns
   -------

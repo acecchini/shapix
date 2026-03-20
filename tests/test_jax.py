@@ -543,6 +543,12 @@ class TestJaxScalarLikeReexports:
     assert is_bearable(255, U8ScalarLike)
     assert not is_bearable(256, U8ScalarLike)
 
+  def test_0d_jax_array_not_scalar_like(self) -> None:
+    """Backend 0-D arrays are not ScalarLike (use Like[Scalar] instead)."""
+    from shapix.jax import F32ScalarLike
+
+    assert not is_bearable(jnp.float32(1.0), F32ScalarLike)
+
 
 # =====================================================================
 # Like casting spot checks with JAX arrays
