@@ -73,9 +73,9 @@ __all__ = [
 
 
 def _binop(left: object, op: str, right: object) -> Dimension:
-  """Build a binary expression.  Returns ``_ValueExpr`` if either operand is one."""
-  if isinstance(left, _ValueExpr) or isinstance(right, _ValueExpr):
-    return _ValueExpr(f"({left}{op}{right})")  # type: ignore[return-value]
+  """Build a binary expression.  Returns ``Value`` if either operand is one."""
+  if isinstance(left, Value) or isinstance(right, Value):
+    return Value(f"({left}{op}{right})")  # type: ignore[return-value]
   return Dimension(f"({left}{op}{right})")
 
 
@@ -96,6 +96,9 @@ class Dimension(str):
   def __new__(cls, value: str | int, /) -> Dimension:
     if isinstance(value, bool):
       msg = f"Dimension does not accept bool ({value!r}); use an int or str"
+      raise TypeError(msg)
+    if not isinstance(value, (str, int)):  # pyright: ignore[reportUnnecessaryIsInstance]
+      msg = f"Dimension requires str or int, got {type(value).__name__}"  # type: ignore[unreachable]
       raise TypeError(msg)
     return str.__new__(cls, str(value) if isinstance(value, int) else value)
 
@@ -166,6 +169,18 @@ class Dimension(str):
     raw = str(self)
     if raw.startswith("+"):
       return self
+    if raw == "":
+      msg = "Cannot apply + (broadcastable) to Scalar"
+      raise TypeError(msg)
+    if raw == "__":
+      msg = "Cannot apply + (broadcastable) to anonymous dimension __"
+      raise TypeError(msg)
+    if raw.startswith("~"):
+      msg = (
+        f"Cannot apply + (broadcastable) to variadic dimension {raw!r}; "
+        "use ~+name for broadcastable variadic"
+      )
+      raise TypeError(msg)
     return Dimension(f"+{raw}")
 
   # ------------------------------------------------------------------
@@ -213,6 +228,12 @@ class Dimension(str):
     # Broadcastable: +name or +number
     if raw.startswith("+"):
       rest = raw[1:]
+      if not rest:
+        msg = "Invalid dimension '+'; broadcastable requires a base dimension"
+        raise TypeError(msg)
+      if rest == "__":
+        msg = "Cannot use broadcastable (+) with anonymous dimension __"
+        raise TypeError(msg)
       if rest.lstrip("-").isdigit():
         size = int(rest)
         if size < 0:
@@ -345,17 +366,18 @@ if tp.TYPE_CHECKING:
 
     def __pos__(self) -> Dimension: ...
 
-  Scalar = tp.TypeVar("Scalar")
-  B = tp.TypeVar("B")
-  N = tp.TypeVar("N")
-  P = tp.TypeVar("P")
-  L = tp.TypeVar("L")
-  C = tp.TypeVar("C")
-  D = tp.TypeVar("D")
-  K = tp.TypeVar("K")
-  H = tp.TypeVar("H")
-  W = tp.TypeVar("W")
-  __ = tp.TypeVar("__")
+  Scalar = tp.Literal["Scalar"]
+  B = tp.Literal["B"]
+  N = tp.Literal["N"]
+  P = tp.Literal["P"]
+  L = tp.Literal["L"]
+  C = tp.Literal["C"]
+  D = tp.Literal["D"]
+  K = tp.Literal["K"]
+  H = tp.Literal["H"]
+  W = tp.Literal["W"]
+  __ = tp.Literal["__"]
+
 else:
 
   class Value(_ValueExpr):

@@ -183,19 +183,34 @@ def _torch_asarray(obj: object) -> tp.Any:
   return torch.as_tensor(obj)
 
 
+# Backend-scoped fast-path trust: only np.ndarray and torch.Tensor skip
+# conversion.  Foreign-backend arrays (e.g. jax.Array) fall through
+# to the slow path where torch.as_tensor() verifies actual convertibility.
+_TORCH_TRUSTED: tuple[type, ...] = (_np.ndarray, Tensor)
+
+
 def make_array_like_type(
   dtype_spec: object,
   *,
   casting: str = "same_kind",
   name: str = "ArrayLike",
   asarray: object | None = _torch_asarray,
+  trusted_types: object | None = _TORCH_TRUSTED,
 ) -> tp.Any:
   """Torch-aware version of :func:`shapix.make_array_like_type`.
 
   Defaults to ``torch.as_tensor`` for the slow path, so tensors, NumPy arrays,
   Python scalars, and nested sequences are accepted.
+  The fast path only trusts ``np.ndarray`` and ``torch.Tensor``; other
+  backend arrays (e.g. ``jax.Array``) go through the slow path.
   """
-  return _make_array_like_type(dtype_spec, casting=casting, name=name, asarray=asarray)  # type: ignore[arg-type]
+  return _make_array_like_type(
+    dtype_spec,  # type: ignore[arg-type]
+    casting=casting,
+    name=name,
+    asarray=asarray,  # type: ignore[arg-type]
+    trusted_types=trusted_types,  # type: ignore[arg-type]
+  )
 
 
 # ---------------------------------------------------------------------------

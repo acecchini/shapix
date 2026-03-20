@@ -493,6 +493,43 @@ class TestNewDimensionSymbols:
     assert result.shape == (8, 4)
 
 
+class TestTrustedTypesParameter:
+  """Test backend-scoped trusted_types on _ArrayLikeChecker."""
+
+  def test_trusted_types_none_uses_global(self) -> None:
+    """trusted_types=None falls back to global _is_trusted_array."""
+    from shapix._array_types import _ArrayLikeChecker
+
+    checker = _ArrayLikeChecker(
+      FLOAT32, (NamedDim("X"),), casting="same_kind", name="F32Like"
+    )
+    assert checker._trusted_types is None  # noqa: SLF001
+    assert checker(np.ones(3, dtype=np.float32)) is True
+
+  def test_trusted_types_scoped(self) -> None:
+    """trusted_types restricts fast path to specified types."""
+    from shapix._array_types import _ArrayLikeChecker
+
+    # Only trust np.ndarray
+    checker = _ArrayLikeChecker(
+      FLOAT32,
+      (NamedDim("X"),),
+      casting="same_kind",
+      name="F32Like",
+      trusted_types=(np.ndarray,),
+    )
+    assert checker._trusted_types == (np.ndarray,)  # noqa: SLF001
+    # ndarray goes through fast path
+    assert checker(np.ones(3, dtype=np.float32)) is True
+
+  def test_factory_threads_trusted_types(self) -> None:
+    """make_array_like_type passes trusted_types to factory."""
+    from shapix._array_types import make_array_like_type
+
+    factory = make_array_like_type(FLOAT32, name="F32Like", trusted_types=(np.ndarray,))
+    assert factory._trusted_types == (np.ndarray,)  # noqa: SLF001
+
+
 class TestTrustedArrayCache:
   def test_ndarray_is_trusted(self) -> None:
     from shapix._array_types import _is_trusted_array

@@ -282,6 +282,7 @@ class _ArrayLikeChecker:
     "_shape_spec",
     "_casting",
     "_asarray",
+    "_trusted_types",
     "_repr",
     "_fail_obj",
     "_fail_memo",
@@ -296,11 +297,13 @@ class _ArrayLikeChecker:
     casting: str,
     name: str,
     asarray: Callable[[object], object] | None = None,
+    trusted_types: tuple[type, ...] | None = None,
   ) -> None:
     self._dtype_spec = dtype_spec
     self._shape_spec = shape_spec
     self._casting = casting
     self._asarray = asarray
+    self._trusted_types = trusted_types
     self._fail_obj: object | None = None
     self._fail_memo: object | None = None
     self._fail_replays: int = 0
@@ -337,9 +340,15 @@ class _ArrayLikeChecker:
     # Fast path: known array types with shape + dtype skip conversion.
     # Spoofed objects with .shape/.dtype fall through to the slow path
     # where _convert() verifies actual convertibility.
+    # When trusted_types is set, only those types get the fast path;
+    # foreign-backend arrays fall through to the slow path where
+    # _convert() verifies actual convertibility.
     shape = getattr(obj, "shape", None)
     if shape is not None and getattr(obj, "dtype", None) is not None:
-      if _is_trusted_array(obj):
+      trusted = self._trusted_types
+      if (trusted is not None and isinstance(obj, trusted)) or (
+        trusted is None and _is_trusted_array(obj)
+      ):
         result = self._check(obj, tuple(shape), memo, scope)
         if not result and has_prior and not has_untagged_memo():
           self._fail_obj = obj
@@ -436,7 +445,7 @@ class _ArrayLikeFactory:
   sequences, arrays) with dtype casting awareness.
   """
 
-  __slots__ = ("_dtype_spec", "_casting", "_asarray", "__name__")
+  __slots__ = ("_dtype_spec", "_casting", "_asarray", "_trusted_types", "__name__")
 
   def __init__(
     self,
@@ -445,10 +454,12 @@ class _ArrayLikeFactory:
     casting: str,
     name: str,
     asarray: Callable[[object], object] | None = None,
+    trusted_types: tuple[type, ...] | None = None,
   ) -> None:
     self._dtype_spec = dtype_spec
     self._casting = casting
     self._asarray = asarray
+    self._trusted_types = trusted_types
     self.__name__ = name
 
   def __getitem__(self, dims: object) -> type:
@@ -462,6 +473,7 @@ class _ArrayLikeFactory:
       casting=self._casting,
       name=self.__name__,
       asarray=self._asarray,
+      trusted_types=self._trusted_types,
     )
     return Annotated[object, Is[checker]]  # type: ignore[return-value]
 
@@ -475,6 +487,7 @@ def make_array_like_type(
   casting: str = "same_kind",
   name: str = "ArrayLike",
   asarray: Callable[[object], object] | None = None,
+  trusted_types: tuple[type, ...] | None = None,
 ) -> _ArrayLikeFactory:
   """Create a subscriptable array-like type factory.
 
@@ -493,6 +506,12 @@ def make_array_like_type(
       When provided, it is tried before ``np.asarray`` on the slow path
       (objects without ``.shape`` / ``.dtype``).  Use this to support
       backend-specific protocols like ``__jax_array__``.
+  trusted_types:
+      Optional tuple of types that get the fast path (skip conversion).
+      When ``None`` (default), all known array backends are trusted.
+      Set this to scope the fast path to a specific backend so that
+      foreign-backend arrays fall through to the slow path where
+      actual convertibility is verified.
 
   Returns
   -------
@@ -510,7 +529,9 @@ def make_array_like_type(
   if casting not in _VALID_CASTINGS:
     msg = f"Invalid casting {casting!r}, must be one of {sorted(_VALID_CASTINGS)}"
     raise ValueError(msg)
-  return _ArrayLikeFactory(dtype_spec, casting=casting, name=name, asarray=asarray)
+  return _ArrayLikeFactory(
+    dtype_spec, casting=casting, name=name, asarray=asarray, trusted_types=trusted_types
+  )
 
 
 # ---------------------------------------------------------------------------

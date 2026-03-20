@@ -424,8 +424,32 @@ class TestJaxLikeEdgeCases:
   def test_dict_rejected(self) -> None:
     assert not is_bearable({"a": 1.0}, F32Like[...])
 
-  def test_f32like_accepts_torch_tensor_via_numpy_arraylike(self) -> None:
+  def test_f32like_accepts_torch_tensor_via_conversion(self) -> None:
     torch = pytest.importorskip("torch")
+    assert is_bearable(torch.ones(3, dtype=torch.float32), F32Like[...])
+
+
+class TestJaxLikeTrustScope:
+  """JAX Like fast path trusts only np.ndarray and jax.Array."""
+
+  def test_jax_array_is_fast_path_trusted(self) -> None:
+    """jax.Array should be trusted (fast path) by JAX Like types."""
+    from shapix.jax import _JAX_TRUSTED
+
+    assert jax.Array in _JAX_TRUSTED
+    assert np.ndarray in _JAX_TRUSTED
+
+  def test_torch_tensor_not_in_jax_trusted(self) -> None:
+    """torch.Tensor must NOT be in JAX trusted types."""
+    torch = pytest.importorskip("torch")
+    from shapix.jax import _JAX_TRUSTED
+
+    assert torch.Tensor not in _JAX_TRUSTED
+
+  def test_torch_tensor_still_accepted_via_slow_path(self) -> None:
+    """Torch tensor passes via slow path (jnp.asarray conversion)."""
+    torch = pytest.importorskip("torch")
+    # CPU float32 tensor should be convertible via jnp.asarray
     assert is_bearable(torch.ones(3, dtype=torch.float32), F32Like[...])
 
 

@@ -300,6 +300,48 @@ class TestUnaryOnSymbolicExpressions:
     assert spec.broadcastable is True
 
 
+class TestDimensionConstructorRejection:
+  """Dimension rejects non-str/non-int inputs."""
+
+  def test_rejects_float(self) -> None:
+    with pytest.raises(TypeError, match="Dimension requires str or int"):
+      Dimension(3.0)  # type: ignore[arg-type]
+
+  def test_rejects_none(self) -> None:
+    with pytest.raises(TypeError, match="Dimension requires str or int"):
+      Dimension(None)  # type: ignore[arg-type]
+
+  def test_rejects_object(self) -> None:
+    with pytest.raises(TypeError, match="Dimension requires str or int"):
+      Dimension(object())  # type: ignore[arg-type]
+
+
+class TestUnaryPosRejection:
+  """Unary + rejects Scalar, anonymous, and variadic targets."""
+
+  def test_pos_scalar_raises(self) -> None:
+    from shapix import Scalar
+
+    with pytest.raises(TypeError, match="Cannot apply .* to Scalar"):
+      +Scalar  # noqa: B018
+
+  def test_pos_anonymous_raises(self) -> None:
+    with pytest.raises(TypeError, match="Cannot apply .* to anonymous dimension"):
+      +Dimension("__")
+
+  def test_pos_variadic_raises(self) -> None:
+    with pytest.raises(TypeError, match="Cannot apply .* to variadic dimension"):
+      +(~Dimension("N"))
+
+  def test_dim_spec_bare_plus_raises(self) -> None:
+    with pytest.raises(TypeError, match="broadcastable requires a base dimension"):
+      Dimension("+")._dim_spec  # noqa: B018, SLF001
+
+  def test_dim_spec_plus_anonymous_raises(self) -> None:
+    with pytest.raises(TypeError, match="Cannot use broadcastable .* with anonymous"):
+      Dimension("+__")._dim_spec  # noqa: B018, SLF001
+
+
 class TestBooleanDimRejection:
   """Dimension(bool) and F32[bool] must raise."""
 

@@ -235,7 +235,7 @@ def last_dim(x: F32[~__, C]) -> F32[~__, C]:
 
 ### Broadcastable dimensions
 
-Apply `+` (unary plus) to any dimension to make it **broadcastable** — size 1 always matches, regardless of the bound value:
+Apply `+` (unary plus) to a named dimension, integer, or expression to make it **broadcastable** — size 1 always matches, regardless of the bound value:
 
 ```python
 from shapix import N, C
@@ -446,6 +446,8 @@ def process(x: F32Like[N, C]) -> F32[N, C]:
 Dtype compatibility uses NumPy's `same_kind` casting rules by default: `int32` can be passed where `float32` is expected (safe upcast), but `complex128` cannot.
 
 **Available:** `BoolLike`, `I8Like`, `I16Like`, `I32Like`, `I64Like`, `U8Like`–`U64Like`, `F16Like`, `F32Like`, `F64Like`, `F128Like`, `C64Like`, `C128Like`, `C256Like`, plus category aliases `IntLike`, `FloatLike`, `NumLike`, `ShapedLike`, etc.
+
+> **Note:** `ShapedLike` has the same runtime-vs-static approximation as `Shaped`: runtime accepts any dtype, static alias narrows to bool | numeric.
 
 Like types are also available in JAX and PyTorch backends:
 

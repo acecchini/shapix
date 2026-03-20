@@ -188,19 +188,34 @@ def _jax_asarray(obj: object) -> tp.Any:
   return jnp.asarray(obj)
 
 
+# Backend-scoped fast-path trust: only np.ndarray and jax.Array skip
+# conversion.  Foreign-backend arrays (e.g. torch.Tensor) fall through
+# to the slow path where jnp.asarray() verifies actual convertibility.
+_JAX_TRUSTED: tuple[type, ...] = (_np.ndarray, JaxArray)
+
+
 def make_array_like_type(
   dtype_spec: object,
   *,
   casting: str = "same_kind",
   name: str = "ArrayLike",
   asarray: object | None = _jax_asarray,
+  trusted_types: object | None = _JAX_TRUSTED,
 ) -> tp.Any:
   """JAX-aware version of :func:`shapix.make_array_like_type`.
 
   Defaults to ``jnp.asarray`` for the slow path, so objects implementing
   ``__jax_array__`` are accepted in addition to standard array-likes.
+  The fast path only trusts ``np.ndarray`` and ``jax.Array``; other
+  backend arrays (e.g. ``torch.Tensor``) go through the slow path.
   """
-  return _make_array_like_type(dtype_spec, casting=casting, name=name, asarray=asarray)  # type: ignore[arg-type]
+  return _make_array_like_type(
+    dtype_spec,  # type: ignore[arg-type]
+    casting=casting,
+    name=name,
+    asarray=asarray,  # type: ignore[arg-type]
+    trusted_types=trusted_types,  # type: ignore[arg-type]
+  )
 
 
 # ---------------------------------------------------------------------------
