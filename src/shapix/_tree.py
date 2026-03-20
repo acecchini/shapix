@@ -121,7 +121,7 @@ class _TreeChecker:
     self._repr = f"Tree[{leaf_type!r}{spec_str}]"
 
   def __call__(self, obj: object) -> bool:
-    # Replay guard (same mechanism as _StructChecker — see comment there).
+    # Replay guard (same mechanism as _ArrayChecker — see comment there).
     if self._fail_obj is not None and self._fail_obj is obj:
       if has_untagged_memo():
         self._fail_obj = None
@@ -137,7 +137,7 @@ class _TreeChecker:
           self._fail_obj = None
           self._fail_memo = None
         else:
-          # Error-gen replay (see _StructChecker comment).
+          # Error-gen replay (see _ArrayChecker comment).
           self._fail_replays -= 1
           if self._fail_replays <= 0:
             self._fail_obj = None

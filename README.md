@@ -197,7 +197,7 @@ indexing, and other arbitrary Python expressions.
 
 ### Variadic dimensions
 
-Apply `~` (tilde) to any dimension to make it **variadic** — matching zero or more contiguous dimensions:
+Apply `~` (tilde) to a named dimension to make it **variadic** — matching zero or more contiguous dimensions:
 
 ```python
 from shapix import B, C
@@ -344,7 +344,7 @@ from shapix.numpy import F32, I64, Shaped  # and many more
 
 **Concrete dtypes:** `Bool`, `I8`, `I16`, `I32`, `I64`, `U8`, `U16`, `U32`, `U64`, `F16`, `F32`, `F64`, `F128`, `C64`, `C128`, `C256`
 
-**Category dtypes:** `Int` (signed), `UInt` (unsigned), `Integer` (all int), `Float`, `Real` (int + float), `Complex`, `Inexact` (float + complex), `Num` (all numeric), `Shaped` (any dtype)
+**Category dtypes:** `Int` (signed), `UInt` (unsigned), `Integer` (all int), `Float`, `Real` (int + float), `Complex`, `Inexact` (float + complex), `Num` (all numeric), `Shaped` (any dtype; static alias approximates as bool | numeric)
 
 **Additional dtypes:** `V` (void), `Str` (string), `Bytes` (bytes), `Obj` (object), `DT64` (datetime64), `TD64` (timedelta64)
 

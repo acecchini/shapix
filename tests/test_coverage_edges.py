@@ -12,7 +12,7 @@ import pytest
 import shapix._memo as memo_mod
 from beartype import BeartypeConf
 from shapix import N
-from shapix._array_types import _StructChecker, _to_shape_spec, make_array_type
+from shapix._array_types import _ArrayChecker, _to_shape_spec, make_array_type
 from shapix._dtypes import FLOAT32, extract_dtype_str
 from shapix._memo import ShapeMemo, bindings_str, get_memo
 from shapix._shape import FixedDim, NamedDim, VariadicDim, check_shape
@@ -26,7 +26,7 @@ class TestArrayFactoryEdges:
     class DtypeOnly:
       dtype = np.dtype(np.float32)
 
-    checker = _StructChecker(FLOAT32, (NamedDim("N"),))
+    checker = _ArrayChecker(FLOAT32, (NamedDim("N"),))
     assert checker(DtypeOnly()) is False
 
   def test_array_factory_repr(self) -> None:
@@ -176,7 +176,7 @@ class TestArrayFactoryShapeSpecEdges:
     assert specs[2] is ANONYMOUS_VARIADIC
 
   def test_memo_restored_on_failure(self) -> None:
-    checker = _StructChecker(FLOAT32, (NamedDim("N"),))
+    checker = _ArrayChecker(FLOAT32, (NamedDim("N"),))
     arr = np.ones((10,), dtype=np.float32)
     # Should fail because N=5 != 10, and memo should be restored
     from shapix._memo import push_memo, pop_memo
@@ -316,7 +316,7 @@ class TestArrayLikeCheckerEdges:
 
   def test_struct_checker_fail_obj_replay(self) -> None:
     """StructChecker should replay failure for same object."""
-    checker = _StructChecker(FLOAT32, (NamedDim("N"),))
+    checker = _ArrayChecker(FLOAT32, (NamedDim("N"),))
     bad = np.ones(3, dtype=np.int64)
     assert checker(bad) is False  # dtype mismatch, sets _fail_obj
     assert checker(bad) is False  # replay
@@ -491,6 +491,27 @@ class TestNewDimensionSymbols:
     arr = np.ones((8, 4), dtype=np.float32)
     result = f(arr)
     assert result.shape == (8, 4)
+
+
+class TestTrustedArrayCache:
+  def test_ndarray_is_trusted(self) -> None:
+    from shapix._array_types import _is_trusted_array
+
+    assert _is_trusted_array(np.ones(3))
+
+  def test_plain_object_not_trusted(self) -> None:
+    from shapix._array_types import _is_trusted_array
+
+    assert not _is_trusted_array(object())
+
+  def test_spoofed_not_trusted(self) -> None:
+    from shapix._array_types import _is_trusted_array
+
+    class Fake:
+      shape = (3,)
+      dtype = np.dtype(np.float32)
+
+    assert not _is_trusted_array(Fake())
 
 
 class TestClawWrapper:

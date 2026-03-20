@@ -29,7 +29,7 @@ Tree structure symbols
     ``T``, ``S`` — named tree structure symbols.
     :class:`Structure` — create custom structure symbols.
 
-Unary operators (apply to any dimension)
+Unary operators
     ``~N`` — variadic (match zero or more contiguous dims).
     ``+N`` — broadcastable (size 1 always matches).
     ``~__`` — anonymous variadic (match any number of dims, no binding).

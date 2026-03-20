@@ -342,6 +342,19 @@ class TestTorchLikeTypes:
     with pytest.raises(Exception):
       f(torch.ones((3, 4), dtype=torch.bfloat16))
 
+  def test_spoofed_shape_dtype_rejected(self) -> None:
+    """Object with .shape/.dtype but not a real array must be rejected."""
+
+    class SpoofedArray:
+      def __init__(self) -> None:
+        self.shape = (3,)
+        self.dtype = np.dtype(np.float32)
+
+      def __array__(self, *_a: object, **_kw: object) -> None:  # noqa: PLW3201
+        raise TypeError("not convertible")
+
+    assert not is_bearable(SpoofedArray(), F32Like[...])
+
 
 class TestTorchAsarrayFallback:
   def test_torch_like_uses_torch_as_tensor(self) -> None:

@@ -6,7 +6,7 @@ validation automatically.
 
 The main components are:
 
-- :class:`_StructChecker` — a callable validator invoked by beartype's ``Is[]``
+- :class:`_ArrayChecker` — a callable validator invoked by beartype's ``Is[]``
   mechanism for strict array types.  Checks dtype then validates shape against
   the spec while maintaining cross-argument dimension consistency via the memo.
 
@@ -51,13 +51,49 @@ __all__ = ["make_array_type", "make_array_like_type"]
 
 _VALID_CASTINGS = frozenset({"no", "equiv", "safe", "same_kind", "unsafe"})
 
+# ---------------------------------------------------------------------------
+# Trusted array type cache (for ArrayLike fast-path gating)
+# ---------------------------------------------------------------------------
+
+_trusted_array_cache: dict[type, bool] = {}
+
+
+def _is_trusted_array(obj: object) -> bool:
+  """True if *obj* is an instance of a known array class."""
+  cls = type(obj)
+  result = _trusted_array_cache.get(cls)
+  if result is not None:
+    return result
+
+  import sys
+
+  import numpy as np
+
+  trusted: tuple[type, ...] = (np.ndarray,)
+
+  jax_mod = sys.modules.get("jax")
+  if jax_mod is not None:
+    jax_array = getattr(jax_mod, "Array", None)
+    if jax_array is not None:
+      trusted = (*trusted, jax_array)
+
+  torch_mod = sys.modules.get("torch")
+  if torch_mod is not None:
+    tensor = getattr(torch_mod, "Tensor", None)
+    if tensor is not None:
+      trusted = (*trusted, tensor)
+
+  is_trusted = isinstance(obj, trusted)
+  _trusted_array_cache[cls] = is_trusted
+  return is_trusted
+
 
 # ---------------------------------------------------------------------------
 # Validator callable (used inside beartype's Is[...])
 # ---------------------------------------------------------------------------
 
 
-class _StructChecker:
+class _ArrayChecker:
   """Callable invoked by beartype to validate dtype + shape at runtime.
 
   Instances are created once per unique annotation (e.g.
@@ -185,7 +221,7 @@ class _ArrayFactory:
       dims = (dims,)
 
     shape_spec = _to_shape_spec(dims)
-    checker = _StructChecker(self._dtype_spec, shape_spec)
+    checker = _ArrayChecker(self._dtype_spec, shape_spec)
     return Annotated[self._array_type, Is[checker]]  # type: ignore[return-value]
 
   def __repr__(self) -> str:
@@ -273,7 +309,7 @@ class _ArrayLikeChecker:
     self._repr = f"{name}[{dims}]"
 
   def __call__(self, obj: object) -> bool:
-    # Replay guard (same mechanism as _StructChecker — see comment there).
+    # Replay guard (same mechanism as _ArrayChecker — see comment there).
     if self._fail_obj is not None and self._fail_obj is obj:
       if has_untagged_memo():
         self._fail_obj = None
@@ -287,7 +323,7 @@ class _ArrayLikeChecker:
           self._fail_obj = None
           self._fail_memo = None
         else:
-          # Error-gen replay (see _StructChecker comment).
+          # Error-gen replay (see _ArrayChecker comment).
           self._fail_replays -= 1
           if self._fail_replays <= 0:
             self._fail_obj = None
@@ -298,15 +334,18 @@ class _ArrayLikeChecker:
     scope = get_scope(_depth=3)
     has_prior = bool(memo.single or memo.variadic or memo.structures)
 
-    # Fast path: obj already has shape + dtype (np.ndarray, Tensor, jax.Array)
+    # Fast path: known array types with shape + dtype skip conversion.
+    # Spoofed objects with .shape/.dtype fall through to the slow path
+    # where _convert() verifies actual convertibility.
     shape = getattr(obj, "shape", None)
     if shape is not None and getattr(obj, "dtype", None) is not None:
-      result = self._check(obj, tuple(shape), memo, scope)
-      if not result and has_prior and not has_untagged_memo():
-        self._fail_obj = obj
-        self._fail_memo = memo
-        self._fail_replays = 2
-      return result
+      if _is_trusted_array(obj):
+        result = self._check(obj, tuple(shape), memo, scope)
+        if not result and has_prior and not has_untagged_memo():
+          self._fail_obj = obj
+          self._fail_memo = memo
+          self._fail_replays = 2
+        return result
 
     # Slow path: convert scalar / sequence / protocol object to array.
     # Try the backend-specific converter first (jnp.asarray, torch.as_tensor),

@@ -1169,6 +1169,19 @@ class TestArrayLikeRejection:
     with pytest.raises(BeartypeCallHintParamViolation):
       f(value)  # type: ignore[arg-type]
 
+  def test_spoofed_shape_dtype_rejected(self) -> None:
+    """Object with .shape/.dtype but not a real array must be rejected."""
+
+    class SpoofedArray:
+      def __init__(self) -> None:
+        self.shape = (3,)
+        self.dtype = np.dtype(np.float32)
+
+      def __array__(self, *_a: object, **_kw: object) -> None:  # noqa: PLW3201
+        raise TypeError("not convertible")
+
+    assert not is_bearable(SpoofedArray(), F32Like[...])
+
 
 class TestArrayLikeVariousTypes:
   def test_i64like(self) -> None:
