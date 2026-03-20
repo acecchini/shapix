@@ -117,7 +117,7 @@ Elegant runtime shape and dtype checking for NumPy, JAX, and PyTorch arrays — 
 
 [Get Started](getting-started/index.md){ .md-button .md-button--primary }
 [API Reference](api/index.md){ .md-button }
-[GitHub :fontawesome-brands-github:](https://github.com/acecchini/shapix){ .md-button }
+[GitHub](https://github.com/acecchini/shapix){ .md-button }
 
 </div>
 

@@ -67,30 +67,8 @@ def bad_reshape(x: F32[N, C]) -> F32[N, C]:
 
 ## What's next?
 
-<div class="grid cards" markdown>
+!!! tip "Next steps"
 
--   :material-ruler:{ .lg .middle } **Dimensions**
-
-    ---
-
-    Named, fixed, variadic, broadcastable, symbolic — the full dimension system.
-
-    [:octicons-arrow-right-24: Dimensions](../features/dimensions.md)
-
--   :material-grid:{ .lg .middle } **Array Types**
-
-    ---
-
-    Concrete dtypes, categories, and custom types for any backend.
-
-    [:octicons-arrow-right-24: Array types](../features/array-types.md)
-
--   :material-file-tree:{ .lg .middle } **Tree Annotations**
-
-    ---
-
-    Validate leaves and structure of nested dicts, lists, and tuples.
-
-    [:octicons-arrow-right-24: Trees](../features/tree-annotations.md)
-
-</div>
+    - :material-ruler: **[Dimensions](../features/dimensions.md)** — Named, fixed, variadic, broadcastable, symbolic — the full dimension system.
+    - :material-grid: **[Array Types](../features/array-types.md)** — Concrete dtypes, categories, and custom types for any backend.
+    - :material-file-tree: **[Tree Annotations](../features/tree-annotations.md)** — Validate leaves and structure of nested dicts, lists, and tuples.

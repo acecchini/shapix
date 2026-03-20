@@ -101,10 +101,6 @@ accent = "deep purple"
 toggle.icon = "lucide/moon"
 toggle.name = "Switch to light mode"
 
-[project.extra]
-[project.extra.analytics]
-provider = ""
-
 [[project.extra.social]]
 icon = "fontawesome/brands/github"
 link = "https://github.com/acecchini/shapix"
@@ -112,14 +108,3 @@ link = "https://github.com/acecchini/shapix"
 [[project.extra.social]]
 icon = "fontawesome/brands/python"
 link = "https://pypi.org/project/shapix/"
-
-[project.markdown_extensions.toc]
-permalink = true
-toc_depth = 3
-
-[project.markdown_extensions.pymdownx.highlight]
-anchor_linenums = true
-line_spans = "__span"
-pygments_lang_class = true
-
-[project.markdown_extensions.pymdownx.superfences]
