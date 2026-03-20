@@ -9,19 +9,31 @@ hide:
 <style>
 .md-typeset h1 { display: none; }
 
+/* ── Hero: full viewport with visual background ── */
 .hero {
-  text-align: center;
-  padding: 0 1rem 2rem;
-}
-
-.hero__visual {
-  width: 100%;
-  max-width: 960px;
-  margin: 0 auto 2rem;
-  border-radius: 16px;
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
   overflow: hidden;
 }
 
+#shapix-visual {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.hero__content {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+}
+
+/* ── Logo + Title ── */
 .hero__logo {
   display: flex;
   align-items: center;
@@ -32,7 +44,7 @@ hide:
 }
 
 .hero__logo canvas {
-  filter: drop-shadow(0 0 16px rgba(124, 77, 255, 0.5));
+  filter: drop-shadow(0 0 20px rgba(124, 77, 255, 0.6));
 }
 
 .hero__title {
@@ -43,7 +55,7 @@ hide:
 
 .hero__letter {
   display: inline-block;
-  font-size: 4rem;
+  font-size: 4.2rem;
   font-weight: 800;
   letter-spacing: -0.02em;
   background: linear-gradient(135deg, #7c4dff 0%, #b388ff 40%, #ea80fc 70%, #7c4dff 100%);
@@ -53,13 +65,13 @@ hide:
   background-clip: text;
   animation: letterWave 3s ease-in-out infinite, shimmer 4s ease-in-out infinite;
   transform-style: preserve-3d;
-  filter: drop-shadow(0 4px 8px rgba(124, 77, 255, 0.3));
+  filter: drop-shadow(0 4px 12px rgba(124, 77, 255, 0.4));
 }
 
 @keyframes letterWave {
-  0%, 100% { transform: translateY(0) rotateX(0deg) rotateY(0deg); }
-  25% { transform: translateY(-8px) rotateX(10deg) rotateY(-5deg); }
-  75% { transform: translateY(4px) rotateX(-5deg) rotateY(3deg); }
+  0%, 100% { transform: translateY(0) rotateX(0deg); }
+  25% { transform: translateY(-10px) rotateX(12deg); }
+  75% { transform: translateY(5px) rotateX(-6deg); }
 }
 
 @keyframes shimmer {
@@ -67,6 +79,7 @@ hide:
   50% { background-position: 100% 50%; }
 }
 
+/* ── Tagline & Subtitle ── */
 .hero__tagline {
   font-size: 0.85rem;
   font-weight: 600;
@@ -85,6 +98,7 @@ hide:
   line-height: 1.6;
 }
 
+/* ── Buttons ── */
 .hero__actions {
   display: flex;
   gap: 1rem;
@@ -99,12 +113,14 @@ hide:
   border-radius: 2rem;
 }
 
+/* ── Code block ── */
 .hero__code {
   max-width: 640px;
   margin: 0 auto;
   text-align: left;
 }
 
+/* ── Features grid ── */
 .features-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -135,6 +151,7 @@ hide:
   margin-bottom: 0;
 }
 
+/* ── Backends ── */
 .backends {
   text-align: center;
   padding: 2rem 0;
@@ -157,9 +174,9 @@ hide:
 }
 </style>
 
-<div class="hero" markdown>
-
-<div class="hero__visual" id="shapix-visual"></div>
+<div class="hero">
+<div id="shapix-visual"></div>
+<div class="hero__content" markdown>
 
 <div class="hero__logo">
 <canvas id="shapix-logo" width="80" height="80"></canvas>
@@ -194,6 +211,7 @@ def conv2d(x: F32[N, C, H, W], weight: F32[C, C, 3, 3]) -> F32[N, C, H, W]:
 
 </div>
 
+</div>
 </div>
 
 ---
