@@ -60,13 +60,7 @@
   justify-content: center;
 }
 
-/* Keep header icons above tabs overlay */
-.md-header__inner {
-  position: relative;
-  z-index: 4;
-}
-
-/* Hide search from header — still accessible via "/" shortcut */
+/* Hide search from header */
 .md-search {
   display: none !important;
 }
