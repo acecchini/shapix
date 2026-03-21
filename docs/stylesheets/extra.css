@@ -179,131 +179,154 @@
   --md-default-bg-color--lightest: #151a2a;
 }
 
-/* ── CSS star field for all pages (dark mode) ── */
+/* ── 4-layer star/particle system (div-based, independent animations) ── */
 
-body[data-md-color-scheme="slate"]::before,
-body[data-md-color-scheme="slate"]::after {
-  content: '';
+.star-layer {
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 0;
-}
-
-body[data-md-color-scheme="slate"]::before {
-  width: 1px;
-  height: 1px;
   background: transparent;
-  box-shadow: 457px 52px #fff, 1127px 502px #fff, 915px 286px #fff, 420px 1386px #fff, 2234px 179px #fff, 2419px 865px #fff, 131px 62px #fff, 384px 448px #fff, 953px 1035px #fff, 2466px 55px #fff, 2299px 408px #fff, 2233px 860px #fff, 903px 920px #fff, 2414px 570px #fff, 27px 327px #fff, 1732px 697px #fff, 1139px 319px #fff, 882px 690px #fff, 419px 190px #fff, 1557px 199px #fff, 1471px 705px #fff, 2473px 542px #fff, 178px 941px #fff, 2197px 256px #fff, 1551px 162px #fff, 2262px 601px #fff, 2534px 741px #fff, 2365px 394px #fff, 285px 94px #fff, 934px 593px #fff, 327px 477px #fff, 414px 779px #fff, 1139px 929px #fff, 1495px 334px #fff, 1517px 728px #fff, 859px 1373px #fff, 1094px 1438px #fff, 293px 1248px #fff, 701px 1094px #fff, 1003px 335px #fff, 1894px 778px #fff, 1106px 1311px #fff, 2282px 450px #fff, 1329px 115px #fff, 939px 66px #fff, 1293px 822px #fff, 1097px 136px #fff, 865px 1162px #fff, 1289px 436px #fff, 2045px 811px #fff, 1880px 293px #fff, 1085px 286px #fff, 1011px 1150px #fff, 2208px 539px #fff, 2395px 878px #fff, 2391px 818px #fff, 1483px 450px #fff, 567px 1044px #fff, 2022px 187px #fff, 193px 225px #fff, 627px 1286px #fff, 656px 1394px #fff, 1730px 1222px #fff, 261px 789px #fff, 1564px 1221px #fff, 1918px 1084px #fff, 1030px 1134px #fff, 48px 1394px #fff, 470px 1397px #fff, 2200px 547px #fff, 1394px 229px #fff, 1203px 891px #fff, 648px 930px #fff, 14px 540px #fff, 2051px 366px #fff, 2080px 218px #fff, 1223px 1309px #fff, 2080px 1248px #fff, 815px 314px #fff, 1532px 331px #fff, 2210px 1087px #fff, 3px 1227px #fff, 1328px 1001px #fff, 80px 230px #fff, 1487px 630px #fff, 981px 119px #fff, 987px 1162px #fff, 323px 176px #fff, 1991px 142px #fff, 2182px 258px #fff, 526px 1352px #fff, 1947px 1126px #fff, 677px 543px #fff, 2162px 1243px #fff, 1734px 434px #fff, 2209px 1413px #fff, 824px 639px #fff, 1635px 1376px #fff, 1530px 898px #fff, 2120px 925px #fff;
-  animation: starDrift1 90s linear infinite, starPulse1 6s ease-in-out infinite;
 }
 
-body[data-md-color-scheme="slate"]::after {
-  width: 2px;
-  height: 2px;
-  background: transparent;
-  box-shadow: 1655px 780px rgba(200,190,255,0.9), 820px 1228px rgba(200,190,255,0.9), 733px 472px rgba(200,190,255,0.9), 1018px 273px rgba(200,190,255,0.9), 355px 515px rgba(200,190,255,0.9), 1570px 1088px rgba(200,190,255,0.9), 2207px 184px rgba(200,190,255,0.9), 2556px 1003px rgba(200,190,255,0.9), 818px 864px rgba(200,190,255,0.9), 2512px 1206px rgba(200,190,255,0.9), 888px 766px rgba(200,190,255,0.9), 1590px 1398px rgba(200,190,255,0.9), 871px 312px rgba(200,190,255,0.9), 1891px 1353px rgba(200,190,255,0.9), 734px 1162px rgba(200,190,255,0.9), 1388px 170px rgba(200,190,255,0.9), 2166px 1388px rgba(200,190,255,0.9), 360px 961px rgba(200,190,255,0.9), 1296px 825px rgba(200,190,255,0.9), 175px 552px rgba(200,190,255,0.9), 2286px 16px rgba(200,190,255,0.9), 1742px 418px rgba(200,190,255,0.9), 1485px 1095px rgba(200,190,255,0.9), 332px 947px rgba(200,190,255,0.9), 2125px 406px rgba(200,190,255,0.9), 2481px 948px rgba(200,190,255,0.9), 211px 733px rgba(200,190,255,0.9), 529px 443px rgba(200,190,255,0.9), 659px 905px rgba(200,190,255,0.9), 2439px 364px rgba(200,190,255,0.9), 2062px 1353px rgba(200,190,255,0.9), 721px 76px rgba(200,190,255,0.9), 450px 48px rgba(200,190,255,0.9), 702px 971px rgba(200,190,255,0.9), 1717px 167px rgba(200,190,255,0.9), 1743px 1295px rgba(200,190,255,0.9), 353px 293px rgba(200,190,255,0.9), 1269px 1265px rgba(200,190,255,0.9), 24px 781px rgba(200,190,255,0.9), 1351px 279px rgba(200,190,255,0.9);
-  animation: starDrift2 120s linear infinite, starPulse2 6s ease-in-out infinite;
-  animation-delay: 0s, -1.5s;
-}
-
-@keyframes starDrift1 {
-  from { transform: translateY(0); }
-  to { transform: translateY(-30px); }
-}
-
-@keyframes starDrift2 {
-  from { transform: translate(0, 0); }
-  to { transform: translate(20px, -20px); }
-}
-
-@keyframes starPulse1 {
-  0% { opacity: 0.15; }
-  25% { opacity: 0.9; }
-  50% { opacity: 0.05; }
-  75% { opacity: 0.85; }
-  100% { opacity: 0.15; }
-}
-
-@keyframes starPulse2 {
-  0% { opacity: 0.6; }
-  25% { opacity: 0.1; }
-  50% { opacity: 0.7; }
-  75% { opacity: 0.05; }
-  100% { opacity: 0.6; }
-}
-
-/* ── Make content backgrounds transparent so stars/particles show through ── */
+/* ── Make content backgrounds transparent so layers show through ── */
 
 body {
   background: var(--md-default-bg-color) !important;
 }
 
-.md-main {
-  background: transparent !important;
-}
-
-.md-main__inner {
-  background: transparent !important;
-}
-
-.md-content {
-  background: transparent !important;
-}
-
-.md-sidebar {
-  background: transparent !important;
-}
-
+.md-main,
+.md-main__inner,
+.md-content,
+.md-sidebar,
 .md-container {
   background: transparent !important;
 }
 
-/* ── CSS particles for all pages (light mode) ── */
+/* ══════════════════════════════════════════════════════
+   DARK MODE — 4 star layers, quarter-cycle phase offsets
+   ══════════════════════════════════════════════════════ */
 
-body[data-md-color-scheme="default"]::before,
-body[data-md-color-scheme="default"]::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
+[data-md-color-scheme="slate"] .star-layer-1 {
+  width: 1px; height: 1px;
+  box-shadow: 457px 52px #fff, 915px 286px #fff, 2234px 179px #fff, 131px 62px #fff, 953px 1035px #fff, 2299px 408px #fff, 903px 920px #fff, 27px 327px #fff, 1139px 319px #fff, 419px 190px #fff, 1471px 705px #fff, 178px 941px #fff, 1551px 162px #fff, 2534px 741px #fff, 285px 94px #fff, 327px 477px #fff, 1139px 929px #fff, 1517px 728px #fff, 1094px 1438px #fff, 701px 1094px #fff, 1894px 778px #fff, 2282px 450px #fff, 939px 66px #fff, 1097px 136px #fff, 1289px 436px #fff;
+  animation: starPulseA 8s ease-in-out infinite;
 }
 
-body[data-md-color-scheme="default"]::before {
-  width: 2px;
-  height: 2px;
-  background: transparent;
-  box-shadow: 320px 180px rgba(100,60,180,0.25), 890px 420px rgba(100,60,180,0.25), 1450px 90px rgba(100,60,180,0.25), 210px 680px rgba(100,60,180,0.25), 750px 1100px rgba(100,60,180,0.25), 1680px 340px rgba(100,60,180,0.25), 2100px 620px rgba(100,60,180,0.25), 430px 1300px rgba(100,60,180,0.25), 1200px 200px rgba(100,60,180,0.25), 560px 850px rgba(100,60,180,0.25), 1900px 150px rgba(100,60,180,0.25), 2350px 480px rgba(100,60,180,0.25), 170px 1050px rgba(100,60,180,0.25), 1050px 750px rgba(100,60,180,0.25), 2480px 900px rgba(100,60,180,0.25), 680px 290px rgba(100,60,180,0.25), 1350px 1200px rgba(100,60,180,0.25), 2200px 1100px rgba(100,60,180,0.25), 380px 510px rgba(100,60,180,0.25), 1560px 680px rgba(100,60,180,0.25), 90px 370px rgba(100,60,180,0.25), 2050px 280px rgba(100,60,180,0.25), 1800px 950px rgba(100,60,180,0.25), 620px 1380px rgba(100,60,180,0.25), 1100px 460px rgba(100,60,180,0.25), 2300px 750px rgba(100,60,180,0.25), 470px 30px rgba(100,60,180,0.25), 1720px 1300px rgba(100,60,180,0.25), 950px 600px rgba(100,60,180,0.25), 260px 900px rgba(100,60,180,0.25), 1430px 120px rgba(100,60,180,0.25), 2150px 400px rgba(100,60,180,0.25), 780px 1250px rgba(100,60,180,0.25), 130px 200px rgba(100,60,180,0.25), 1650px 550px rgba(100,60,180,0.25), 2400px 200px rgba(100,60,180,0.25), 510px 720px rgba(100,60,180,0.25), 1280px 950px rgba(100,60,180,0.25), 2000px 50px rgba(100,60,180,0.25), 830px 400px rgba(100,60,180,0.25);
-  animation: dustDrift1 80s linear infinite, dustPulse1 8s ease-in-out infinite;
+[data-md-color-scheme="slate"] .star-layer-2 {
+  width: 1px; height: 1px;
+  box-shadow: 1127px 502px #fff, 420px 1386px #fff, 2419px 865px #fff, 384px 448px #fff, 2466px 55px #fff, 2233px 860px #fff, 2414px 570px #fff, 1732px 697px #fff, 882px 690px #fff, 1557px 199px #fff, 2473px 542px #fff, 2197px 256px #fff, 2262px 601px #fff, 2365px 394px #fff, 934px 593px #fff, 414px 779px #fff, 1495px 334px #fff, 859px 1373px #fff, 293px 1248px #fff, 1003px 335px #fff, 1106px 1311px #fff, 1329px 115px #fff, 1293px 822px #fff, 865px 1162px #fff, 2045px 811px #fff;
+  animation: starPulseB 8s ease-in-out infinite;
+  animation-delay: -2s;
 }
 
-body[data-md-color-scheme="default"]::after {
-  width: 3px;
-  height: 3px;
-  background: transparent;
-  box-shadow: 540px 320px rgba(80,40,160,0.18), 1300px 680px rgba(80,40,160,0.18), 2100px 150px rgba(80,40,160,0.18), 180px 950px rgba(80,40,160,0.18), 870px 1200px rgba(80,40,160,0.18), 1750px 430px rgba(80,40,160,0.18), 2400px 800px rgba(80,40,160,0.18), 420px 70px rgba(80,40,160,0.18), 1050px 350px rgba(80,40,160,0.18), 690px 1050px rgba(80,40,160,0.18), 1550px 900px rgba(80,40,160,0.18), 2250px 550px rgba(80,40,160,0.18), 310px 480px rgba(80,40,160,0.18), 1420px 1100px rgba(80,40,160,0.18), 2000px 250px rgba(80,40,160,0.18), 760px 600px rgba(80,40,160,0.18), 1160px 80px rgba(80,40,160,0.18), 2350px 1300px rgba(80,40,160,0.18), 100px 750px rgba(80,40,160,0.18), 1680px 200px rgba(80,40,160,0.18);
-  animation: dustDrift2 100s linear infinite, dustPulse2 12s ease-in-out infinite;
+[data-md-color-scheme="slate"] .star-layer-3 {
+  width: 2px; height: 2px;
+  box-shadow: 1655px 780px rgba(200,190,255,0.9), 733px 472px rgba(200,190,255,0.9), 355px 515px rgba(200,190,255,0.9), 2207px 184px rgba(200,190,255,0.9), 818px 864px rgba(200,190,255,0.9), 888px 766px rgba(200,190,255,0.9), 871px 312px rgba(200,190,255,0.9), 734px 1162px rgba(200,190,255,0.9), 1880px 293px #fff, 1085px 286px #fff, 1011px 1150px #fff, 2208px 539px #fff, 2395px 878px #fff, 1483px 450px #fff, 567px 1044px #fff, 2022px 187px #fff, 193px 225px #fff, 627px 1286px #fff, 1730px 1222px #fff, 261px 789px #fff;
+  animation: starPulseC 8s ease-in-out infinite;
+  animation-delay: -4s;
 }
 
-@keyframes dustDrift1 {
-  from { transform: translateY(0); }
-  to { transform: translateY(-25px); }
+[data-md-color-scheme="slate"] .star-layer-4 {
+  width: 2px; height: 2px;
+  box-shadow: 820px 1228px rgba(200,190,255,0.9), 1018px 273px rgba(200,190,255,0.9), 1570px 1088px rgba(200,190,255,0.9), 2556px 1003px rgba(200,190,255,0.9), 2512px 1206px rgba(200,190,255,0.9), 1590px 1398px rgba(200,190,255,0.9), 1891px 1353px rgba(200,190,255,0.9), 1388px 170px rgba(200,190,255,0.9), 1564px 1221px #fff, 1918px 1084px #fff, 1030px 1134px #fff, 48px 1394px #fff, 470px 1397px #fff, 2200px 547px #fff, 1394px 229px #fff, 1203px 891px #fff, 648px 930px #fff, 14px 540px #fff, 2051px 366px #fff, 2080px 218px #fff;
+  animation: starPulseD 8s ease-in-out infinite;
+  animation-delay: -6s;
 }
 
-@keyframes dustDrift2 {
-  from { transform: translate(0, 0); }
-  to { transform: translate(15px, -15px); }
+/* Pulse A: peaks at 25%, max 1.0 */
+@keyframes starPulseA {
+  0%, 100% { opacity: 0.05; }
+  25% { opacity: 1; }
+  50% { opacity: 0.05; }
+  75% { opacity: 0.08; }
 }
 
-@keyframes dustPulse1 {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 0.9; }
+/* Pulse B: peaks at 25%, max 0.9 */
+@keyframes starPulseB {
+  0%, 100% { opacity: 0.05; }
+  25% { opacity: 0.9; }
+  50% { opacity: 0.05; }
+  75% { opacity: 0.08; }
 }
 
-@keyframes dustPulse2 {
-  0%, 100% { opacity: 0.7; }
-  50% { opacity: 0.4; }
+/* Pulse C: peaks at 25%, max 0.85 */
+@keyframes starPulseC {
+  0%, 100% { opacity: 0.05; }
+  25% { opacity: 0.85; }
+  50% { opacity: 0.05; }
+  75% { opacity: 0.08; }
+}
+
+/* Pulse D: peaks at 25%, max 0.95 */
+@keyframes starPulseD {
+  0%, 100% { opacity: 0.05; }
+  25% { opacity: 0.95; }
+  50% { opacity: 0.05; }
+  75% { opacity: 0.08; }
+}
+
+/* ══════════════════════════════════════════════════════
+   LIGHT MODE — 4 dark-dust layers, same phase offsets
+   ══════════════════════════════════════════════════════ */
+
+[data-md-color-scheme="default"] .star-layer-1 {
+  width: 2px; height: 2px;
+  box-shadow: 320px 180px rgba(80,40,150,0.35), 890px 420px rgba(80,40,150,0.35), 1450px 90px rgba(80,40,150,0.35), 210px 680px rgba(80,40,150,0.35), 750px 1100px rgba(80,40,150,0.35), 1680px 340px rgba(80,40,150,0.35), 2100px 620px rgba(80,40,150,0.35), 430px 1300px rgba(80,40,150,0.35), 1200px 200px rgba(80,40,150,0.35), 560px 850px rgba(80,40,150,0.35);
+  animation: dustPulseA 8s ease-in-out infinite;
+}
+
+[data-md-color-scheme="default"] .star-layer-2 {
+  width: 2px; height: 2px;
+  box-shadow: 1900px 150px rgba(70,30,140,0.3), 2350px 480px rgba(70,30,140,0.3), 170px 1050px rgba(70,30,140,0.3), 1050px 750px rgba(70,30,140,0.3), 2480px 900px rgba(70,30,140,0.3), 680px 290px rgba(70,30,140,0.3), 1350px 1200px rgba(70,30,140,0.3), 2200px 1100px rgba(70,30,140,0.3), 380px 510px rgba(70,30,140,0.3), 1560px 680px rgba(70,30,140,0.3);
+  animation: dustPulseB 8s ease-in-out infinite;
+  animation-delay: -2s;
+}
+
+[data-md-color-scheme="default"] .star-layer-3 {
+  width: 3px; height: 3px;
+  box-shadow: 90px 370px rgba(60,20,130,0.25), 2050px 280px rgba(60,20,130,0.25), 1800px 950px rgba(60,20,130,0.25), 620px 1380px rgba(60,20,130,0.25), 1100px 460px rgba(60,20,130,0.25), 2300px 750px rgba(60,20,130,0.25), 470px 30px rgba(60,20,130,0.25), 1720px 1300px rgba(60,20,130,0.25), 950px 600px rgba(60,20,130,0.25), 260px 900px rgba(60,20,130,0.25);
+  animation: dustPulseC 8s ease-in-out infinite;
+  animation-delay: -4s;
+}
+
+[data-md-color-scheme="default"] .star-layer-4 {
+  width: 3px; height: 3px;
+  box-shadow: 540px 320px rgba(65,25,135,0.28), 1300px 680px rgba(65,25,135,0.28), 2100px 150px rgba(65,25,135,0.28), 180px 950px rgba(65,25,135,0.28), 870px 1200px rgba(65,25,135,0.28), 1750px 430px rgba(65,25,135,0.28), 2400px 800px rgba(65,25,135,0.28), 420px 70px rgba(65,25,135,0.28), 1050px 350px rgba(65,25,135,0.28), 690px 1050px rgba(65,25,135,0.28);
+  animation: dustPulseD 8s ease-in-out infinite;
+  animation-delay: -6s;
+}
+
+/* Dust A: max 0.9 */
+@keyframes dustPulseA {
+  0%, 100% { opacity: 0.08; }
+  25% { opacity: 0.9; }
+  50% { opacity: 0.08; }
+  75% { opacity: 0.1; }
+}
+
+/* Dust B: max 0.8 */
+@keyframes dustPulseB {
+  0%, 100% { opacity: 0.08; }
+  25% { opacity: 0.8; }
+  50% { opacity: 0.08; }
+  75% { opacity: 0.1; }
+}
+
+/* Dust C: max 0.75 */
+@keyframes dustPulseC {
+  0%, 100% { opacity: 0.08; }
+  25% { opacity: 0.75; }
+  50% { opacity: 0.08; }
+  75% { opacity: 0.1; }
+}
+
+/* Dust D: max 0.85 */
+@keyframes dustPulseD {
+  0%, 100% { opacity: 0.08; }
+  25% { opacity: 0.85; }
+  50% { opacity: 0.08; }
+  75% { opacity: 0.1; }
 }
 
 /* ── Smooth scrolling ── */
