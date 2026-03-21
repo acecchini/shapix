@@ -69,7 +69,7 @@ body { background: transparent !important; }
 .hero__letter {
   display: inline-block;
   font-family: 'Outfit', sans-serif;
-  font-size: 4.8rem;
+  font-size: 3.8rem;
   font-weight: 900;
   letter-spacing: -0.04em;
   color: #c9b3ff;
@@ -321,7 +321,7 @@ a.backend-logo:hover {
 /* ── Responsive ── */
 @media (max-width: 600px) {
   .hero__letter { font-size: 3rem; }
-  .hero__logo canvas { width: 140px; height: 140px; }
+  .hero__logo canvas { width: 180px; height: 180px; }
   .backends__logos { gap: 1.5rem; }
 }
 </style>
@@ -332,7 +332,7 @@ a.backend-logo:hover {
 <div class="hero__content" markdown>
 
 <div class="hero__logo">
-<canvas id="shapix-logo" width="240" height="240"></canvas>
+<canvas id="shapix-logo" width="270" height="270"></canvas>
 <div class="hero__title" id="shapix-title">Shapix</div>
 </div>
 
