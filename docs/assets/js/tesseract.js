@@ -572,19 +572,16 @@
   else
     requestAnimationFrame(init)
 
-  // MkDocs Material SPA navigation
-  if (typeof document$ !== 'undefined') {
-    document$.subscribe(function () { init() })
-  } else {
-    // Fallback: observe content changes for SPA frameworks
-    var _lastPath = location.pathname
-    document.addEventListener('click', function () {
-      setTimeout(function () {
-        if (location.pathname !== _lastPath) {
-          _lastPath = location.pathname
-          setTimeout(init, 50)
-        }
-      }, 100)
-    })
-  }
+  // SPA navigation: watch for #shapix-visual appearing without a canvas child
+  // This works regardless of when MkDocs Material's JS loads
+  var _observed = false
+  new MutationObserver(function () {
+    var el = document.getElementById('shapix-visual')
+    if (el && !el.querySelector('canvas')) {
+      if (!_observed) { _observed = true; return } // skip initial (handled above)
+      init()
+    } else if (!el) {
+      _observed = true // navigated away from home
+    }
+  }).observe(document.body, { childList: true, subtree: true })
 })()
