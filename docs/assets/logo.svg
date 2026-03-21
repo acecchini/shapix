@@ -1,22 +1,63 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-  <!-- Connecting faces (trapezoids) -->
-  <polygon points="24,2 45,21 34,28 31,14" fill="white" opacity=".1"/>
-  <polygon points="45,21 27,46 20,34 34,28" fill="white" opacity=".07"/>
-  <polygon points="27,46 3,25 16,19 20,34" fill="white" opacity=".12"/>
-  <polygon points="3,25 24,2 31,14 16,19" fill="white" opacity=".09"/>
+  <!-- Tesseract Schlegel diagram: cube-within-cube, rotated ~40° Y, ~20° X -->
 
-  <!-- Inner face -->
-  <polygon points="31,14 34,28 20,34 16,19" fill="white" opacity=".1"/>
+  <!-- Visible outer cube face fills -->
+  <polygon points="22.5,39.5 39.5,35 39.5,14 22.5,19" fill="white" opacity=".07"/>
+  <polygon points="8.5,34 22.5,39.5 22.5,19 8.5,13" fill="white" opacity=".05"/>
+  <polygon points="8.5,13 25.5,8.5 39.5,14 22.5,19" fill="white" opacity=".09"/>
 
-  <!-- Connecting edges -->
-  <line x1="24" y1="2" x2="31" y2="14" stroke="white" stroke-width="1.2" stroke-linecap="round" opacity=".6"/>
-  <line x1="45" y1="21" x2="34" y2="28" stroke="white" stroke-width="1.2" stroke-linecap="round" opacity=".5"/>
-  <line x1="27" y1="46" x2="20" y2="34" stroke="white" stroke-width="1.2" stroke-linecap="round" opacity=".65"/>
-  <line x1="3" y1="25" x2="16" y2="19" stroke="white" stroke-width="1.2" stroke-linecap="round" opacity=".55"/>
+  <!-- Connecting face fills (walls between outer and inner cubes) -->
+  <polygon points="22.5,39.5 39.5,35 29.5,28 23.5,29.5" fill="white" opacity=".04"/>
+  <polygon points="39.5,35 39.5,14 29.5,20.5 29.5,28" fill="white" opacity=".06"/>
+  <polygon points="39.5,14 22.5,19 23.5,22 29.5,20.5" fill="white" opacity=".07"/>
+  <polygon points="22.5,19 22.5,39.5 23.5,29.5 23.5,22" fill="white" opacity=".05"/>
 
-  <!-- Outer quadrilateral (perspective kite) -->
-  <polygon points="24,2 45,21 27,46 3,25" fill="none" stroke="white" stroke-width="2" stroke-linejoin="round" opacity=".95"/>
+  <!-- Inner cube face fill -->
+  <polygon points="23.5,29.5 29.5,28 29.5,20.5 23.5,22" fill="white" opacity=".08"/>
 
-  <!-- Inner quadrilateral (rotated, offset) -->
-  <polygon points="31,14 34,28 20,34 16,19" fill="none" stroke="white" stroke-width="1.6" stroke-linejoin="round" opacity=".85"/>
+  <!-- Outer cube — back-facing edges -->
+  <line x1="8.5" y1="34" x2="25.5" y2="29" stroke="white" stroke-width="1.4" stroke-linecap="round" opacity=".45"/>
+  <line x1="25.5" y1="29" x2="25.5" y2="8.5" stroke="white" stroke-width="1.4" stroke-linecap="round" opacity=".4"/>
+
+  <!-- Outer cube — visible face edges -->
+  <line x1="25.5" y1="8.5" x2="8.5" y2="13" stroke="white" stroke-width="1.6" stroke-linecap="round" opacity=".6"/>
+  <line x1="8.5" y1="13" x2="8.5" y2="34" stroke="white" stroke-width="1.6" stroke-linecap="round" opacity=".6"/>
+  <line x1="22.5" y1="39.5" x2="39.5" y2="35" stroke="white" stroke-width="1.6" stroke-linecap="round" opacity=".7"/>
+  <line x1="39.5" y1="35" x2="39.5" y2="14" stroke="white" stroke-width="1.6" stroke-linecap="round" opacity=".7"/>
+  <line x1="39.5" y1="14" x2="22.5" y2="19" stroke="white" stroke-width="1.8" stroke-linecap="round" opacity=".85"/>
+  <line x1="22.5" y1="19" x2="22.5" y2="39.5" stroke="white" stroke-width="1.8" stroke-linecap="round" opacity=".9"/>
+
+  <!-- Outer cube — depth-connecting edges -->
+  <line x1="8.5" y1="34" x2="22.5" y2="39.5" stroke="white" stroke-width="1.5" stroke-linecap="round" opacity=".65"/>
+  <line x1="25.5" y1="29" x2="39.5" y2="35" stroke="white" stroke-width="1.4" stroke-linecap="round" opacity=".5"/>
+  <line x1="25.5" y1="8.5" x2="39.5" y2="14" stroke="white" stroke-width="1.5" stroke-linecap="round" opacity=".65"/>
+  <line x1="8.5" y1="13" x2="22.5" y2="19" stroke="white" stroke-width="1.6" stroke-linecap="round" opacity=".8"/>
+
+  <!-- Inner cube — back-facing edges -->
+  <line x1="18.5" y1="27.5" x2="24.5" y2="25.5" stroke="white" stroke-width="1.1" stroke-linecap="round" opacity=".45"/>
+  <line x1="24.5" y1="25.5" x2="24.5" y2="18.5" stroke="white" stroke-width="1.1" stroke-linecap="round" opacity=".4"/>
+  <line x1="24.5" y1="18.5" x2="18.5" y2="20" stroke="white" stroke-width="1.1" stroke-linecap="round" opacity=".55"/>
+  <line x1="18.5" y1="20" x2="18.5" y2="27.5" stroke="white" stroke-width="1.1" stroke-linecap="round" opacity=".6"/>
+
+  <!-- Inner cube — front-facing edges -->
+  <line x1="23.5" y1="29.5" x2="29.5" y2="28" stroke="white" stroke-width="1.2" stroke-linecap="round" opacity=".7"/>
+  <line x1="29.5" y1="28" x2="29.5" y2="20.5" stroke="white" stroke-width="1.2" stroke-linecap="round" opacity=".7"/>
+  <line x1="29.5" y1="20.5" x2="23.5" y2="22" stroke="white" stroke-width="1.3" stroke-linecap="round" opacity=".85"/>
+  <line x1="23.5" y1="22" x2="23.5" y2="29.5" stroke="white" stroke-width="1.3" stroke-linecap="round" opacity=".9"/>
+
+  <!-- Inner cube — depth-connecting edges -->
+  <line x1="18.5" y1="27.5" x2="23.5" y2="29.5" stroke="white" stroke-width="1.0" stroke-linecap="round" opacity=".65"/>
+  <line x1="24.5" y1="25.5" x2="29.5" y2="28" stroke="white" stroke-width="1.0" stroke-linecap="round" opacity=".5"/>
+  <line x1="24.5" y1="18.5" x2="29.5" y2="20.5" stroke="white" stroke-width="1.0" stroke-linecap="round" opacity=".65"/>
+  <line x1="18.5" y1="20" x2="23.5" y2="22" stroke="white" stroke-width="1.1" stroke-linecap="round" opacity=".8"/>
+
+  <!-- 4th-dimension connecting edges (outer vertex to inner vertex) -->
+  <line x1="8.5" y1="34" x2="18.5" y2="27.5" stroke="white" stroke-width="1.0" stroke-linecap="round" opacity=".55"/>
+  <line x1="25.5" y1="29" x2="24.5" y2="25.5" stroke="white" stroke-width="1.0" stroke-linecap="round" opacity=".45"/>
+  <line x1="25.5" y1="8.5" x2="24.5" y2="18.5" stroke="white" stroke-width="1.0" stroke-linecap="round" opacity=".55"/>
+  <line x1="8.5" y1="13" x2="18.5" y2="20" stroke="white" stroke-width="1.0" stroke-linecap="round" opacity=".65"/>
+  <line x1="22.5" y1="39.5" x2="23.5" y2="29.5" stroke="white" stroke-width="1.0" stroke-linecap="round" opacity=".75"/>
+  <line x1="39.5" y1="35" x2="29.5" y2="28" stroke="white" stroke-width="1.0" stroke-linecap="round" opacity=".65"/>
+  <line x1="39.5" y1="14" x2="29.5" y2="20.5" stroke="white" stroke-width="1.0" stroke-linecap="round" opacity=".7"/>
+  <line x1="22.5" y1="19" x2="23.5" y2="22" stroke="white" stroke-width="1.1" stroke-linecap="round" opacity=".85"/>
 </svg>
