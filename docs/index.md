@@ -11,15 +11,21 @@ hide:
 <style>
 .md-typeset h1 { display: none; }
 .md-content__button { display: none !important; }
-.md-content__inner {
-  padding: 0; margin: 0; max-width: none;
-  background: transparent !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
+.md-content__inner { padding: 0; margin: 0; max-width: none; }
 .md-main__inner { margin-top: 0; }
 .md-content { padding-top: 0; }
 html { overflow-x: hidden; }
+
+/* Make page transparent so fixed visual shows through */
+body { background: transparent !important; }
+
+/* ── Full-page visual canvas ── */
+#shapix-visual {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
 
 /* ── Hero ── */
 .hero {
@@ -95,28 +101,17 @@ html { overflow-x: hidden; }
   text-transform: uppercase;
   color: var(--md-primary-fg-color);
   margin-bottom: 0.5rem;
-  opacity: 0.85;
-  text-shadow: 0 0 20px rgba(255,255,255,0.5);
-}
-
-[data-md-color-scheme="slate"] .hero__tagline {
-  text-shadow: 0 0 20px rgba(0,0,0,0.4);
+  opacity: 0.7;
 }
 
 .hero__subtitle {
   font-family: 'Outfit', sans-serif;
-  font-size: 1.05rem;
+  font-size: 1.15rem;
   font-weight: 500;
-  color: #2d1b4e;
+  color: var(--md-default-fg-color--light);
   max-width: 580px;
   margin: 0 auto 1.5rem;
   line-height: 1.7;
-  text-shadow: 0 0 24px rgba(255,255,255,0.6);
-}
-
-[data-md-color-scheme="slate"] .hero__subtitle {
-  color: #c9b3ff;
-  text-shadow: 0 0 24px rgba(0,0,0,0.4);
 }
 
 .beartype-link {
@@ -126,10 +121,10 @@ html { overflow-x: hidden; }
 }
 
 .beartype-logo-inline {
-  height: 0.5em;
+  height: 0.7em;
   width: auto;
-  vertical-align: -0.02em;
-  margin-right: 0.08em;
+  vertical-align: -0.05em;
+  margin-right: 0.1em;
   opacity: 0.4;
   filter: grayscale(100%) brightness(0.5);
   transition: all 0.3s ease;
@@ -207,7 +202,7 @@ html { overflow-x: hidden; }
 .feature-card {
   padding: 1.5rem;
   border-radius: 14px;
-  background: rgba(255,255,255,0.3);
+  background: rgba(255,255,255,0.55);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(124,77,255,0.08);
@@ -221,7 +216,7 @@ html { overflow-x: hidden; }
 }
 
 [data-md-color-scheme="slate"] .feature-card {
-  background: rgba(13,17,23,0.35);
+  background: rgba(13,17,23,0.5);
   border-color: rgba(179,136,255,0.1);
 }
 
@@ -252,14 +247,14 @@ html { overflow-x: hidden; }
   margin: 0 auto 2rem;
   padding: 2rem 1.5rem 2.5rem;
   border-radius: 16px;
-  background: rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.4);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(124,77,255,0.06);
 }
 
 [data-md-color-scheme="slate"] .backends {
-  background: rgba(13,17,23,0.25);
+  background: rgba(13,17,23,0.4);
   border-color: rgba(179,136,255,0.08);
 }
 
@@ -326,16 +321,18 @@ a.backend-logo:hover {
 /* ── Responsive ── */
 @media (max-width: 600px) {
   .hero__letter { font-size: 3rem; }
-  .hero__logo canvas { width: 160px; height: 160px; }
+  .hero__logo canvas { width: 180px; height: 180px; }
   .backends__logos { gap: 1.5rem; }
 }
 </style>
+
+<div id="shapix-visual"></div>
 
 <div class="hero">
 <div class="hero__content" markdown>
 
 <div class="hero__logo">
-<canvas id="shapix-logo" width="220" height="220"></canvas>
+<canvas id="shapix-logo" width="270" height="270"></canvas>
 <div class="hero__title" id="shapix-title">Shapix</div>
 </div>
 
