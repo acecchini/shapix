@@ -210,18 +210,18 @@ body { background: transparent !important; }
   z-index: 1;
   max-width: 61rem;
   margin: 0 auto;
-  padding: 0.5rem 1.5rem;
+  padding: 0.2rem 1.5rem;
 }
 
 .features-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 0.75rem;
-  padding: 0.5rem 0;
+  gap: 0.5rem;
+  padding: 0.2rem 0;
 }
 
 .feature-card {
-  padding: 0.8rem 1rem;
+  padding: 0.5rem 0.8rem;
   border-radius: 14px;
   background: rgba(255,255,255,0.55);
   backdrop-filter: blur(16px);
@@ -248,15 +248,15 @@ body { background: transparent !important; }
 
 .feature-card h3 {
   margin-top: 0;
-  margin-bottom: 0.3rem;
-  font-size: 0.95rem;
+  margin-bottom: 0.15rem;
+  font-size: 0.9rem;
 }
 
 .feature-card h3 .headerlink { display: none; }
 
 .feature-card p {
   color: var(--md-default-fg-color--light);
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   margin-bottom: 0;
 }
 
