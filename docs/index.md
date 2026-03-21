@@ -277,7 +277,7 @@ a.backend-logo:hover {
 Elegant shape and dtype validation for NumPy, JAX, and PyTorch arrays — powered by <a href="https://github.com/beartype/beartype">beartype</a>.
 </p>
 
-<div class="hero__actions">
+<div class="hero__actions" markdown>
 
 [Get Started](getting-started/index.md){ .md-button .md-button--primary }
 [API Reference](api/index.md){ .md-button }
