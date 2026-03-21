@@ -12,7 +12,7 @@ hide:
 .md-typeset h1 { display: none; }
 .md-content__button { display: none !important; }
 .md-content__inner { padding: 0; margin: 0; max-width: none; }
-.md-main__inner { margin-top: clamp(-2.5rem, -2vh, -0.5rem); }
+.md-main__inner { margin-top: clamp(-2.5rem, -1.5vh, -0.3rem); }
 .md-content { padding-top: 0; }
 .md-typeset .feature-card h3 { margin: 0 0 0.15rem; }
 .md-typeset .feature-card p { margin: 0; }
@@ -60,10 +60,10 @@ body { background: transparent !important; }
 }
 
 .hero__logo canvas {
-  width: clamp(140px, 15vh, 220px);
-  height: clamp(140px, 15vh, 220px);
+  width: clamp(130px, 15vh, 220px);
+  height: clamp(130px, 15vh, 220px);
   filter: drop-shadow(0 0 22px rgba(140, 90, 255, 0.3));
-  margin-bottom: clamp(-40px, -4vh, -20px);
+  margin-bottom: clamp(-40px, -4.5vh, -18px);
 }
 
 /* ── 3D extruded title ── */
@@ -176,7 +176,7 @@ body { background: transparent !important; }
   gap: 1rem;
   justify-content: center;
   flex-wrap: wrap;
-  margin-bottom: clamp(0.4rem, 1.5vh, 2rem);
+  margin-bottom: clamp(0.3rem, 1.8vh, 2.5rem);
 }
 
 .hero__actions .md-button {
@@ -216,18 +216,18 @@ body { background: transparent !important; }
   z-index: 1;
   max-width: 61rem;
   margin: 0 auto;
-  padding: clamp(0.1rem, 0.3vh, 0.2rem) 1.5rem clamp(0.4rem, 1.5vh, 1.8rem);
+  padding: clamp(0.05rem, 0.2vh, 0.15rem) 1.5rem clamp(0.3rem, 1.8vh, 2.2rem);
 }
 
 .features-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: clamp(0.2rem, 0.4vh, 0.5rem);
-  padding: clamp(0.1rem, 0.3vh, 0.2rem) 0;
+  gap: clamp(0.15rem, 0.5vh, 0.6rem);
+  padding: clamp(0.05rem, 0.2vh, 0.15rem) 0;
 }
 
 .feature-card {
-  padding: clamp(0.2rem, 0.4vh, 0.5rem) 0.8rem;
+  padding: clamp(0.15rem, 0.4vh, 0.55rem) 0.8rem;
   border-radius: 14px;
   background: rgba(255,255,255,0.55);
   backdrop-filter: blur(16px);
@@ -272,8 +272,8 @@ body { background: transparent !important; }
   z-index: 1;
   text-align: center;
   max-width: 61rem;
-  margin: 0 auto clamp(0.2rem, 0.5vh, 0.5rem);
-  padding: clamp(0.4rem, 0.7vh, 0.75rem) 1.5rem clamp(0.5rem, 0.8vh, 1rem);
+  margin: 0 auto clamp(0.15rem, 0.6vh, 0.8rem);
+  padding: clamp(0.3rem, 0.8vh, 0.9rem) 1.5rem clamp(0.4rem, 0.9vh, 1.1rem);
   border-radius: 16px;
   background: rgba(255,255,255,0.4);
   backdrop-filter: blur(12px);
