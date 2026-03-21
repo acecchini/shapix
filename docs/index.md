@@ -175,9 +175,9 @@ body { background: transparent !important; }
 
 .hero__actions .md-button {
   font-family: 'Outfit', sans-serif;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   font-weight: 700;
-  padding: 0.5rem 1.6rem;
+  padding: 0.4rem 1.2rem;
   border-radius: 2rem;
   border: 2px solid var(--md-primary-fg-color);
   color: var(--md-primary-fg-color);
