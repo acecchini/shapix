@@ -12,7 +12,7 @@ hide:
 .md-typeset h1 { display: none; }
 .md-content__button { display: none !important; }
 .md-content__inner { padding: 0; margin: 0; max-width: none; }
-.md-main__inner { margin-top: 0; }
+.md-main__inner { margin-top: -1rem; }
 .md-content { padding-top: 0; }
 .md-footer { display: none !important; }
 html { overflow-x: hidden; }
@@ -359,7 +359,7 @@ a.backend-logo:hover {
 <div class="hero__content" markdown>
 
 <div class="hero__logo">
-<canvas id="shapix-logo" width="200" height="200"></canvas>
+<canvas id="shapix-logo" width="220" height="220"></canvas>
 <div class="hero__title" id="shapix-title">Shapix</div>
 </div>
 
