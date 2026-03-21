@@ -12,7 +12,7 @@ hide:
 .md-typeset h1 { display: none; }
 .md-content__button { display: none !important; }
 .md-content__inner { padding: 0; margin: 0; max-width: none; }
-.md-main__inner { margin-top: -1rem; }
+.md-main__inner { margin-top: -1.5rem; }
 .md-content { padding-top: 0; }
 .md-footer { display: none !important; }
 html { overflow-x: hidden; }
@@ -57,7 +57,7 @@ body { background: transparent !important; }
 
 .hero__logo canvas {
   filter: drop-shadow(0 0 22px rgba(140, 90, 255, 0.3));
-  margin-bottom: -20px;
+  margin-bottom: -28px;
 }
 
 /* ── 3D extruded title ── */
