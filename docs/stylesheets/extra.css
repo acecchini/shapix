@@ -179,6 +179,38 @@
   --md-default-bg-color--lightest: #151a2a;
 }
 
+/* ── CSS star field for all pages (dark mode) ── */
+
+[data-md-color-scheme="slate"] body::before,
+[data-md-color-scheme="slate"] body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+[data-md-color-scheme="slate"] body::before {
+  width: 1px;
+  height: 1px;
+  background: transparent;
+  box-shadow: 457px 52px #fff, 1127px 502px #fff, 915px 286px #fff, 420px 1386px #fff, 2234px 179px #fff, 2419px 865px #fff, 131px 62px #fff, 384px 448px #fff, 953px 1035px #fff, 2466px 55px #fff, 2299px 408px #fff, 2233px 860px #fff, 903px 920px #fff, 2414px 570px #fff, 27px 327px #fff, 1732px 697px #fff, 1139px 319px #fff, 882px 690px #fff, 419px 190px #fff, 1557px 199px #fff, 1471px 705px #fff, 2473px 542px #fff, 178px 941px #fff, 2197px 256px #fff, 1551px 162px #fff, 2262px 601px #fff, 2534px 741px #fff, 2365px 394px #fff, 285px 94px #fff, 934px 593px #fff, 327px 477px #fff, 414px 779px #fff, 1139px 929px #fff, 1495px 334px #fff, 1517px 728px #fff, 859px 1373px #fff, 1094px 1438px #fff, 293px 1248px #fff, 701px 1094px #fff, 1003px 335px #fff, 1894px 778px #fff, 1106px 1311px #fff, 2282px 450px #fff, 1329px 115px #fff, 939px 66px #fff, 1293px 822px #fff, 1097px 136px #fff, 865px 1162px #fff, 1289px 436px #fff, 2045px 811px #fff, 1880px 293px #fff, 1085px 286px #fff, 1011px 1150px #fff, 2208px 539px #fff, 2395px 878px #fff, 2391px 818px #fff, 1483px 450px #fff, 567px 1044px #fff, 2022px 187px #fff, 193px 225px #fff, 627px 1286px #fff, 656px 1394px #fff, 1730px 1222px #fff, 261px 789px #fff, 1564px 1221px #fff, 1918px 1084px #fff, 1030px 1134px #fff, 48px 1394px #fff, 470px 1397px #fff, 2200px 547px #fff, 1394px 229px #fff, 1203px 891px #fff, 648px 930px #fff, 14px 540px #fff, 2051px 366px #fff, 2080px 218px #fff, 1223px 1309px #fff, 2080px 1248px #fff, 815px 314px #fff, 1532px 331px #fff, 2210px 1087px #fff, 3px 1227px #fff, 1328px 1001px #fff, 80px 230px #fff, 1487px 630px #fff, 981px 119px #fff, 987px 1162px #fff, 323px 176px #fff, 1991px 142px #fff, 2182px 258px #fff, 526px 1352px #fff, 1947px 1126px #fff, 677px 543px #fff, 2162px 1243px #fff, 1734px 434px #fff, 2209px 1413px #fff, 824px 639px #fff, 1635px 1376px #fff, 1530px 898px #fff, 2120px 925px #fff;
+  animation: starTwinkle 8s ease-in-out infinite;
+}
+
+[data-md-color-scheme="slate"] body::after {
+  width: 2px;
+  height: 2px;
+  background: transparent;
+  box-shadow: 1655px 780px rgba(200,190,255,0.9), 820px 1228px rgba(200,190,255,0.9), 733px 472px rgba(200,190,255,0.9), 1018px 273px rgba(200,190,255,0.9), 355px 515px rgba(200,190,255,0.9), 1570px 1088px rgba(200,190,255,0.9), 2207px 184px rgba(200,190,255,0.9), 2556px 1003px rgba(200,190,255,0.9), 818px 864px rgba(200,190,255,0.9), 2512px 1206px rgba(200,190,255,0.9), 888px 766px rgba(200,190,255,0.9), 1590px 1398px rgba(200,190,255,0.9), 871px 312px rgba(200,190,255,0.9), 1891px 1353px rgba(200,190,255,0.9), 734px 1162px rgba(200,190,255,0.9), 1388px 170px rgba(200,190,255,0.9), 2166px 1388px rgba(200,190,255,0.9), 360px 961px rgba(200,190,255,0.9), 1296px 825px rgba(200,190,255,0.9), 175px 552px rgba(200,190,255,0.9), 2286px 16px rgba(200,190,255,0.9), 1742px 418px rgba(200,190,255,0.9), 1485px 1095px rgba(200,190,255,0.9), 332px 947px rgba(200,190,255,0.9), 2125px 406px rgba(200,190,255,0.9), 2481px 948px rgba(200,190,255,0.9), 211px 733px rgba(200,190,255,0.9), 529px 443px rgba(200,190,255,0.9), 659px 905px rgba(200,190,255,0.9), 2439px 364px rgba(200,190,255,0.9), 2062px 1353px rgba(200,190,255,0.9), 721px 76px rgba(200,190,255,0.9), 450px 48px rgba(200,190,255,0.9), 702px 971px rgba(200,190,255,0.9), 1717px 167px rgba(200,190,255,0.9), 1743px 1295px rgba(200,190,255,0.9), 353px 293px rgba(200,190,255,0.9), 1269px 1265px rgba(200,190,255,0.9), 24px 781px rgba(200,190,255,0.9), 1351px 279px rgba(200,190,255,0.9);
+  animation: starTwinkle 12s ease-in-out infinite reverse;
+}
+
+@keyframes starTwinkle {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; }
+}
+
 /* ── Smooth scrolling ── */
 
 html {

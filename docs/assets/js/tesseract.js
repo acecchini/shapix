@@ -232,7 +232,7 @@
       '    float twinkle=.55+.2*sin(T*(.06+h*.1)+h*100.)+.15*sin(T*(.11+h2*.08)+h2*73.)+.1*sin(T*(.17+h3*.12)+h3*51.);',
       '    float brightness=smoothstep(.997,1.,h)*twinkle;',
       '    vec3 starCol=mix(vec3(.8,.85,1.),vec3(1.,.95,.8),hash(gp+99.));',
-      '    col+=starCol*brightness*(1.-alpha)*.8;',
+      '    col+=starCol*brightness*(1.-alpha)*1.2;',
       '  }',
       '  if(D<.5&&h>.993){',
       '    float shimmer=.6+.4*sin(T*(.1+h*.2)+h*60.);',
