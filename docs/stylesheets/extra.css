@@ -234,36 +234,26 @@ body {
   animation-delay: -6s;
 }
 
-/* Pulse A: peaks at 25%, max 1.0 */
+/* All stars always visible (min 0.25–0.35), pulse up to bright peaks */
+
 @keyframes starPulseA {
-  0%, 100% { opacity: 0.05; }
-  25% { opacity: 1; }
-  50% { opacity: 0.05; }
-  75% { opacity: 0.08; }
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
 }
 
-/* Pulse B: peaks at 25%, max 0.9 */
 @keyframes starPulseB {
-  0%, 100% { opacity: 0.05; }
-  25% { opacity: 0.9; }
-  50% { opacity: 0.05; }
-  75% { opacity: 0.08; }
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 0.9; }
 }
 
-/* Pulse C: peaks at 25%, max 0.85 */
 @keyframes starPulseC {
-  0%, 100% { opacity: 0.05; }
-  25% { opacity: 0.85; }
-  50% { opacity: 0.05; }
-  75% { opacity: 0.08; }
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.85; }
 }
 
-/* Pulse D: peaks at 25%, max 0.95 */
 @keyframes starPulseD {
-  0%, 100% { opacity: 0.05; }
-  25% { opacity: 0.95; }
-  50% { opacity: 0.05; }
-  75% { opacity: 0.08; }
+  0%, 100% { opacity: 0.28; }
+  50% { opacity: 0.95; }
 }
 
 /* ══════════════════════════════════════════════════════
@@ -297,36 +287,24 @@ body {
   animation-delay: -6s;
 }
 
-/* Dust A: max 0.9 */
 @keyframes dustPulseA {
-  0%, 100% { opacity: 0.08; }
-  25% { opacity: 0.9; }
-  50% { opacity: 0.08; }
-  75% { opacity: 0.1; }
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.9; }
 }
 
-/* Dust B: max 0.8 */
 @keyframes dustPulseB {
-  0%, 100% { opacity: 0.08; }
-  25% { opacity: 0.8; }
-  50% { opacity: 0.08; }
-  75% { opacity: 0.1; }
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 0.85; }
 }
 
-/* Dust C: max 0.75 */
 @keyframes dustPulseC {
-  0%, 100% { opacity: 0.08; }
-  25% { opacity: 0.75; }
-  50% { opacity: 0.08; }
-  75% { opacity: 0.1; }
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.8; }
 }
 
-/* Dust D: max 0.85 */
 @keyframes dustPulseD {
-  0%, 100% { opacity: 0.08; }
-  25% { opacity: 0.85; }
-  50% { opacity: 0.08; }
-  75% { opacity: 0.1; }
+  0%, 100% { opacity: 0.28; }
+  50% { opacity: 0.9; }
 }
 
 /* ── Smooth scrolling ── */
