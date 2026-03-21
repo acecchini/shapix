@@ -56,17 +56,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  pointer-events: auto;
+  pointer-events: none;
   max-width: none;
   padding: 0 13rem 0 14rem;
 }
 
 .md-tabs__list {
-  pointer-events: auto;
-}
-
-/* Let clicks pass through to header elements between tab links */
-.md-tabs__inner {
   pointer-events: none;
 }
 
