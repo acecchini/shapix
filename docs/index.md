@@ -170,7 +170,7 @@ body { background: transparent !important; }
   gap: 1rem;
   justify-content: center;
   flex-wrap: wrap;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.8rem;
 }
 
 .hero__actions .md-button {
@@ -210,7 +210,7 @@ body { background: transparent !important; }
   z-index: 1;
   max-width: 61rem;
   margin: 0 auto;
-  padding: 0.2rem 1.5rem;
+  padding: 0.2rem 1.5rem 0.5rem;
 }
 
 .features-grid {
