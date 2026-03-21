@@ -12,7 +12,7 @@ hide:
 .md-typeset h1 { display: none; }
 .md-content__button { display: none !important; }
 .md-content__inner { padding: 0; margin: 0; max-width: none; }
-.md-main__inner { margin-top: clamp(-3rem, -2.5vh, -0.3rem); }
+.md-main__inner { margin-top: clamp(-3.5rem, -3.5vh, -1.5rem); }
 .md-content { padding-top: 0; }
 .md-typeset .feature-card h3 { margin: 0 0 0.15rem; }
 .md-typeset .feature-card p { margin: 0; }
