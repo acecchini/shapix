@@ -11,10 +11,10 @@ docs_dir: docs
 site_dir: site
 
 extra_css:
-  - stylesheets/extra.css?v=3
+  - stylesheets/extra.css?v=4
 
 extra_javascript:
-  - assets/js/tesseract.js?v=3
+  - assets/js/tesseract.js?v=4
 
 nav:
   - Home: index.md
