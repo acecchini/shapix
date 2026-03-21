@@ -472,15 +472,15 @@
         return { x: cx + x3 * sc * s, y: cy + y3 * sc * s + floatY, z: z3 }
       })
 
-      // Faces sorted back to front — glass-like white fill
+      // Faces sorted back to front — purple-tinted glass
       Faces.slice().sort(function (a, b) {
         var az = 0, bz = 0
         for (var i = 0; i < 4; i++) { az += pts[a[i]].z; bz += pts[b[i]].z }
         return az - bz
       }).forEach(function (f) {
         var avgZ = (pts[f[0]].z + pts[f[1]].z + pts[f[2]].z + pts[f[3]].z) / 4
-        var alpha = 0.02 + (avgZ + 1) * 0.03
-        alpha = Math.max(0.02, Math.min(0.08, alpha))
+        var alpha = 0.05 + (avgZ + 1) * 0.065
+        alpha = Math.max(0.04, Math.min(0.18, alpha))
 
         ctx.beginPath()
         ctx.moveTo(pts[f[0]].x, pts[f[0]].y)
@@ -488,11 +488,11 @@
         ctx.lineTo(pts[f[2]].x, pts[f[2]].y)
         ctx.lineTo(pts[f[3]].x, pts[f[3]].y)
         ctx.closePath()
-        ctx.fillStyle = 'rgba(255,255,255,' + alpha + ')'
+        ctx.fillStyle = 'rgba(180,140,255,' + alpha + ')'
         ctx.fill()
       })
 
-      // Edges — crisp white-to-lavender, no per-edge glow
+      // Edges — time-evolving purple gradient
       ctx.lineCap = 'round'
       ctx.lineJoin = 'round'
 
@@ -508,10 +508,11 @@
 
         var lineW = 1.0 + (avgZ + 1) * 0.8
 
-        // White at front, soft lavender at back
-        var r = Math.round(230 + (avgZ + 1) * 12)
-        var g = Math.round(220 + (avgZ + 1) * 10)
-        var b = 255
+        // Purple gradient that evolves over time
+        var phase = t * 0.05 + (e[0] + e[1]) * 0.2
+        var r = Math.round(140 + 60 * Math.sin(phase) + (avgZ + 1) * 30)
+        var g = Math.round(80 + 40 * Math.sin(phase + 2.0) + (avgZ + 1) * 20)
+        var b = Math.round(200 + 55 * Math.sin(phase + 4.0))
 
         ctx.beginPath()
         ctx.moveTo(p0.x, p0.y)
@@ -523,7 +524,7 @@
 
       // Single soft glow pass for front edges
       ctx.globalAlpha = 0.15
-      ctx.shadowColor = 'rgba(200,180,255,0.4)'
+      ctx.shadowColor = 'rgba(160,100,255,0.5)'
       ctx.shadowBlur = 15
       sortedEdges.forEach(function (e) {
         var p0 = pts[e[0]], p1 = pts[e[1]]
@@ -533,7 +534,7 @@
         ctx.beginPath()
         ctx.moveTo(p0.x, p0.y)
         ctx.lineTo(p1.x, p1.y)
-        ctx.strokeStyle = 'rgba(220,210,255,0.6)'
+        ctx.strokeStyle = 'rgba(180,130,255,0.6)'
         ctx.lineWidth = lineW
         ctx.stroke()
       })

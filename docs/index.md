@@ -54,7 +54,7 @@ body { background: transparent !important; }
 }
 
 .hero__logo canvas {
-  filter: drop-shadow(0 0 20px rgba(180, 160, 255, 0.25));
+  filter: drop-shadow(0 0 22px rgba(140, 90, 255, 0.3));
 }
 
 /* ── 3D extruded title ── */
