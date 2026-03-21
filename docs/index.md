@@ -345,7 +345,7 @@ a.backend-logo:hover {
 <div class="hero__tagline">Runtime shape checking for the array age</div>
 
 <p class="hero__subtitle">
-Elegant shape and dtype validation for NumPy, JAX, and PyTorch arrays — powered by <a href="https://github.com/beartype/beartype" class="beartype-link"><img src="assets/images/beartype_bear.png" alt="beartype" class="beartype-logo-inline">beartype</a>.
+Elegant shape and dtype validation for NumPy, JAX, and PyTorch arrays — powered by <a href="https://github.com/beartype/beartype" class="beartype-link">beartype</a>.
 </p>
 
 <div class="hero__actions">
