@@ -173,10 +173,10 @@
   --md-primary-fg-color--dark: #7c4dff;
   --md-accent-fg-color: #b388ff;
   --md-accent-fg-color--transparent: rgba(179, 136, 255, 0.1);
-  --md-default-bg-color: #080e1e;
-  --md-default-bg-color--light: #0d1428;
-  --md-default-bg-color--lighter: #121a30;
-  --md-default-bg-color--lightest: #1a2340;
+  --md-default-bg-color: #060810;
+  --md-default-bg-color--light: #0a0e18;
+  --md-default-bg-color--lighter: #0e1220;
+  --md-default-bg-color--lightest: #151a2a;
 }
 
 /* ── Smooth scrolling ── */
