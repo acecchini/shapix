@@ -399,6 +399,30 @@
         if (diff === 1) E.push([i, j])
       }
 
+    // 24 square faces: fix 2 axes, vary the other 2
+    var Faces = []
+    for (var a1 = 0; a1 < 4; a1++)
+      for (var a2 = a1 + 1; a2 < 4; a2++) {
+        var fixed = []
+        for (var k = 0; k < 4; k++)
+          if (k !== a1 && k !== a2) fixed.push(k)
+        for (var f0 = 0; f0 < 2; f0++)
+          for (var f1 = 0; f1 < 2; f1++) {
+            var fv0 = f0 ? 1 : -1, fv1 = f1 ? 1 : -1
+            var quad = []
+            for (var vi = 0; vi < 16; vi++)
+              if (V[vi][fixed[0]] === fv0 && V[vi][fixed[1]] === fv1)
+                quad.push(vi)
+            // Sort by angle in (a1,a2) plane for proper winding
+            ;(function (ax1, ax2) {
+              quad.sort(function (a, b) {
+                return Math.atan2(V[a][ax2], V[a][ax1]) - Math.atan2(V[b][ax2], V[b][ax1])
+              })
+            })(a1, a2)
+            Faces.push(quad)
+          }
+      }
+
     // 4D rotation in a plane
     function rot4(v, p, q, a) {
       var co = Math.cos(a), si = Math.sin(a)
@@ -451,6 +475,30 @@
         // 3D → 2D perspective
         var d3 = 3.5, s = d3 / (d3 - z3)
         return { x: cx + x3 * sc * s, y: cy + y3 * sc * s + floatY, z: z3 }
+      })
+
+      // Faces sorted back to front, semi-transparent
+      Faces.slice().sort(function (a, b) {
+        var az = 0, bz = 0
+        for (var i = 0; i < 4; i++) { az += pts[a[i]].z; bz += pts[b[i]].z }
+        return az - bz
+      }).forEach(function (f) {
+        var avgZ = (pts[f[0]].z + pts[f[1]].z + pts[f[2]].z + pts[f[3]].z) / 4
+        var alpha = 0.04 + (avgZ + 1) * 0.04
+        alpha = Math.max(0.03, Math.min(0.14, alpha))
+        var hue = ((avgZ + 1) * 0.2 + t * 0.02) % 1
+        var r = Math.round(110 + hue * 80)
+        var g = Math.round(60 + (1 - hue) * 50)
+        var b = Math.round(200 + hue * 55)
+
+        ctx.beginPath()
+        ctx.moveTo(pts[f[0]].x, pts[f[0]].y)
+        ctx.lineTo(pts[f[1]].x, pts[f[1]].y)
+        ctx.lineTo(pts[f[2]].x, pts[f[2]].y)
+        ctx.lineTo(pts[f[3]].x, pts[f[3]].y)
+        ctx.closePath()
+        ctx.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')'
+        ctx.fill()
       })
 
       // Edges sorted back to front, smooth rounded caps, no vertex dots
