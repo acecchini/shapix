@@ -374,7 +374,7 @@
   }
 
   /* ================================================================
-   * LOGO — Large icosahedron with solid faces and glowing edges
+   * LOGO — Animated tesseract with sinusoidal vertex forces + breathing
    * ================================================================ */
   function initLogo() {
     var c = document.getElementById('shapix-logo')
@@ -384,131 +384,104 @@
     c.width = S * dpr; c.height = S * dpr
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
-    var phi = (1 + Math.sqrt(5)) / 2
-    var raw = [
-      [0, 1, phi], [0, 1, -phi], [0, -1, phi], [0, -1, -phi],
-      [1, phi, 0], [1, -phi, 0], [-1, phi, 0], [-1, -phi, 0],
-      [phi, 0, 1], [phi, 0, -1], [-phi, 0, 1], [-phi, 0, -1]
-    ]
-    var V = raw.map(function (v) {
-      var l = Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2])
-      return [v[0] / l, v[1] / l, v[2] / l]
-    })
+    // 16 tesseract vertices: all (±1, ±1, ±1, ±1)
+    var V = []
+    for (var i = 0; i < 16; i++)
+      V.push([(i & 1) ? 1 : -1, (i & 2) ? 1 : -1, (i & 4) ? 1 : -1, (i & 8) ? 1 : -1])
 
-    var E = [], adj = []
-    for (var i = 0; i < 12; i++) adj.push([])
-    for (var i = 0; i < 12; i++)
-      for (var j = i + 1; j < 12; j++) {
-        var dx = V[i][0] - V[j][0], dy = V[i][1] - V[j][1], dz = V[i][2] - V[j][2]
-        if (dx * dx + dy * dy + dz * dz < 1.25) {
-          E.push([i, j])
-          adj[i].push(j)
-          adj[j].push(i)
-        }
+    // 32 edges: vertices differing in exactly 1 coordinate
+    var E = []
+    for (var i = 0; i < 16; i++)
+      for (var j = i + 1; j < 16; j++) {
+        var diff = 0
+        for (var k = 0; k < 4; k++)
+          if (V[i][k] !== V[j][k]) diff++
+        if (diff === 1) E.push([i, j])
       }
 
-    var F = []
-    for (var i = 0; i < 12; i++)
-      for (var ji = 0; ji < adj[i].length; ji++) {
-        var jj = adj[i][ji]
-        if (jj <= i) continue
-        for (var ki = ji + 1; ki < adj[i].length; ki++) {
-          var kk = adj[i][ki]
-          if (kk <= jj) continue
-          if (adj[jj].indexOf(kk) !== -1) F.push([i, jj, kk])
-        }
-      }
-
-    function rotY(v, a) {
+    // 4D rotation in a plane
+    function rot4(v, p, q, a) {
       var co = Math.cos(a), si = Math.sin(a)
-      return [v[0] * co + v[2] * si, v[1], -v[0] * si + v[2] * co]
-    }
-    function rotX(v, a) {
-      var co = Math.cos(a), si = Math.sin(a)
-      return [v[0], v[1] * co - v[2] * si, v[1] * si + v[2] * co]
-    }
-    function rotZ(v, a) {
-      var co = Math.cos(a), si = Math.sin(a)
-      return [v[0] * co - v[1] * si, v[0] * si + v[1] * co, v[2]]
+      var r = [v[0], v[1], v[2], v[3]]
+      r[p] = v[p] * co - v[q] * si
+      r[q] = v[p] * si + v[q] * co
+      return r
     }
 
     function draw() {
       var t = performance.now() * 0.001
       ctx.clearRect(0, 0, S, S)
-      var cx = S / 2, cy = S / 2, sc = S * 0.4
+      var cx = S / 2, cy = S / 2, sc = S * 0.26
 
-      var floatY = Math.sin(t * 0.7) * 8
-      var tiltX = (my - 0.5) * 0.6
-      var tiltY = (mx - 0.5) * 0.6
+      var floatY = Math.sin(t * 0.7) * 6
+      var breath = 1 + 0.1 * Math.sin(t * 0.6)
+      var tiltX = (my - 0.5) * 0.5
+      var tiltY = (mx - 0.5) * 0.5
 
-      var pts = V.map(function (v) {
-        var r = rotY(v, t * 0.3)
-        r = rotX(r, t * 0.2)
-        r = rotZ(r, t * 0.12)
-        r = rotX(r, tiltX)
-        r = rotY(r, tiltY)
-        var d = 3.2, s = 1 / (d - r[2])
-        return { x: cx + r[0] * sc * s, y: cy + r[1] * sc * s + floatY, z: r[2], d: s * d }
+      var pts = V.map(function (v, idx) {
+        // Sinusoidal vertex displacement — each vertex pulled independently
+        var d = [
+          v[0] + Math.sin(t * 0.4 + idx * 0.7) * 0.15,
+          v[1] + Math.cos(t * 0.35 + idx * 1.1) * 0.12,
+          v[2] + Math.sin(t * 0.45 + idx * 0.9) * 0.1,
+          v[3] + Math.cos(t * 0.3 + idx * 1.3) * 0.13
+        ]
+
+        // Apply breathing
+        d = [d[0] * breath, d[1] * breath, d[2] * breath, d[3] * breath]
+
+        // 4D rotations in multiple planes
+        var r = rot4(d, 0, 3, t * 0.3)
+        r = rot4(r, 1, 2, t * 0.2)
+        r = rot4(r, 0, 2, t * 0.15)
+        r = rot4(r, 1, 3, t * 0.25)
+
+        // 4D → 3D perspective projection
+        var w4 = 2.8 - r[3] * 0.35
+        var x3 = r[0] / w4, y3 = r[1] / w4, z3 = r[2] / w4
+
+        // Mouse-driven 3D tilt
+        var co = Math.cos(tiltX), si = Math.sin(tiltX)
+        var ny = y3 * co - z3 * si, nz = y3 * si + z3 * co
+        y3 = ny; z3 = nz
+        co = Math.cos(tiltY); si = Math.sin(tiltY)
+        var nx = x3 * co + z3 * si; nz = -x3 * si + z3 * co
+        x3 = nx; z3 = nz
+
+        // 3D → 2D perspective
+        var d3 = 3.5, s = d3 / (d3 - z3)
+        return { x: cx + x3 * sc * s, y: cy + y3 * sc * s + floatY, z: z3 }
       })
 
-      // Faces (back to front)
-      F.slice().sort(function (a, b) {
-        return (pts[a[0]].z + pts[a[1]].z + pts[a[2]].z) - (pts[b[0]].z + pts[b[1]].z + pts[b[2]].z)
-      }).forEach(function (f) {
-        var p0 = pts[f[0]], p1 = pts[f[1]], p2 = pts[f[2]]
-        var avgZ = (p0.z + p1.z + p2.z) / 3
-        var alpha = 0.12 + (avgZ + 1) * 0.16
-        alpha = Math.max(0.08, Math.min(0.42, alpha))
-        var hue = ((avgZ + 1) * 0.25 + t * 0.03) % 1
-        var r = Math.round(90 + hue * 100)
-        var g = Math.round(50 + (1 - hue) * 60)
-        var b = Math.round(200 + hue * 55)
+      // Edges sorted back to front, smooth rounded caps, no vertex dots
+      ctx.lineCap = 'round'
+      ctx.lineJoin = 'round'
 
-        ctx.beginPath()
-        ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y)
-        ctx.closePath()
-        ctx.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')'
-        ctx.fill()
-      })
-
-      // Edges (back to front)
       E.slice().sort(function (a, b) {
         return (pts[a[0]].z + pts[a[1]].z) - (pts[b[0]].z + pts[b[1]].z)
       }).forEach(function (e) {
         var p0 = pts[e[0]], p1 = pts[e[1]]
         var avgZ = (p0.z + p1.z) / 2
         var alpha = 0.3 + (avgZ + 1) * 0.3
-        alpha = Math.max(0.2, Math.min(0.9, alpha))
+        alpha = Math.max(0.15, Math.min(0.92, alpha))
+
+        var lineW = 1.6 + (avgZ + 1) * 1.4
 
         var g = ctx.createLinearGradient(p0.x, p0.y, p1.x, p1.y)
-        g.addColorStop(0, 'rgba(124,77,255,' + alpha + ')')
+        g.addColorStop(0, 'rgba(140,90,255,' + alpha + ')')
         g.addColorStop(0.5, 'rgba(179,136,255,' + alpha + ')')
-        g.addColorStop(1, 'rgba(210,150,255,' + alpha + ')')
+        g.addColorStop(1, 'rgba(200,160,255,' + alpha + ')')
 
         ctx.beginPath()
-        ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y)
+        ctx.moveTo(p0.x, p0.y)
+        ctx.lineTo(p1.x, p1.y)
         ctx.strokeStyle = g
-        ctx.lineWidth = 1.2 + (avgZ + 1) * 1.2
-        ctx.shadowColor = 'rgba(160,120,255,' + alpha * 0.7 + ')'
-        ctx.shadowBlur = 12
+        ctx.lineWidth = lineW
+        ctx.shadowColor = 'rgba(140,100,255,' + alpha * 0.6 + ')'
+        ctx.shadowBlur = 10
         ctx.stroke()
-        ctx.shadowBlur = 0
       })
-
-      // Vertices
-      pts.forEach(function (p) {
-        var alpha = 0.4 + (p.z + 1) * 0.3
-        alpha = Math.max(0.3, Math.min(0.95, alpha))
-        var size = 1.8 + (p.z + 1) * 1.2
-
-        ctx.beginPath()
-        ctx.arc(p.x, p.y, size, 0, Math.PI * 2)
-        ctx.fillStyle = 'rgba(210,175,255,' + alpha + ')'
-        ctx.shadowColor = 'rgba(160,120,255,' + alpha * 0.8 + ')'
-        ctx.shadowBlur = 14
-        ctx.fill()
-        ctx.shadowBlur = 0
-      })
+      ctx.shadowBlur = 0
 
       requestAnimationFrame(draw)
     }
