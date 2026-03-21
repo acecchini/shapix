@@ -9,6 +9,8 @@
 
   var tmx = 0.5, tmy = 0.5, mx = 0.5, my = 0.5
   var tOff = Math.random() * 1000
+  var _afs = []       // track all animation frame IDs for cleanup
+  var _resizeCb = null // track resize listener for cleanup
 
   document.addEventListener('mousemove', function (e) {
     tmx = e.clientX / window.innerWidth
@@ -320,8 +322,6 @@
       fboObj = { fbo: fb, tex: tex, w: w, h: h }
     }
 
-    var aid = null
-
     function dk() {
       var e = document.querySelector('[data-md-color-scheme]')
       return e && e.getAttribute('data-md-color-scheme') === 'slate' ? 1 : 0
@@ -358,20 +358,14 @@
       gl.uniform1f(uCD, dark)
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
 
-      aid = requestAnimationFrame(frame)
+      _afs.push(requestAnimationFrame(frame))
     }
 
     resize()
+    if (_resizeCb) window.removeEventListener('resize', _resizeCb)
+    _resizeCb = resize
     window.addEventListener('resize', resize)
-    aid = requestAnimationFrame(frame)
-
-    document.addEventListener('visibilitychange', function () {
-      if (document.hidden) {
-        if (aid) { cancelAnimationFrame(aid); aid = null }
-      } else {
-        if (!aid) aid = requestAnimationFrame(frame)
-      }
-    })
+    _afs.push(requestAnimationFrame(frame))
   }
 
   /* ================================================================
@@ -532,7 +526,7 @@
       })
       ctx.shadowBlur = 0
 
-      requestAnimationFrame(draw)
+      _afs.push(requestAnimationFrame(draw))
     }
     draw()
   }
@@ -555,13 +549,42 @@
         var dx = (mx - 0.5) * 15
         var dy = -(my - 0.5) * 10
         logoEl.style.transform = 'rotateY(' + dx + 'deg) rotateX(' + (dy + 5) + 'deg)'
-        requestAnimationFrame(updateTilt)
+        _afs.push(requestAnimationFrame(updateTilt))
       })()
     }
   }
 
+  function cleanup() {
+    for (var i = 0; i < _afs.length; i++) cancelAnimationFrame(_afs[i])
+    _afs = []
+    var old = document.querySelector('#shapix-visual canvas')
+    if (old) old.remove()
+  }
+
+  function init() {
+    cleanup()
+    start()
+  }
+
+  // Initial load
   if (document.readyState === 'loading')
-    document.addEventListener('DOMContentLoaded', start)
+    document.addEventListener('DOMContentLoaded', init)
   else
-    requestAnimationFrame(start)
+    requestAnimationFrame(init)
+
+  // MkDocs Material SPA navigation
+  if (typeof document$ !== 'undefined') {
+    document$.subscribe(function () { init() })
+  } else {
+    // Fallback: observe content changes for SPA frameworks
+    var _lastPath = location.pathname
+    document.addEventListener('click', function () {
+      setTimeout(function () {
+        if (location.pathname !== _lastPath) {
+          _lastPath = location.pathname
+          setTimeout(init, 50)
+        }
+      }, 100)
+    })
+  }
 })()
