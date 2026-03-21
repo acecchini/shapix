@@ -12,7 +12,7 @@ hide:
 .md-typeset h1 { display: none; }
 .md-content__button { display: none !important; }
 .md-content__inner { padding: 0; margin: 0; max-width: none; }
-.md-main__inner { margin-top: -1.5rem; }
+.md-main__inner { margin-top: -2.2rem; }
 .md-content { padding-top: 0; }
 .md-footer { display: none !important; }
 html { overflow-x: hidden; }
@@ -57,7 +57,7 @@ body { background: transparent !important; }
 
 .hero__logo canvas {
   filter: drop-shadow(0 0 22px rgba(140, 90, 255, 0.3));
-  margin-bottom: -38px;
+  margin-bottom: -48px;
 }
 
 /* ── 3D extruded title ── */
@@ -170,14 +170,14 @@ body { background: transparent !important; }
   gap: 1rem;
   justify-content: center;
   flex-wrap: wrap;
-  margin-bottom: 0.8rem;
+  margin-bottom: 1.2rem;
 }
 
 .hero__actions .md-button {
   font-family: 'Outfit', sans-serif;
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   font-weight: 700;
-  padding: 0.4rem 1.2rem;
+  padding: 0.35rem 1rem;
   border-radius: 2rem;
   border: 2px solid var(--md-primary-fg-color);
   color: var(--md-primary-fg-color);
@@ -210,7 +210,7 @@ body { background: transparent !important; }
   z-index: 1;
   max-width: 61rem;
   margin: 0 auto;
-  padding: 0.2rem 1.5rem 0.5rem;
+  padding: 0.2rem 1.5rem 1rem;
 }
 
 .features-grid {
