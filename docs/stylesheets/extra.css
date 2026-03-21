@@ -34,8 +34,20 @@
 
 /* ── Navigation refinements ── */
 
+/* ── Inline header + tabs: single bar ── */
+
 .md-tabs {
-  border-bottom: 1px solid var(--md-default-fg-color--lightest);
+  margin-top: calc(-1 * var(--md-header-height, 3rem));
+  padding-left: 11rem;
+  padding-right: 5rem;
+  background: transparent !important;
+  border-bottom: none;
+  position: relative;
+  z-index: 5;
+}
+
+.md-tabs__list {
+  justify-content: flex-start;
 }
 
 .md-nav__link {
