@@ -12,6 +12,8 @@ hide:
 .md-typeset h1 { display: none; }
 .md-content__button { display: none !important; }
 .md-content__inner { padding: 0; margin: 0; max-width: none; }
+.md-main__inner { margin-top: 0; }
+.md-content { padding-top: 0; }
 html { overflow-x: hidden; }
 
 /* Make page transparent so fixed visual shows through */
@@ -33,7 +35,7 @@ body { background: transparent !important; }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 1rem 1rem 1.5rem;
+  padding: 0 1rem 1rem;
 }
 
 .hero__content {
