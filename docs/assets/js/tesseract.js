@@ -617,25 +617,39 @@
     resize()
     window.addEventListener('resize', resize)
 
-    // Generate stars — spread across max viewport
+    // Generate stars
     var NUM = 220
     var stars = []
-    // Simple seeded pseudo-random
     var seed = 12345
     function rand() { seed = (seed * 16807 + 0) % 2147483647; return seed / 2147483647 }
+
+    // Light-mode palette: soft warm tones (lavender, lilac, rose-gold, warm white)
+    var lightColors = [
+      [180, 160, 220], // soft lavender
+      [190, 170, 210], // lilac
+      [200, 175, 195], // rose-tinted
+      [210, 190, 170], // warm gold
+      [175, 155, 210], // deeper lavender
+      [195, 180, 200]  // pale mauve
+    ]
+
     for (var i = 0; i < NUM; i++) {
+      var lc = lightColors[Math.floor(rand() * lightColors.length)]
       stars.push({
-        x: rand(),  // 0-1 normalized
+        x: rand(),
         y: rand(),
         size: rand() < 0.7 ? 1 : 1.5,
         group: i % 4,
         phase: rand() * Math.PI * 2,
         speed: 1.8 + rand() * 0.8,
         maxB: 0.8 + rand() * 0.2,
-        // Color: mix white and purple-tinted
-        r: rand() < 0.65 ? 255 : 200 + Math.floor(rand() * 20),
-        g: rand() < 0.65 ? 255 : 190 + Math.floor(rand() * 15),
-        b: 255
+        // Dark mode colors
+        dr: rand() < 0.65 ? 255 : 200 + Math.floor(rand() * 20),
+        dg: rand() < 0.65 ? 255 : 190 + Math.floor(rand() * 15),
+        db: 255,
+        // Light mode: soft glow radius
+        glowR: 2 + rand() * 3,
+        lr: lc[0], lg: lc[1], lb: lc[2]
       })
     }
 
@@ -653,25 +667,35 @@
 
       for (var i = 0; i < NUM; i++) {
         var s = stars[i]
-        var groupPhase = s.group * 1.5708 // pi/2
+        var groupPhase = s.group * 1.5708
         var raw = Math.sin(T * s.speed + groupPhase + s.phase)
         var pulse = raw * 0.5 + 0.5
         pulse = pulse * pulse
         var brightness = 0.08 + pulse * s.maxB
 
-        if (dark) {
-          ctx.globalAlpha = brightness
-          ctx.fillStyle = 'rgb(' + s.r + ',' + s.g + ',' + s.b + ')'
-        } else {
-          // Light mode: dark purple dust
-          ctx.globalAlpha = brightness * 0.6
-          ctx.fillStyle = 'rgba(80,40,150,0.7)'
-        }
-
         var px = s.x * w
         var py = s.y * h
-        var sz = s.size * dpr
-        ctx.fillRect(px, py, sz, sz)
+
+        if (dark) {
+          ctx.globalAlpha = brightness
+          ctx.fillStyle = 'rgb(' + s.dr + ',' + s.dg + ',' + s.db + ')'
+          var sz = s.size * dpr
+          ctx.beginPath()
+          ctx.arc(px, py, sz, 0, 6.2832)
+          ctx.fill()
+        } else {
+          // Light mode: soft glowing motes with radial gradient
+          var r = s.glowR * dpr
+          ctx.globalAlpha = brightness * 0.45
+          var grad = ctx.createRadialGradient(px, py, 0, px, py, r)
+          grad.addColorStop(0, 'rgba(' + s.lr + ',' + s.lg + ',' + s.lb + ',0.8)')
+          grad.addColorStop(0.4, 'rgba(' + s.lr + ',' + s.lg + ',' + s.lb + ',0.3)')
+          grad.addColorStop(1, 'rgba(' + s.lr + ',' + s.lg + ',' + s.lb + ',0)')
+          ctx.fillStyle = grad
+          ctx.beginPath()
+          ctx.arc(px, py, r, 0, 6.2832)
+          ctx.fill()
+        }
       }
 
       ctx.globalAlpha = 1
