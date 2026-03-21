@@ -12,7 +12,7 @@ hide:
 .md-typeset h1 { display: none; }
 .md-content__button { display: none !important; }
 .md-content__inner { padding: 0; margin: 0; max-width: none; }
-.md-main__inner { margin-top: clamp(-2.5rem, -1.5vh, -0.3rem); }
+.md-main__inner { margin-top: clamp(-3rem, -2.5vh, -0.3rem); }
 .md-content { padding-top: 0; }
 .md-typeset .feature-card h3 { margin: 0 0 0.15rem; }
 .md-typeset .feature-card p { margin: 0; }
@@ -60,10 +60,10 @@ body { background: transparent !important; }
 }
 
 .hero__logo canvas {
-  width: clamp(130px, 15vh, 220px);
-  height: clamp(130px, 15vh, 220px);
+  width: clamp(120px, 14vh, 220px);
+  height: clamp(120px, 14vh, 220px);
   filter: drop-shadow(0 0 22px rgba(140, 90, 255, 0.3));
-  margin-bottom: clamp(-40px, -4.5vh, -18px);
+  margin-bottom: clamp(-44px, -5vh, -18px);
 }
 
 /* ── 3D extruded title ── */

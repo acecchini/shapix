@@ -11,7 +11,7 @@ docs_dir: docs
 site_dir: site
 
 extra_css:
-  - stylesheets/extra.css?v=7
+  - stylesheets/extra.css?v=8
 
 extra_javascript:
   - assets/js/tesseract.js?v=5
