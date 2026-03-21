@@ -174,9 +174,9 @@ body { background: transparent !important; }
 .hero__actions .md-button:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 16px rgba(124, 77, 255, 0.3);
-  background: var(--md-primary-fg-color);
+  background: var(--md-primary-fg-color--dark);
   color: white;
-  border-color: var(--md-primary-fg-color);
+  border-color: var(--md-primary-fg-color--dark);
 }
 
 .hero__actions .md-button--primary:hover {
