@@ -121,7 +121,7 @@ body { background: transparent !important; }
 }
 
 .beartype-logo-inline {
-  height: 0.18em;
+  height: 0.06em;
   width: auto;
   vertical-align: 0;
   margin-right: 0.04em;
