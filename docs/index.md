@@ -113,6 +113,21 @@ body { background: transparent !important; }
   line-height: 1.7;
 }
 
+.beartype-link {
+  white-space: nowrap;
+}
+
+.beartype-logo-inline {
+  height: 1.1em;
+  width: auto;
+  vertical-align: -0.15em;
+  margin-right: 0.2em;
+}
+
+[data-md-color-scheme="slate"] .beartype-logo-inline {
+  filter: invert(1);
+}
+
 /* ── Buttons ── */
 .hero__actions {
   display: flex;
@@ -269,7 +284,7 @@ a.backend-logo:hover {
 }
 
 .backend-logo .jax-logo-img {
-  height: 22px;
+  height: 32px;
   width: auto;
 }
 
@@ -306,7 +321,7 @@ a.backend-logo:hover {
 <div class="hero__tagline">Runtime shape checking for the array age</div>
 
 <p class="hero__subtitle">
-Elegant shape and dtype validation for NumPy, JAX, and PyTorch arrays — powered by <a href="https://github.com/beartype/beartype">beartype</a>.
+Elegant shape and dtype validation for NumPy, JAX, and PyTorch arrays — powered by <a href="https://github.com/beartype/beartype" class="beartype-link"><img src="assets/images/beartype_logo.png" alt="beartype" class="beartype-logo-inline">beartype</a>.
 </p>
 
 <div class="hero__actions">
