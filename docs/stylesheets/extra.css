@@ -53,11 +53,22 @@
   justify-content: center;
   pointer-events: auto;
   max-width: none;
-  padding: 0 13rem;
+  padding: 0 13rem 0 10rem;
 }
 
 .md-tabs__list {
   justify-content: center;
+}
+
+/* Keep search + header icons above tabs overlay */
+.md-search {
+  position: relative;
+  z-index: 4;
+}
+
+.md-header__source {
+  position: relative;
+  z-index: 4;
 }
 
 .md-nav__link {
