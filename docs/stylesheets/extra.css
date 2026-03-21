@@ -45,7 +45,7 @@
 }
 
 [data-md-color-scheme="slate"] .md-header {
-  background: rgba(179, 136, 255, 0.08) !important;
+  background: rgba(179, 136, 255, 0.18) !important;
 }
 
 .md-tabs {
@@ -57,9 +57,9 @@
 }
 
 [data-md-color-scheme="slate"] .md-tabs {
-  background: rgba(179, 136, 255, 0.05) !important;
-  border-bottom: 1px solid rgba(179, 136, 255, 0.08);
-  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.15);
+  background: rgba(179, 136, 255, 0.12) !important;
+  border-bottom: 1px solid rgba(179, 136, 255, 0.15);
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.3);
 }
 
 .md-tabs__list {
