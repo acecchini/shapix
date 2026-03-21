@@ -53,7 +53,7 @@
   justify-content: center;
   pointer-events: auto;
   max-width: none;
-  padding: 0;
+  padding: 0 13rem;
 }
 
 .md-tabs__list {
@@ -111,10 +111,19 @@
 
 /* ── Header logo ── */
 
+.md-header__button.md-logo {
+  margin-right: 0;
+  padding-right: 0;
+}
+
 .md-header__button.md-logo img,
 .md-header__button.md-logo svg {
   width: 2.2rem;
   height: 2.2rem;
+}
+
+.md-header__title {
+  margin-left: 0.1rem;
 }
 
 /* ── Footer social icons ── */
