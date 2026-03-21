@@ -181,8 +181,8 @@
 
 /* ── CSS star field for all pages (dark mode) ── */
 
-[data-md-color-scheme="slate"] body::before,
-[data-md-color-scheme="slate"] body::after {
+body[data-md-color-scheme="slate"]::before,
+body[data-md-color-scheme="slate"]::after {
   content: '';
   position: fixed;
   inset: 0;
@@ -190,7 +190,7 @@
   z-index: 0;
 }
 
-[data-md-color-scheme="slate"] body::before {
+body[data-md-color-scheme="slate"]::before {
   width: 1px;
   height: 1px;
   background: transparent;
@@ -198,7 +198,7 @@
   animation: starDrift1 90s linear infinite, starPulse1 2.5s ease-in-out infinite;
 }
 
-[data-md-color-scheme="slate"] body::after {
+body[data-md-color-scheme="slate"]::after {
   width: 2px;
   height: 2px;
   background: transparent;
@@ -260,8 +260,8 @@ body {
 
 /* ── CSS particles for all pages (light mode) ── */
 
-[data-md-color-scheme="default"] body::before,
-[data-md-color-scheme="default"] body::after {
+body[data-md-color-scheme="default"]::before,
+body[data-md-color-scheme="default"]::after {
   content: '';
   position: fixed;
   inset: 0;
@@ -269,7 +269,7 @@ body {
   z-index: 0;
 }
 
-[data-md-color-scheme="default"] body::before {
+body[data-md-color-scheme="default"]::before {
   width: 2px;
   height: 2px;
   background: transparent;
@@ -277,7 +277,7 @@ body {
   animation: dustDrift1 80s linear infinite, dustPulse1 8s ease-in-out infinite;
 }
 
-[data-md-color-scheme="default"] body::after {
+body[data-md-color-scheme="default"]::after {
   width: 3px;
   height: 3px;
   background: transparent;
