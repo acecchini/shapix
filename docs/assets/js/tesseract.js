@@ -109,7 +109,7 @@
       '  vec3 wp=warp(p,T);',
       '  float d=length(wp-bpos(0,T))-brad(0,T);',
       '  for(int i=1;i<NB;i++){',
-      '    d=smin(d,length(wp-bpos(i,T))-brad(i,T),.5);',
+      '    d=smin(d,length(wp-bpos(i,T))-brad(i,T),1.2);',
       '  }',
       '  return d*.75;',
       '}',
