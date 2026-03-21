@@ -121,13 +121,17 @@ body { background: transparent !important; }
 }
 
 .beartype-logo-inline {
-  height: 0.85em;
+  height: 0.9em;
   width: auto;
-  vertical-align: -0.05em;
-  margin-right: 0.15em;
-  opacity: 0.5;
-  filter: grayscale(100%);
+  vertical-align: -0.1em;
+  margin-right: 0.1em;
+  opacity: 0.4;
+  filter: grayscale(100%) brightness(0.5);
   transition: all 0.3s ease;
+}
+
+[data-md-color-scheme="slate"] .beartype-logo-inline {
+  filter: grayscale(100%) brightness(0.5) invert(1);
 }
 
 .beartype-link:hover .beartype-logo-inline {
@@ -328,14 +332,14 @@ a.backend-logo:hover {
 <div class="hero__content" markdown>
 
 <div class="hero__logo">
-<canvas id="shapix-logo" width="200" height="200"></canvas>
+<canvas id="shapix-logo" width="240" height="240"></canvas>
 <div class="hero__title" id="shapix-title">Shapix</div>
 </div>
 
 <div class="hero__tagline">Runtime shape checking for the array age</div>
 
 <p class="hero__subtitle">
-Elegant shape and dtype validation for NumPy, JAX, and PyTorch arrays — powered by <a href="https://github.com/beartype/beartype" class="beartype-link"><img src="assets/images/beartype_bear.svg" alt="beartype" class="beartype-logo-inline">beartype</a>.
+Elegant shape and dtype validation for NumPy, JAX, and PyTorch arrays — powered by <a href="https://github.com/beartype/beartype" class="beartype-link"><img src="assets/images/beartype_bear.png" alt="beartype" class="beartype-logo-inline">beartype</a>.
 </p>
 
 <div class="hero__actions">
