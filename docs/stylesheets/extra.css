@@ -36,13 +36,18 @@
 
 /* ── Inline header + tabs: single bar ── */
 
+/* Lower header so tabs can sit above it */
+.md-header {
+  z-index: 3 !important;
+}
+
 .md-tabs {
   margin-top: calc(-1 * var(--md-header-height, 3rem));
   height: var(--md-header-height, 3rem);
   background: transparent !important;
   border-bottom: none;
   position: relative;
-  z-index: 3;
+  z-index: 5;
   pointer-events: none;
 }
 
@@ -57,12 +62,16 @@
 }
 
 .md-tabs__list {
-  justify-content: center;
+  pointer-events: auto;
 }
 
-/* Hide search from header */
-.md-search {
-  display: none !important;
+/* Let clicks pass through to header elements between tab links */
+.md-tabs__inner {
+  pointer-events: none;
+}
+
+.md-tabs__item {
+  pointer-events: auto;
 }
 
 .md-nav__link {
