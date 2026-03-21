@@ -29,12 +29,11 @@ body { background: transparent !important; }
 .hero {
   position: relative;
   z-index: 1;
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 4rem 1rem 2rem;
+  padding: 1rem 1rem 1.5rem;
 }
 
 .hero__content {
@@ -47,8 +46,8 @@ body { background: transparent !important; }
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.3rem;
-  margin-bottom: 0.5rem;
+  gap: 0;
+  margin-bottom: 0.3rem;
   transform-style: preserve-3d;
   transition: transform 0.08s ease-out;
 }
@@ -99,7 +98,7 @@ body { background: transparent !important; }
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--md-primary-fg-color);
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   opacity: 0.7;
 }
 
@@ -109,7 +108,7 @@ body { background: transparent !important; }
   font-weight: 500;
   color: var(--md-default-fg-color--light);
   max-width: 580px;
-  margin: 0 auto 2.5rem;
+  margin: 0 auto 1.5rem;
   line-height: 1.7;
 }
 
@@ -134,7 +133,7 @@ body { background: transparent !important; }
   gap: 1rem;
   justify-content: center;
   flex-wrap: wrap;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
 }
 
 .hero__actions .md-button {
@@ -306,7 +305,7 @@ a.backend-logo:hover {
 /* ── Responsive ── */
 @media (max-width: 600px) {
   .hero__letter { font-size: 3rem; }
-  .hero__logo canvas { width: 180px; height: 180px; }
+  .hero__logo canvas { width: 140px; height: 140px; }
   .backends__logos { gap: 1.5rem; }
 }
 </style>
@@ -317,7 +316,7 @@ a.backend-logo:hover {
 <div class="hero__content" markdown>
 
 <div class="hero__logo">
-<canvas id="shapix-logo" width="280" height="280"></canvas>
+<canvas id="shapix-logo" width="200" height="200"></canvas>
 <div class="hero__title" id="shapix-title">Shapix</div>
 </div>
 
