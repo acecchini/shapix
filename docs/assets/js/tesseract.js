@@ -9,8 +9,9 @@
 
   var tmx = 0.5, tmy = 0.5, mx = 0.5, my = 0.5
   var tOff = Math.random() * 1000
-  var _afs = []       // track all animation frame IDs for cleanup
+  var _uiAfs = []      // track logo/title animation frame IDs
   var _resizeCb = null // track resize listener for cleanup
+  var _bgRunning = false
 
   document.addEventListener('mousemove', function (e) {
     tmx = e.clientX / window.innerWidth
@@ -25,14 +26,26 @@
 
   function start() {
     var el = document.getElementById('shapix-visual')
-    if (!el) return
+    if (!el) {
+      el = document.createElement('div')
+      el.id = 'shapix-visual'
+      el.style.cssText = 'position:fixed;inset:0;z-index:0;pointer-events:none;'
+      document.body.insertBefore(el, document.body.firstChild)
+    }
     if (!el.offsetWidth) {
       requestAnimationFrame(function () { setTimeout(start, 30) })
       return
     }
-    initBg(el)
-    initLogo()
-    initTitle()
+    var isHome = !!document.querySelector('.hero__logo')
+    el.classList.toggle('shapix-visual--blurred', !isHome)
+    if (!_bgRunning) {
+      initBg(el)
+      _bgRunning = true
+    }
+    if (isHome) {
+      initLogo()
+      initTitle()
+    }
   }
 
   /* ================================================================
@@ -333,7 +346,7 @@
       gl.uniform1f(uCD, dark)
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
 
-      _afs.push(requestAnimationFrame(frame))
+      requestAnimationFrame(frame)
     }
 
     resize()
@@ -350,7 +363,7 @@
     var c = document.getElementById('shapix-logo')
     if (!c) return
     var ctx = c.getContext('2d')
-    var S = 270, dpr = Math.min(window.devicePixelRatio || 1, 2)
+    var S = 220, dpr = Math.min(window.devicePixelRatio || 1, 2)
     c.width = S * dpr; c.height = S * dpr
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
@@ -405,7 +418,7 @@
     function draw() {
       var t = performance.now() * 0.001 + tOff
       ctx.clearRect(0, 0, S, S)
-      var cx = S / 2, cy = S / 2, sc = S * 0.26
+      var cx = S / 2, cy = S / 2, sc = S * 0.32
 
       var floatY = Math.sin(t * 0.7) * 6
       var breath = 1 + 0.1 * Math.sin(t * 0.6)
@@ -516,7 +529,7 @@
       ctx.globalAlpha = 1
       ctx.shadowBlur = 0
 
-      _afs.push(requestAnimationFrame(draw))
+      _uiAfs.push(requestAnimationFrame(draw))
     }
     draw()
   }
@@ -539,16 +552,14 @@
         var dx = (mx - 0.5) * 15
         var dy = -(my - 0.5) * 10
         logoEl.style.transform = 'rotateY(' + dx + 'deg) rotateX(' + (dy + 5) + 'deg)'
-        _afs.push(requestAnimationFrame(updateTilt))
+        _uiAfs.push(requestAnimationFrame(updateTilt))
       })()
     }
   }
 
   function cleanup() {
-    for (var i = 0; i < _afs.length; i++) cancelAnimationFrame(_afs[i])
-    _afs = []
-    var old = document.querySelector('#shapix-visual canvas')
-    if (old) old.remove()
+    for (var i = 0; i < _uiAfs.length; i++) cancelAnimationFrame(_uiAfs[i])
+    _uiAfs = []
   }
 
   function init() {
@@ -562,16 +573,11 @@
   else
     requestAnimationFrame(init)
 
-  // SPA navigation: watch for #shapix-visual appearing without a canvas child
-  // This works regardless of when MkDocs Material's JS loads
-  var _observed = false
+  // SPA navigation: detect URL changes from MkDocs Material instant loading
+  var _lastHref = location.href
   new MutationObserver(function () {
-    var el = document.getElementById('shapix-visual')
-    if (el && !el.querySelector('canvas')) {
-      if (!_observed) { _observed = true; return } // skip initial (handled above)
-      init()
-    } else if (!el) {
-      _observed = true // navigated away from home
-    }
+    if (location.href === _lastHref) return
+    _lastHref = location.href
+    init()
   }).observe(document.body, { childList: true, subtree: true })
 })()

@@ -157,3 +157,60 @@ html {
   color: white;
   text-decoration: underline;
 }
+
+/* ── Global bubble background ── */
+
+body,
+.md-main,
+.md-content {
+  background: transparent !important;
+}
+
+#shapix-visual.shapix-visual--blurred canvas {
+  filter: blur(50px);
+  opacity: 0.4;
+}
+
+[data-md-color-scheme="slate"] #shapix-visual.shapix-visual--blurred canvas {
+  filter: blur(50px);
+  opacity: 0.3;
+}
+
+/* ── Frosted glass content for doc pages ── */
+
+.md-content__inner {
+  background: rgba(255,255,255,0.82);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-radius: 12px;
+}
+
+[data-md-color-scheme="slate"] .md-content__inner {
+  background: rgba(13,17,23,0.82);
+}
+
+.md-sidebar__inner {
+  background: rgba(255,255,255,0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 8px;
+}
+
+[data-md-color-scheme="slate"] .md-sidebar__inner {
+  background: rgba(13,17,23,0.7);
+}
+
+.md-footer {
+  position: relative;
+  z-index: 1;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+[data-md-color-scheme="default"] .md-footer {
+  background: rgba(50, 30, 80, 0.95);
+}
+
+[data-md-color-scheme="slate"] .md-footer {
+  background: rgba(8, 10, 16, 0.95);
+}
