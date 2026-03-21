@@ -116,7 +116,7 @@ body { background: transparent !important; }
 
 .hero__powered {
   font-family: 'Outfit', sans-serif;
-  font-size: 1.1rem;
+  font-size: 1.6rem;
   font-weight: 600;
   text-align: center;
   margin: 0 auto 0.75rem;
@@ -131,12 +131,12 @@ body { background: transparent !important; }
 }
 
 .beartype-logo-inline {
-  height: 18px !important;
-  max-height: 18px !important;
+  height: 36px !important;
+  max-height: 36px !important;
   width: auto !important;
-  max-width: 20px !important;
-  vertical-align: -2px;
-  margin-right: 3px;
+  max-width: 40px !important;
+  vertical-align: -4px;
+  margin-right: 5px;
   opacity: 0.4;
   filter: grayscale(100%) brightness(0.5);
   transition: all 0.3s ease;
@@ -357,7 +357,7 @@ a.backend-logo:hover {
 <div class="hero__tagline">Runtime shape checking for the array age</div>
 
 <p class="hero__subtitle">
-Elegant shape and dtype validation for NumPy, JAX, and PyTorch arrays.
+Elegant shape and dtype validation for NumPy, JAX, and PyTorch arrays
 </p>
 
 <p class="hero__powered">
