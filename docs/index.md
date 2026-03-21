@@ -108,8 +108,8 @@ body { background: transparent !important; }
 .hero__subtitle {
   font-family: 'Outfit', sans-serif;
   font-size: 1rem;
-  font-weight: 500;
-  color: var(--md-default-fg-color--light);
+  font-weight: 600;
+  color: var(--md-default-fg-color);
   max-width: 520px;
   margin: 0 auto 0.2rem;
   line-height: 1.3;
