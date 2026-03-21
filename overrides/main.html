@@ -1,9 +1,12 @@
 {% extends "base.html" %}
 
-{% block body %}
+{% block scripts %}
 {{ super() }}
-<div class="star-layer star-layer-1"></div>
-<div class="star-layer star-layer-2"></div>
-<div class="star-layer star-layer-3"></div>
-<div class="star-layer star-layer-4"></div>
+<script>
+["1","2","3","4"].forEach(function(n) {
+  var d = document.createElement("div");
+  d.className = "star-layer star-layer-" + n;
+  document.body.appendChild(d);
+});
+</script>
 {% endblock %}
