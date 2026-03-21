@@ -215,7 +215,7 @@
       '  col=col/(col+1.);',
       '',
       '  // Background blend — only show actual bubbles, nothing else',
-      '  vec3 bg=mix(vec3(.98,.97,1.),vec3(.04,.048,.08),D);',
+      '  vec3 bg=mix(vec3(.953,.933,1.),vec3(.04,.048,.08),D);',
       '  float alpha=max(max(col.r,col.g),col.b);',
       '  alpha=smoothstep(.02,.08,alpha);',
       '  float boost=mix(1.3,1.25,D);',
