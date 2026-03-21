@@ -39,8 +39,6 @@
 .md-tabs {
   margin-top: calc(-1 * var(--md-header-height, 3rem));
   height: var(--md-header-height, 3rem);
-  padding-left: 14rem;
-  padding-right: 13rem;
   background: transparent !important;
   border-bottom: none;
   position: relative;
@@ -52,11 +50,14 @@
   height: 100%;
   display: flex;
   align-items: center;
+  justify-content: center;
   pointer-events: auto;
+  max-width: none;
+  padding: 0;
 }
 
 .md-tabs__list {
-  justify-content: flex-start;
+  justify-content: center;
 }
 
 .md-nav__link {
