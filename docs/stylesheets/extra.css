@@ -87,6 +87,14 @@
   font-size: 0.9rem;
 }
 
+/* ── Header logo ── */
+
+.md-header__button.md-logo img,
+.md-header__button.md-logo svg {
+  width: 1.8rem;
+  height: 1.8rem;
+}
+
 /* ── Footer social icons ── */
 
 .md-social__link svg {
