@@ -8,6 +8,7 @@
   'use strict'
 
   var tmx = 0.5, tmy = 0.5, mx = 0.5, my = 0.5
+  var tOff = Math.random() * 1000
 
   document.addEventListener('mousemove', function (e) {
     tmx = e.clientX / window.innerWidth
@@ -335,7 +336,7 @@
 
     function frame(t) {
       mx += (tmx - mx) * .06; my += (tmy - my) * .06
-      var time = t * .001, dark = dk()
+      var time = t * .001 + tOff, dark = dk()
 
       gl.bindFramebuffer(gl.FRAMEBUFFER, fboObj.fbo)
       gl.viewport(0, 0, fboObj.w, fboObj.h)
@@ -433,7 +434,7 @@
     }
 
     function draw() {
-      var t = performance.now() * 0.001
+      var t = performance.now() * 0.001 + tOff
       ctx.clearRect(0, 0, S, S)
       var cx = S / 2, cy = S / 2, sc = S * 0.26
 
