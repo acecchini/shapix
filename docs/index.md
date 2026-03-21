@@ -14,6 +14,10 @@ hide:
 .md-content__inner { padding: 0; margin: 0; max-width: none; }
 .md-main__inner { margin-top: clamp(-2.5rem, -2vh, -0.5rem); }
 .md-content { padding-top: 0; }
+.md-typeset .feature-card h3 { margin: 0 0 0.15rem; }
+.md-typeset .feature-card p { margin: 0; }
+.md-typeset .hero__content p { margin: 0; }
+.md-typeset .hero__content .hero__powered { margin: 0 auto 0.3rem; }
 .md-footer { display: none !important; }
 html { overflow-x: hidden; }
 
