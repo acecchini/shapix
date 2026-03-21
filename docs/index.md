@@ -6,7 +6,7 @@ hide:
   - toc
 ---
 
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@700;800;900&display=swap" rel="stylesheet">
 
 <style>
 .md-typeset h1 { display: none; }
@@ -25,7 +25,7 @@ body { background: transparent !important; }
   pointer-events: none;
 }
 
-/* ── Hero: full viewport, centered ── */
+/* ── Hero ── */
 .hero {
   position: relative;
   z-index: 1;
@@ -39,61 +39,63 @@ body { background: transparent !important; }
 
 .hero__content {
   text-align: center;
+  perspective: 800px;
 }
 
-/* ── Logo + Title (stacked vertically) ── */
+/* ── Logo + Title (stacked, 3D tilt via JS) ── */
 .hero__logo {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.3rem;
   margin-bottom: 0.5rem;
-  perspective: 800px;
   transform-style: preserve-3d;
+  transition: transform 0.08s ease-out;
 }
 
 .hero__logo canvas {
-  filter: drop-shadow(0 0 30px rgba(124, 77, 255, 0.45));
+  filter: drop-shadow(0 0 35px rgba(124, 77, 255, 0.5));
 }
 
+/* ── 3D extruded title ── */
 .hero__title {
   display: flex;
   gap: 0;
+  transform: rotateX(8deg);
+  transform-origin: center bottom;
 }
 
-/* ── 3D extruded title letters ── */
 .hero__letter {
   display: inline-block;
-  font-family: 'Syne', sans-serif;
-  font-size: 6rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  background: linear-gradient(180deg, #e0d4ff 0%, #b388ff 45%, #7c4dff 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  filter:
-    drop-shadow(0 1px 0 #5a3abf)
-    drop-shadow(0 1px 0 #5535b0)
-    drop-shadow(0 1px 0 #4f30a5)
-    drop-shadow(0 1px 0 #4a2b9a)
-    drop-shadow(0 2px 6px rgba(70,35,150,0.35))
-    drop-shadow(0 0 20px rgba(124,77,255,0.2));
-  animation: letterFloat 3s ease-in-out infinite;
-  transform-style: preserve-3d;
+  font-family: 'Outfit', sans-serif;
+  font-size: 4.8rem;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  color: #c9b3ff;
+  text-shadow:
+    0 1px 0 #6b4bbd,
+    0 2px 0 #6344b5,
+    0 3px 0 #5b3dad,
+    0 4px 0 #5336a5,
+    0 5px 0 #4b2f9d,
+    0 6px 0 #432895,
+    0 7px 0 #3b218d,
+    0 8px 0 #331a85,
+    0 9px 3px rgba(40,15,100,0.5),
+    0 0 20px rgba(124,77,255,0.15);
+  animation: letterFloat 3.5s ease-in-out infinite;
 }
 
 @keyframes letterFloat {
-  0%, 100% { transform: translateY(0) rotateX(0deg); }
-  25% { transform: translateY(-8px) rotateX(8deg); }
-  75% { transform: translateY(4px) rotateX(-4deg); }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
 }
 
 /* ── Tagline & Subtitle ── */
 .hero__tagline {
-  font-family: 'Syne', sans-serif;
+  font-family: 'Outfit', sans-serif;
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--md-primary-fg-color);
@@ -102,7 +104,7 @@ body { background: transparent !important; }
 }
 
 .hero__subtitle {
-  font-family: 'Syne', sans-serif;
+  font-family: 'Outfit', sans-serif;
   font-size: 1.15rem;
   font-weight: 500;
   color: var(--md-default-fg-color--light);
@@ -121,9 +123,9 @@ body { background: transparent !important; }
 }
 
 .hero__actions .md-button {
-  font-family: 'Syne', sans-serif;
+  font-family: 'Outfit', sans-serif;
   font-size: 0.95rem;
-  font-weight: 600;
+  font-weight: 700;
   padding: 0.7rem 2rem;
   border-radius: 2rem;
 }
@@ -234,22 +236,27 @@ a.backend-logo:hover {
   height: 32px;
 }
 
+.backend-logo .jax-logo-img {
+  height: 22px;
+  width: auto;
+}
+
 .backend-logo span {
-  font-family: 'Syne', sans-serif;
+  font-family: 'Outfit', sans-serif;
   font-size: 1.15rem;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.02em;
 }
 
 .backend-logo--numpy:hover span { color: #4DABCF; }
-.backend-logo--jax:hover span { color: #5B4B8A; }
+.backend-logo--jax:hover span { color: #5e97f6; }
 .backend-logo--torch:hover span { color: #EE4C2C; }
 .backend-logo--optree:hover span { color: #4CAF50; }
 
 /* ── Responsive ── */
 @media (max-width: 600px) {
-  .hero__letter { font-size: 3.5rem; }
-  .hero__logo canvas { width: 120px; height: 120px; }
+  .hero__letter { font-size: 3rem; }
+  .hero__logo canvas { width: 180px; height: 180px; }
   .backends__logos { gap: 1.5rem; }
 }
 </style>
@@ -260,7 +267,7 @@ a.backend-logo:hover {
 <div class="hero__content" markdown>
 
 <div class="hero__logo">
-<canvas id="shapix-logo" width="160" height="160"></canvas>
+<canvas id="shapix-logo" width="280" height="280"></canvas>
 <div class="hero__title" id="shapix-title">Shapix</div>
 </div>
 
@@ -349,7 +356,7 @@ Each thread gets independent dimension bindings via `threading.local()`. Safe fo
 </a>
 
 <a href="https://jax.readthedocs.io/" class="backend-logo backend-logo--jax" target="_blank" rel="noopener">
-<svg viewBox="0 0 24 24" fill="#5B4B8A"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>
+<img src="assets/images/jax_logo.svg" alt="JAX" class="jax-logo-img">
 <span>JAX</span>
 </a>
 
@@ -360,7 +367,7 @@ Each thread gets independent dimension bindings via `threading.local()`. Safe fo
 
 <a href="https://optree.readthedocs.io/" class="backend-logo backend-logo--optree" target="_blank" rel="noopener">
 <svg viewBox="0 0 24 24" fill="#4CAF50"><path d="M17 16l-4-4V8.82C14.16 8.4 15 7.3 15 6c0-1.66-1.34-3-3-3S9 4.34 9 6c0 1.3.84 2.4 2 2.82V12l-4 4H3v5h5v-3.05l4-4.2 4 4.2V21h5v-5h-4z"/></svg>
-<span>optree</span>
+<span>OpTree</span>
 </a>
 
 </div>

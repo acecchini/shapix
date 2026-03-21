@@ -1,13 +1,12 @@
 /**
- * Shapix Visual v3 — Subdued 3D light rays with bloom post-processing,
- * icosahedron logo, and animated 3D title with mouse interaction.
- * Two-pass WebGL2 rendering: scene FBO -> composite with bloom/CA/vignette.
+ * Shapix Visual v4 — 3D morphing bubbles (ray-marched metaballs),
+ * icosahedron logo, and 3D extruded title.
+ * Two-pass WebGL2: scene FBO -> composite with subtle bloom.
  * Zero dependencies.
  */
 ;(function () {
   'use strict'
 
-  // Global mouse state (shared across all components)
   var tmx = 0.5, tmy = 0.5, mx = 0.5, my = 0.5
 
   document.addEventListener('mousemove', function (e) {
@@ -34,8 +33,7 @@
   }
 
   /* ================================================================
-   * BACKGROUND — 3D light rays with multi-pass post-processing
-   * Stronger mouse interaction, more curves, reduced brightness
+   * BACKGROUND — Ray-marched 3D metaballs / morphing bubbles
    * ================================================================ */
   function initBg(el) {
     var canvas = document.createElement('canvas')
@@ -52,7 +50,7 @@
 
     var VERT = '#version 300 es\nlayout(location=0) in vec2 p;void main(){gl_Position=vec4(p,0,1);}'
 
-    // ── Scene shader: curves + particles + nebula ──
+    // ── Scene shader: ray-marched metaballs ──
     var FRAG_SCENE = [
       '#version 300 es',
       'precision highp float;',
@@ -62,172 +60,132 @@
       'uniform float D;',
       'out vec4 O;',
       '',
-      '#define NC 16',
-      '#define NS 56',
-      '#define PI 3.14159265',
-      '#define NPART 30',
+      '#define NB 6',
+      '#define STEPS 50',
       '',
-      'vec3 hash33(vec3 p){',
-      '  p=fract(p*vec3(.1031,.103,.0973));',
-      '  p+=dot(p,p.yxz+33.33);',
-      '  return fract((p.xxy+p.yxx)*p.zyx);',
+      'float smin(float a,float b,float k){',
+      '  float h=clamp(.5+.5*(b-a)/k,0.,1.);',
+      '  return mix(b,a,h)-k*h*(1.-h);',
       '}',
       '',
-      'float noise3(vec3 p){',
-      '  vec3 i=floor(p),f=fract(p);',
-      '  f=f*f*(3.-2.*f);',
-      '  float a=dot(hash33(i),vec3(1))/3.,',
-      '        b=dot(hash33(i+vec3(1,0,0)),vec3(1))/3.,',
-      '        c=dot(hash33(i+vec3(0,1,0)),vec3(1))/3.,',
-      '        d=dot(hash33(i+vec3(1,1,0)),vec3(1))/3.,',
-      '        e=dot(hash33(i+vec3(0,0,1)),vec3(1))/3.,',
-      '        f1=dot(hash33(i+vec3(1,0,1)),vec3(1))/3.,',
-      '        g=dot(hash33(i+vec3(0,1,1)),vec3(1))/3.,',
-      '        h=dot(hash33(i+vec3(1,1,1)),vec3(1))/3.;',
-      '  return mix(mix(mix(a,b,f.x),mix(c,d,f.x),f.y),',
-      '             mix(mix(e,f1,f.x),mix(g,h,f.x),f.y),f.z);',
-      '}',
-      '',
-      'float fbm(vec3 p){return noise3(p)*.6+noise3(p*2.03)*.3+noise3(p*4.01)*.1;}',
-      '',
-      'vec3 hsl2rgb(float h,float s,float l){',
-      '  vec3 rgb=clamp(abs(mod(h*6.+vec3(0,4,2),6.)-3.)-1.,0.,1.);',
-      '  return l+s*(rgb-.5)*(1.-abs(2.*l-1.));',
-      '}',
-      '',
-      'vec3 curve(int i,float s,float t){',
-      '  float fi=float(i),phase=fi*1.618;',
-      '  float fx=1.+mod(fi*3.,4.),fy=1.+mod(fi*2.+1.,5.),fz=.5+mod(fi*1.5,3.);',
-      '  float speed=.7+mod(fi*.73,.8);',
-      '  float drift=t*(.15+fi*.02)*speed;',
-      '  float ax=2.8+sin(t*.1+phase)*.8;',
-      '  float ay=2.0+cos(t*.13+phase*.7)*.7;',
-      '  float az=2.5+sin(t*.08+phase*1.3)*.9;',
-      '  float x=ax*sin(s*fx*PI+drift+phase);',
-      '  float y=ay*sin(s*fy*PI+drift*1.3+phase*2.1);',
-      '  float z=az*cos(s*fz*PI+drift*.7+phase*.5)-.2;',
-      '  vec3 p=vec3(x,y,z);',
-      '  float ns=s*5.+fi*2.+t*.15;',
-      '  p.x+=sin(ns*1.3+t*.4)*cos(ns*.7+fi)*.25;',
-      '  p.y+=cos(ns*1.1+t*.3)*sin(ns*.9+fi*1.5)*.20;',
-      '  p.z+=sin(ns*.8+t*.2)*cos(ns*1.2+fi*.7)*.15;',
-      '  return p;',
-      '}',
-      '',
-      'vec2 proj(vec3 p,float cam){',
-      '  float w=1./(cam-p.z);',
-      '  return vec2(p.x*w,p.y*w);',
-      '}',
-      '',
-      'float envelope(int i,float t){',
+      'vec3 bpos(int i,float t){',
       '  float fi=float(i);',
-      '  float cycle=sin(t*(.12+fi*.015)+fi*2.39)*.5+.5;',
-      '  return smoothstep(.05,.4,cycle)*smoothstep(1.,.7,cycle);',
+      '  return vec3(',
+      '    sin(t*(.12+fi*.03)+fi*2.1)*(1.5+.4*sin(t*.08+fi)),',
+      '    cos(t*(.1+fi*.025)+fi*1.7)*(1.2+.3*cos(t*.06+fi*1.3)),',
+      '    sin(t*(.08+fi*.02)+fi*3.1)*(1.0+.3*sin(t*.1+fi*.7))',
+      '  );',
+      '}',
+      '',
+      'float brad(int i,float t){',
+      '  float fi=float(i);',
+      '  return .55+.2*sin(t*(.2+fi*.05)+fi*2.5);',
+      '}',
+      '',
+      'vec3 bcol(int i){',
+      '  if(i==0)return vec3(.45,.28,.95);',
+      '  if(i==1)return vec3(.6,.45,.9);',
+      '  if(i==2)return vec3(.22,.72,.68);',
+      '  if(i==3)return vec3(.78,.40,.85);',
+      '  if(i==4)return vec3(.28,.42,.88);',
+      '  return vec3(.55,.72,.5);',
+      '}',
+      '',
+      'float scene(vec3 p){',
+      '  float d=length(p-bpos(0,T))-brad(0,T);',
+      '  for(int i=1;i<NB;i++){',
+      '    d=smin(d,length(p-bpos(i,T))-brad(i,T),.8);',
+      '  }',
+      '  return d;',
+      '}',
+      '',
+      'vec3 scol(vec3 p){',
+      '  vec3 c=vec3(0);float tw=0.;',
+      '  for(int i=0;i<NB;i++){',
+      '    float w=1./(1.+pow(length(p-bpos(i,T)),4.));',
+      '    c+=bcol(i)*w;tw+=w;',
+      '  }',
+      '  return c/tw;',
+      '}',
+      '',
+      'vec3 norm(vec3 p){',
+      '  vec2 e=vec2(.002,0);',
+      '  return normalize(vec3(',
+      '    scene(p+e.xyy)-scene(p-e.xyy),',
+      '    scene(p+e.yxy)-scene(p-e.yxy),',
+      '    scene(p+e.yyx)-scene(p-e.yyx)',
+      '  ));',
       '}',
       '',
       'void main(){',
       '  vec2 uv=(gl_FragCoord.xy-.5*R)/min(R.x,R.y);',
       '  vec2 m=(M-.5);',
       '',
-      '  // Mouse lens warp',
-      '  uv+=m*.12*length(uv);',
+      '  // Camera rotation: mouse + slow auto-orbit',
+      '  float ry=m.x*.6,rx=m.y*.4;',
+      '  float cy=cos(ry),sy=sin(ry),cx=cos(rx),sx=sin(rx);',
+      '  mat3 mRot=mat3(cy,sx*sy,-cx*sy, 0.,cx,sx, sy,-sx*cy,cx*cy);',
+      '  float ao=T*.04;',
+      '  mat3 aRot=mat3(cos(ao),0.,sin(ao), 0.,1.,0., -sin(ao),0.,cos(ao));',
+      '  mat3 cam=mRot*aRot;',
       '',
-      '  // Strong camera rotation from mouse',
-      '  float ry=m.x*1.0,rx=m.y*.8;',
-      '  float cy2=cos(ry),sy2=sin(ry),cx2=cos(rx),sx2=sin(rx);',
-      '  mat3 cam=mat3(cy2,sx2*sy2,-cx2*sy2, 0.,cx2,sx2, sy2,-sx2*cy2,cx2*cy2);',
+      '  vec3 ro=cam*vec3(0,0,-5.);',
+      '  vec3 rd=cam*normalize(vec3(uv,1.5));',
       '',
-      '  float zoom=5.5+sin(T*.15)*.15;',
+      '  // Ray march',
+      '  float t=0.,minD=1e9;',
+      '  vec3 minP=ro;',
+      '  for(int i=0;i<STEPS;i++){',
+      '    vec3 p=ro+rd*t;',
+      '    float d=scene(p);',
+      '    if(d<minD){minD=d;minP=p;}',
+      '    if(abs(d)<.003)break;',
+      '    t+=d;',
+      '    if(t>12.)break;',
+      '  }',
       '',
       '  vec3 col=vec3(0);',
-      '  vec3 c1=vec3(.486,.302,1),c2=vec3(.702,.533,1),c3=vec3(.918,.502,.988),',
-      '       c4=vec3(.45,.88,1),c5=vec3(1,.6,.9),c6=vec3(.3,.95,.7);',
       '',
-      '  for(int i=0;i<NC;i++){',
-      '    float env=envelope(i,T);',
-      '    if(env<.01)continue;',
-      '    float fi=float(i),minD=1e9,bestS=0.,bestZ=0.;',
-      '    vec2 bestDelta=vec2(0);',
-      '    float wf=.7+mod(fi*.47,.6);',
+      '  if(minD<.003){',
+      '    vec3 p=ro+rd*t;',
+      '    vec3 n=norm(p);',
+      '    vec3 base=scol(p);',
+      '    vec3 ldir=normalize(vec3(.3,1.,-.5));',
       '',
-      '    for(int j=0;j<NS;j++){',
-      '      float s=float(j)/float(NS-1);',
-      '      vec3 p3=cam*curve(i,s,T);',
-      '      vec2 p2=proj(p3,zoom);',
-      '      vec2 delta=uv-p2;',
-      '      float d=length(delta);',
-      '      if(d<minD){minD=d;bestS=s;bestZ=p3.z;bestDelta=delta;}',
-      '    }',
+      '    // Half-lambert diffuse',
+      '    float diff=dot(n,ldir)*.5+.5;',
+      '    diff=diff*diff;',
       '',
-      '    float dn=clamp((bestZ+2.5)/4.5,0.,1.);',
-      '    float bt=mix(50.,3000.,dn*dn)*wf;',
-      '    float core=exp(-minD*minD*bt*2.5);',
-      '    float inner=exp(-minD*minD*bt*.3);',
-      '    float halo=exp(-minD*minD*bt*.025)*.1;',
-      '    float db=mix(.15,1.3,dn);',
+      '    // Fresnel rim',
+      '    float fres=pow(1.-max(dot(n,-rd),0.),3.);',
       '',
-      '    float pw=smoothstep(0.,.12,bestS)*smoothstep(1.,.88,bestS);',
-      '    pw*=.5+.5*sin(bestS*6.28+T*.5+fi);',
-      '    pw=max(pw,.12);',
+      '    // Subsurface scatter approx',
+      '    float sss=pow(max(dot(normalize(rd+ldir*.5),n),0.),4.)*.2;',
       '',
-      '    float nc=3.+mod(fi*1.3,4.);',
-      '    float pulse=fract(bestS*nc-T*(.6+fi*.08));',
-      '    float pi2=exp(-pulse*pulse*30.)*2.;',
-      '    float nf=exp(-minD*minD*bt*5.)*pi2;',
+      '    // Iridescent edge shift',
+      '    float irid=fres*4.;',
+      '    vec3 iridCol=vec3(',
+      '      .5+.5*sin(irid),',
+      '      .5+.5*sin(irid+2.1),',
+      '      .5+.5*sin(irid+4.2)',
+      '    );',
       '',
-      '    float ci=mod(fi*.37+T*.05,1.);',
-      '    vec3 b1,b2;',
-      '    if(ci<.17){b1=c1;b2=c2;}',
-      '    else if(ci<.33){b1=c2;b2=c3;}',
-      '    else if(ci<.5){b1=c3;b2=c4;}',
-      '    else if(ci<.67){b1=c4;b2=c6;}',
-      '    else if(ci<.83){b1=c6;b2=c5;}',
-      '    else{b1=c5;b2=c1;}',
-      '    float cp=bestS+sin(T*.2+fi*1.3)*.3;',
-      '    vec3 rc=mix(b1,b2,sin(cp*PI)*.5+.5);',
-      '    float hue=mod(fi*.083+bestS*.15+T*.02,1.);',
-      '    rc=mix(rc,hsl2rgb(hue,.7,.55),.25);',
-      '',
-      '    vec3 ct=vec3(0);',
-      '    ct+=vec3(.72,.6,.95)*core*1.1;',
-      '    ct+=rc*inner*.9;',
-      '    ct+=rc*.5*halo;',
-      '    ct+=vec3(.7,.58,.92)*nf*.6;',
-      '    ct*=env*db*pw;',
-      '',
-      '    float fl=exp(-bestDelta.y*bestDelta.y*bt*3.)*exp(-bestDelta.x*bestDelta.x*5.);',
-      '    fl*=pi2*.3;',
-      '    ct+=rc*.4*fl*env;',
-      '',
-      '    col+=ct;',
+      '    col=base*(.18+diff*.55)+base*fres*.22+base*sss+iridCol*fres*.08;',
+      '    col*=exp(-t*.05);',
       '  }',
       '',
-      '  for(int i=0;i<NPART;i++){',
-      '    float fi=float(i);',
-      '    vec3 seed=vec3(fi*1.73,fi*2.31,fi*.97);',
-      '    vec3 pos=hash33(seed)*5.-2.5;',
-      '    pos.y+=sin(T*.4+pos.x*2.)*.4;',
-      '    pos.x+=cos(T*.3+pos.z*1.5)*.3;',
-      '    pos.z+=sin(T*.2+fi*.5)*.5-.3;',
-      '    pos=cam*pos;',
-      '    vec2 pp=proj(pos,zoom);',
-      '    float d=length(uv-pp);',
-      '    float dp=clamp((pos.z+2.)/4.,0.,1.);',
-      '    float sparkle=sin(T*(3.+fi*.5)+fi*10.)*.5+.5;',
-      '    col+=hsl2rgb(mod(fi*.05+T*.01,1.),.6,.55)*exp(-d*d*20000.)*dp*sparkle*.3;',
-      '  }',
+      '  // Ambient glow from nearest blob',
+      '  float glow=exp(-minD*minD*2.5);',
+      '  col+=scol(minP)*glow*.05;',
       '',
-      '  vec3 np=vec3(uv*2.,T*.025);',
-      '  float neb=fbm(np)*.5+fbm(np*1.5+30.)*.3;',
-      '  col+=mix(vec3(.12,.04,.25),vec3(.04,.12,.25),neb)*neb*.09*D;',
-      '',
-      '  col+=vec3(.22,.1,.38)*exp(-length(uv)*1.2)*.04;',
+      '  // Subtle background atmosphere',
+      '  col+=mix(vec3(.04,.02,.1),vec3(.02,.05,.1),uv.x*.5+.5)*D*.03;',
       '',
       '  O=vec4(col,1);',
       '}'
     ].join('\n')
 
-    // ── Composite shader: bloom + CA + mouse warp + vignette + grain ──
+    // ── Composite shader: subtle bloom + vignette ──
     var FRAG_COMP = [
       '#version 300 es',
       'precision highp float;',
@@ -235,48 +193,41 @@
       'uniform vec2 R;',
       'uniform float T;',
       'uniform float D;',
-      'uniform vec2 M;',
       'out vec4 O;',
       '',
       'void main(){',
       '  vec2 tc=gl_FragCoord.xy/R;',
       '  vec2 uv=(gl_FragCoord.xy-.5*R)/min(R.x,R.y);',
-      '  vec2 m=(M-.5);',
-      '',
-      '  // Subtle mouse lens warp',
-      '  tc+=m*.008*length(uv);',
-      '',
       '  vec3 scene=texture(uScene,tc).rgb;',
       '',
+      '  // Very subtle bloom',
       '  vec3 bloom=vec3(0);float tw=0.;',
       '  for(int i=0;i<8;i++){',
       '    float a=float(i)*.785398;',
       '    vec2 d=vec2(cos(a),sin(a));',
-      '    bloom+=texture(uScene,tc+d*5./R).rgb;',
-      '    bloom+=texture(uScene,tc+d*18./R).rgb*.5;',
-      '    bloom+=texture(uScene,tc+d*45./R).rgb*.25;',
-      '    tw+=1.75;',
+      '    bloom+=texture(uScene,tc+d*6./R).rgb;',
+      '    bloom+=texture(uScene,tc+d*20./R).rgb*.4;',
+      '    tw+=1.4;',
       '  }',
       '  bloom/=tw;',
-      '  vec3 col=scene+bloom*.4;',
+      '  vec3 col=scene+bloom*.12;',
       '',
-      '  float ca=length(uv)*.006;',
-      '  vec2 cd=uv*ca;',
-      '  col.r=mix(col.r,texture(uScene,tc+cd).r+bloom.r*.4,.5);',
-      '  col.b=mix(col.b,texture(uScene,tc-cd).b+bloom.b*.4,.5);',
+      '  // Reinhard tone mapping',
+      '  col=col/(col+1.);',
       '',
-      '  col=col*(2.51*col+.03)/(col*(2.43*col+.59)+.14);',
-      '  col=clamp(col,0.,1.);',
+      '  // Gentle vignette',
+      '  col*=1.-dot(uv,uv)*.2;',
       '',
-      '  col*=1.-dot(uv,uv)*.35;',
-      '',
+      '  // Minimal grain',
       '  float grain=fract(sin(dot(gl_FragCoord.xy+fract(T*100.),vec2(12.9898,78.233)))*43758.5453);',
-      '  col+=(grain-.5)*.015;',
+      '  col+=(grain-.5)*.01;',
       '',
-      '  vec3 bg=mix(vec3(.97,.97,.99),vec3(.035,.042,.07),D);',
+      '  // Background blend',
+      '  vec3 bg=mix(vec3(.97,.97,.99),vec3(.04,.048,.08),D);',
       '  float alpha=max(max(col.r,col.g),col.b);',
-      '  alpha=smoothstep(0.,.04,alpha);',
-      '  col=mix(bg,col+bg*(1.-alpha),min(alpha*1.5,1.));',
+      '  alpha=smoothstep(0.,.015,alpha);',
+      '  float boost=mix(1.3,1.,D);',
+      '  col=mix(bg,col*boost,min(alpha*2.,1.));',
       '',
       '  O=vec4(col,1);',
       '}'
@@ -314,26 +265,21 @@
       return
     }
 
-    // Fullscreen quad
     var buf = gl.createBuffer()
     gl.bindBuffer(gl.ARRAY_BUFFER, buf)
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,1,1]), gl.STATIC_DRAW)
     gl.enableVertexAttribArray(0)
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0)
 
-    // Scene uniforms
     var uST = gl.getUniformLocation(sceneProg, 'T')
     var uSR = gl.getUniformLocation(sceneProg, 'R')
     var uSM = gl.getUniformLocation(sceneProg, 'M')
     var uSD = gl.getUniformLocation(sceneProg, 'D')
-    // Composite uniforms
     var uCS = gl.getUniformLocation(compProg, 'uScene')
     var uCR = gl.getUniformLocation(compProg, 'R')
     var uCT = gl.getUniformLocation(compProg, 'T')
     var uCD = gl.getUniformLocation(compProg, 'D')
-    var uCM = gl.getUniformLocation(compProg, 'M')
 
-    // ── FBO for scene render ──
     var fboObj = null
     function makeFBO(w, h) {
       if (fboObj) {
@@ -377,7 +323,6 @@
       mx += (tmx - mx) * .06; my += (tmy - my) * .06
       var time = t * .001, dark = dk()
 
-      // Pass 1: Scene -> FBO
       gl.bindFramebuffer(gl.FRAMEBUFFER, fboObj.fbo)
       gl.viewport(0, 0, fboObj.w, fboObj.h)
       gl.useProgram(sceneProg)
@@ -387,7 +332,6 @@
       gl.uniform1f(uSD, dark)
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
 
-      // Pass 2: Composite -> screen
       gl.bindFramebuffer(gl.FRAMEBUFFER, null)
       gl.viewport(0, 0, canvas.width, canvas.height)
       gl.useProgram(compProg)
@@ -397,7 +341,6 @@
       gl.uniform2f(uCR, canvas.width, canvas.height)
       gl.uniform1f(uCT, time)
       gl.uniform1f(uCD, dark)
-      gl.uniform2f(uCM, mx, my)
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
 
       aid = requestAnimationFrame(frame)
@@ -417,17 +360,16 @@
   }
 
   /* ================================================================
-   * LOGO — Icosahedron with glowing edges and semi-transparent faces
+   * LOGO — Large icosahedron with solid faces and glowing edges
    * ================================================================ */
   function initLogo() {
     var c = document.getElementById('shapix-logo')
     if (!c) return
     var ctx = c.getContext('2d')
-    var S = 160, dpr = Math.min(window.devicePixelRatio || 1, 2)
+    var S = 280, dpr = Math.min(window.devicePixelRatio || 1, 2)
     c.width = S * dpr; c.height = S * dpr
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
-    // Icosahedron geometry
     var phi = (1 + Math.sqrt(5)) / 2
     var raw = [
       [0, 1, phi], [0, 1, -phi], [0, -1, phi], [0, -1, -phi],
@@ -439,7 +381,6 @@
       return [v[0] / l, v[1] / l, v[2] / l]
     })
 
-    // Build edges
     var E = [], adj = []
     for (var i = 0; i < 12; i++) adj.push([])
     for (var i = 0; i < 12; i++)
@@ -452,7 +393,6 @@
         }
       }
 
-    // Build triangular faces
     var F = []
     for (var i = 0; i < 12; i++)
       for (var ji = 0; ji < adj[i].length; ji++) {
@@ -481,37 +421,34 @@
     function draw() {
       var t = performance.now() * 0.001
       ctx.clearRect(0, 0, S, S)
-      var cx = S / 2, cy = S / 2, sc = S * 0.33
+      var cx = S / 2, cy = S / 2, sc = S * 0.4
 
-      // Floating bob animation
-      var floatY = Math.sin(t * 0.8) * 5
-
-      // Mouse tilt
-      var tiltX = (my - 0.5) * 0.5
-      var tiltY = (mx - 0.5) * 0.5
+      var floatY = Math.sin(t * 0.7) * 8
+      var tiltX = (my - 0.5) * 0.6
+      var tiltY = (mx - 0.5) * 0.6
 
       var pts = V.map(function (v) {
-        var r = rotY(v, t * 0.35)
-        r = rotX(r, t * 0.22)
-        r = rotZ(r, t * 0.13)
+        var r = rotY(v, t * 0.3)
+        r = rotX(r, t * 0.2)
+        r = rotZ(r, t * 0.12)
         r = rotX(r, tiltX)
         r = rotY(r, tiltY)
-        var d = 2.8, s = 1 / (d - r[2])
+        var d = 3.2, s = 1 / (d - r[2])
         return { x: cx + r[0] * sc * s, y: cy + r[1] * sc * s + floatY, z: r[2], d: s * d }
       })
 
-      // Draw faces (back to front by z)
+      // Faces (back to front)
       F.slice().sort(function (a, b) {
         return (pts[a[0]].z + pts[a[1]].z + pts[a[2]].z) - (pts[b[0]].z + pts[b[1]].z + pts[b[2]].z)
       }).forEach(function (f) {
         var p0 = pts[f[0]], p1 = pts[f[1]], p2 = pts[f[2]]
         var avgZ = (p0.z + p1.z + p2.z) / 3
-        var alpha = 0.06 + (avgZ + 1) * 0.1
-        alpha = Math.max(0.04, Math.min(0.22, alpha))
-        var hue = ((avgZ + 1) * 0.25 + t * 0.04) % 1
-        var r = Math.round(95 + hue * 90)
-        var g = Math.round(55 + (1 - hue) * 55)
-        var b = Math.round(210 + hue * 45)
+        var alpha = 0.12 + (avgZ + 1) * 0.16
+        alpha = Math.max(0.08, Math.min(0.42, alpha))
+        var hue = ((avgZ + 1) * 0.25 + t * 0.03) % 1
+        var r = Math.round(90 + hue * 100)
+        var g = Math.round(50 + (1 - hue) * 60)
+        var b = Math.round(200 + hue * 55)
 
         ctx.beginPath()
         ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y)
@@ -520,14 +457,14 @@
         ctx.fill()
       })
 
-      // Draw edges (back to front)
+      // Edges (back to front)
       E.slice().sort(function (a, b) {
         return (pts[a[0]].z + pts[a[1]].z) - (pts[b[0]].z + pts[b[1]].z)
       }).forEach(function (e) {
         var p0 = pts[e[0]], p1 = pts[e[1]]
         var avgZ = (p0.z + p1.z) / 2
-        var alpha = 0.15 + (avgZ + 1) * 0.3
-        alpha = Math.max(0.1, Math.min(0.75, alpha))
+        var alpha = 0.3 + (avgZ + 1) * 0.3
+        alpha = Math.max(0.2, Math.min(0.9, alpha))
 
         var g = ctx.createLinearGradient(p0.x, p0.y, p1.x, p1.y)
         g.addColorStop(0, 'rgba(124,77,255,' + alpha + ')')
@@ -537,24 +474,24 @@
         ctx.beginPath()
         ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y)
         ctx.strokeStyle = g
-        ctx.lineWidth = 0.8 + (avgZ + 1) * 0.9
+        ctx.lineWidth = 1.2 + (avgZ + 1) * 1.2
         ctx.shadowColor = 'rgba(160,120,255,' + alpha * 0.7 + ')'
-        ctx.shadowBlur = 8
+        ctx.shadowBlur = 12
         ctx.stroke()
         ctx.shadowBlur = 0
       })
 
-      // Draw vertices with glow
+      // Vertices
       pts.forEach(function (p) {
-        var alpha = 0.2 + (p.z + 1) * 0.35
-        alpha = Math.max(0.15, Math.min(0.85, alpha))
-        var size = 1.2 + (p.z + 1) * 0.9
+        var alpha = 0.4 + (p.z + 1) * 0.3
+        alpha = Math.max(0.3, Math.min(0.95, alpha))
+        var size = 1.8 + (p.z + 1) * 1.2
 
         ctx.beginPath()
         ctx.arc(p.x, p.y, size, 0, Math.PI * 2)
         ctx.fillStyle = 'rgba(210,175,255,' + alpha + ')'
         ctx.shadowColor = 'rgba(160,120,255,' + alpha * 0.8 + ')'
-        ctx.shadowBlur = 10
+        ctx.shadowBlur = 14
         ctx.fill()
         ctx.shadowBlur = 0
       })
@@ -565,7 +502,7 @@
   }
 
   /* ================================================================
-   * TITLE — Animated letters + continuous mouse 3D tilt
+   * TITLE — Letter spans + continuous mouse 3D tilt
    * ================================================================ */
   function initTitle() {
     var el = document.getElementById('shapix-title')
@@ -573,16 +510,15 @@
     var text = 'Shapix'
     var html = ''
     for (var i = 0; i < text.length; i++)
-      html += '<span class="hero__letter" style="animation-delay:' + i * 0.12 + 's">' + text[i] + '</span>'
+      html += '<span class="hero__letter" style="animation-delay:' + i * 0.15 + 's">' + text[i] + '</span>'
     el.innerHTML = html
 
-    // Continuous mouse 3D tilt on the logo+title container
     var logoEl = document.querySelector('.hero__logo')
     if (logoEl) {
       ;(function updateTilt() {
         var dx = (mx - 0.5) * 15
         var dy = -(my - 0.5) * 10
-        logoEl.style.transform = 'rotateY(' + dx + 'deg) rotateX(' + dy + 'deg)'
+        logoEl.style.transform = 'rotateY(' + dx + 'deg) rotateX(' + (dy + 5) + 'deg)'
         requestAnimationFrame(updateTilt)
       })()
     }
