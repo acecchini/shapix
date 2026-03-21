@@ -289,12 +289,10 @@ a.backend-logo:hover {
 Elegant shape and dtype validation for NumPy, JAX, and PyTorch arrays — powered by <a href="https://github.com/beartype/beartype">beartype</a>.
 </p>
 
-<div class="hero__actions" markdown>
-
-[Get Started](getting-started/index.md){ .md-button .md-button--primary }
-[API Reference](api/index.md){ .md-button }
-[GitHub](https://github.com/acecchini/shapix){ .md-button }
-
+<div class="hero__actions">
+<a href="getting-started/" class="md-button md-button--primary">Get Started</a>
+<a href="api/" class="md-button">API Reference</a>
+<a href="https://github.com/acecchini/shapix" class="md-button">GitHub</a>
 </div>
 
 </div>
