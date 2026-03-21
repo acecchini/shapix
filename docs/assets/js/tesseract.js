@@ -243,7 +243,7 @@
       '  vec3 bg=mix(vec3(.97,.97,.99),vec3(.04,.048,.08),D);',
       '  float alpha=max(max(col.r,col.g),col.b);',
       '  alpha=smoothstep(0.,.015,alpha);',
-      '  float boost=mix(1.3,1.,D);',
+      '  float boost=mix(1.3,1.25,D);',
       '  col=mix(bg,col*boost,min(alpha*2.,1.));',
       '',
       '  O=vec4(col,1);',
