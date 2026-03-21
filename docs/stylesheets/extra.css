@@ -60,22 +60,9 @@
   justify-content: center;
 }
 
-/* Pin search + repo to right edge, above tabs */
+/* Keep header icons above tabs overlay */
 .md-header__inner {
   position: relative;
-}
-
-.md-search {
-  position: absolute;
-  right: 2.4rem;
-  top: 0;
-  z-index: 4;
-}
-
-.md-header__source {
-  position: absolute;
-  right: 0.4rem;
-  top: 0;
   z-index: 4;
 }
 
