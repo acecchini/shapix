@@ -36,9 +36,20 @@
 
 /* ── Inline header + tabs: single bar ── */
 
-/* Lower header so tabs can sit above it */
+/* Glassmorphism header */
 .md-header {
   z-index: 3 !important;
+  background: rgba(124, 77, 255, 0.15) !important;
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  border-bottom: 1px solid rgba(124, 77, 255, 0.12);
+  box-shadow: 0 2px 16px rgba(124, 77, 255, 0.08);
+}
+
+[data-md-color-scheme="slate"] .md-header {
+  background: rgba(179, 136, 255, 0.08) !important;
+  border-bottom: 1px solid rgba(179, 136, 255, 0.1);
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.2);
 }
 
 .md-tabs {
