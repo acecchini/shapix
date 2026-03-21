@@ -38,12 +38,21 @@
 
 .md-tabs {
   margin-top: calc(-1 * var(--md-header-height, 3rem));
-  padding-left: 11rem;
-  padding-right: 5rem;
+  height: var(--md-header-height, 3rem);
+  padding-left: 14rem;
+  padding-right: 13rem;
   background: transparent !important;
   border-bottom: none;
   position: relative;
-  z-index: 5;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.md-tabs__inner {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  pointer-events: auto;
 }
 
 .md-tabs__list {
