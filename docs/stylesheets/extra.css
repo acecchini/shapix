@@ -66,19 +66,9 @@
   z-index: 4;
 }
 
-/* Prevent search from expanding into tabs / repo area */
+/* Hide search from header — still accessible via "/" shortcut */
 .md-search {
-  max-width: 2.4rem;
-  overflow: visible;
-}
-
-.md-search--active {
-  max-width: none;
-}
-
-.md-header__source {
-  margin-left: 0.5rem;
-  flex-shrink: 0;
+  display: none !important;
 }
 
 .md-nav__link {
