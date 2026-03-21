@@ -116,27 +116,31 @@ body { background: transparent !important; }
 
 .hero__powered {
   font-family: 'Outfit', sans-serif;
-  font-size: 1.6rem;
+  font-size: 1rem;
   font-weight: 600;
   text-align: center;
   margin: 0 auto 0.75rem;
   opacity: 0.6;
   color: var(--md-default-fg-color--light);
+  transition: all 0.3s ease;
+  cursor: pointer;
 }
 
-.beartype-link {
+.hero__powered .beartype-link {
+  font-size: 2.4rem;
+  font-weight: 700;
   white-space: nowrap;
   color: inherit !important;
   transition: color 0.3s ease;
 }
 
 .beartype-logo-inline {
-  height: 36px !important;
-  max-height: 36px !important;
+  height: 54px !important;
+  max-height: 54px !important;
   width: auto !important;
-  max-width: 40px !important;
-  vertical-align: -4px;
-  margin-right: 5px;
+  max-width: 58px !important;
+  vertical-align: -8px;
+  margin-right: 6px;
   opacity: 0.4;
   filter: grayscale(100%) brightness(0.5);
   transition: all 0.3s ease;
@@ -146,13 +150,17 @@ body { background: transparent !important; }
   filter: grayscale(100%) brightness(0.5) invert(1);
 }
 
-.beartype-link:hover .beartype-logo-inline {
+.hero__powered:hover .beartype-logo-inline {
   opacity: 1;
   filter: grayscale(0%);
 }
 
-.beartype-link:hover {
+.hero__powered:hover .beartype-link {
   color: #8B5E3C !important;
+}
+
+.hero__powered:hover {
+  opacity: 1;
 }
 
 /* ── Buttons ── */
