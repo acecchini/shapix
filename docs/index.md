@@ -95,32 +95,32 @@ body { background: transparent !important; }
 /* ── Tagline & Subtitle ── */
 .hero__tagline {
   font-family: 'Outfit', sans-serif;
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--md-primary-fg-color);
   margin-top: 0;
-  margin-bottom: 0.15rem;
+  margin-bottom: 0.1rem;
   opacity: 0.7;
 }
 
 .hero__subtitle {
   font-family: 'Outfit', sans-serif;
-  font-size: 1.15rem;
+  font-size: 1rem;
   font-weight: 500;
   color: var(--md-default-fg-color--light);
-  max-width: 580px;
-  margin: 0 auto 0.4rem;
-  line-height: 1.4;
+  max-width: 520px;
+  margin: 0 auto 0.2rem;
+  line-height: 1.3;
 }
 
 .hero__powered {
   font-family: 'Outfit', sans-serif;
-  font-size: 1rem;
+  font-size: 0.85rem;
   font-weight: 600;
   text-align: center;
-  margin: 0 auto 0.4rem;
+  margin: 0 auto 0.3rem;
   opacity: 0.6;
   color: var(--md-default-fg-color--light);
   transition: all 0.3s ease;
@@ -128,7 +128,7 @@ body { background: transparent !important; }
 }
 
 .hero__powered .beartype-link {
-  font-size: 2.4rem;
+  font-size: 2rem;
   font-weight: 700;
   white-space: nowrap;
   color: inherit !important;
@@ -136,12 +136,12 @@ body { background: transparent !important; }
 }
 
 .beartype-logo-inline {
-  height: 54px !important;
-  max-height: 54px !important;
+  height: 44px !important;
+  max-height: 44px !important;
   width: auto !important;
-  max-width: 58px !important;
-  vertical-align: -8px;
-  margin-right: 6px;
+  max-width: 48px !important;
+  vertical-align: -6px;
+  margin-right: 5px;
   opacity: 0.4;
   filter: grayscale(100%) brightness(0.5);
   transition: all 0.3s ease;
