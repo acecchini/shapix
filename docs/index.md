@@ -6,113 +6,104 @@ hide:
   - toc
 ---
 
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
 
 <style>
 .md-typeset h1 { display: none; }
-
-/* Hide edit/view source on homepage */
 .md-content__button { display: none !important; }
-
-/* Reset content wrapper for full-bleed hero */
 .md-content__inner { padding: 0; margin: 0; max-width: none; }
 html { overflow-x: hidden; }
 
-/* ── Hero: full viewport, edge to edge ── */
+/* Make page transparent so fixed visual shows through */
+body { background: transparent !important; }
+
+/* ── Full-page visual canvas ── */
+#shapix-visual {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ── Hero: full viewport, centered ── */
 .hero {
   position: relative;
-  width: 100vw;
-  margin-left: calc(-50vw + 50%);
+  z-index: 1;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 4rem 1rem 2rem;
-  overflow: hidden;
-}
-
-#shapix-visual {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
 }
 
 .hero__content {
-  position: relative;
-  z-index: 1;
   text-align: center;
 }
 
-/* ── Logo + Title ── */
+/* ── Logo + Title (stacked vertically) ── */
 .hero__logo {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 1rem;
+  gap: 0.5rem;
   margin-bottom: 0.5rem;
   perspective: 800px;
+  transform-style: preserve-3d;
 }
 
 .hero__logo canvas {
-  filter: drop-shadow(0 0 25px rgba(124, 77, 255, 0.5));
+  filter: drop-shadow(0 0 30px rgba(124, 77, 255, 0.45));
 }
 
 .hero__title {
   display: flex;
   gap: 0;
-  perspective: 600px;
 }
 
-/* ── 3D semi-transparent glass letters ── */
+/* ── 3D extruded title letters ── */
 .hero__letter {
   display: inline-block;
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 5.5rem;
+  font-family: 'Syne', sans-serif;
+  font-size: 6rem;
   font-weight: 800;
-  letter-spacing: -0.03em;
-  background: linear-gradient(
-    180deg,
-    rgba(179, 136, 255, 0.45) 0%,
-    rgba(124, 77, 255, 0.2) 45%,
-    rgba(234, 128, 252, 0.35) 100%
-  );
-  background-size: 100% 100%;
+  letter-spacing: -0.02em;
+  background: linear-gradient(180deg, #e0d4ff 0%, #b388ff 45%, #7c4dff 100%);
   -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
   background-clip: text;
-  -webkit-text-stroke: 0.8px rgba(179, 136, 255, 0.35);
+  -webkit-text-fill-color: transparent;
   filter:
-    drop-shadow(0 1px 0 rgba(124, 77, 255, 0.12))
-    drop-shadow(0 3px 1px rgba(124, 77, 255, 0.08))
-    drop-shadow(0 6px 3px rgba(124, 77, 255, 0.06))
-    drop-shadow(0 0 40px rgba(124, 77, 255, 0.35))
-    drop-shadow(0 0 80px rgba(179, 136, 255, 0.15));
-  animation: letterWave 3s ease-in-out infinite;
+    drop-shadow(0 1px 0 #5a3abf)
+    drop-shadow(0 1px 0 #5535b0)
+    drop-shadow(0 1px 0 #4f30a5)
+    drop-shadow(0 1px 0 #4a2b9a)
+    drop-shadow(0 2px 6px rgba(70,35,150,0.35))
+    drop-shadow(0 0 20px rgba(124,77,255,0.2));
+  animation: letterFloat 3s ease-in-out infinite;
   transform-style: preserve-3d;
 }
 
-@keyframes letterWave {
-  0%, 100% { transform: translateY(0) rotateX(0deg) rotateY(0deg); }
-  25% { transform: translateY(-10px) rotateX(12deg) rotateY(-3deg); }
-  75% { transform: translateY(5px) rotateX(-6deg) rotateY(2deg); }
+@keyframes letterFloat {
+  0%, 100% { transform: translateY(0) rotateX(0deg); }
+  25% { transform: translateY(-8px) rotateX(8deg); }
+  75% { transform: translateY(4px) rotateX(-4deg); }
 }
 
 /* ── Tagline & Subtitle ── */
 .hero__tagline {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: 'Syne', sans-serif;
   font-size: 0.85rem;
   font-weight: 600;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--md-primary-fg-color);
   margin-bottom: 1rem;
-  opacity: 0.6;
+  opacity: 0.7;
 }
 
 .hero__subtitle {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 1.2rem;
+  font-family: 'Syne', sans-serif;
+  font-size: 1.15rem;
   font-weight: 500;
   color: var(--md-default-fg-color--light);
   max-width: 580px;
@@ -130,18 +121,20 @@ html { overflow-x: hidden; }
 }
 
 .hero__actions .md-button {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: 'Syne', sans-serif;
   font-size: 0.95rem;
   font-weight: 600;
   padding: 0.7rem 2rem;
   border-radius: 2rem;
 }
 
-/* ── Features grid ── */
+/* ── Features grid with glassmorphism ── */
 .features-section {
+  position: relative;
+  z-index: 1;
   max-width: 61rem;
   margin: 0 auto;
-  padding: 0 1.5rem;
+  padding: 2rem 1.5rem;
 }
 
 .features-grid {
@@ -153,14 +146,28 @@ html { overflow-x: hidden; }
 
 .feature-card {
   padding: 1.5rem;
-  border-radius: 12px;
-  border: 1px solid var(--md-default-fg-color--lightest);
-  transition: border-color 0.2s, box-shadow 0.2s;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(124,77,255,0.08);
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
 }
 
 .feature-card:hover {
   border-color: var(--md-accent-fg-color);
-  box-shadow: 0 4px 24px rgba(124, 77, 255, 0.08);
+  box-shadow: 0 4px 24px rgba(124, 77, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+[data-md-color-scheme="slate"] .feature-card {
+  background: rgba(13,17,23,0.5);
+  border-color: rgba(179,136,255,0.1);
+}
+
+[data-md-color-scheme="slate"] .feature-card:hover {
+  border-color: rgba(179,136,255,0.3);
+  box-shadow: 0 4px 24px rgba(179, 136, 255, 0.08);
 }
 
 .feature-card h3 {
@@ -174,12 +181,24 @@ html { overflow-x: hidden; }
   margin-bottom: 0;
 }
 
-/* ── Backends ── */
+/* ── Backends with glassmorphism ── */
 .backends {
+  position: relative;
+  z-index: 1;
   text-align: center;
-  padding: 2rem 0 3rem;
   max-width: 61rem;
-  margin: 0 auto;
+  margin: 0 auto 2rem;
+  padding: 2rem 1.5rem 2.5rem;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(124,77,255,0.06);
+}
+
+[data-md-color-scheme="slate"] .backends {
+  background: rgba(13,17,23,0.4);
+  border-color: rgba(179,136,255,0.08);
 }
 
 .backends__logos {
@@ -191,20 +210,23 @@ html { overflow-x: hidden; }
   margin-top: 1.5rem;
 }
 
-.backend-logo {
+a.backend-logo {
   display: flex;
   align-items: center;
   gap: 0.6rem;
+  text-decoration: none !important;
+  color: inherit !important;
   filter: grayscale(100%) brightness(0.7);
   opacity: 0.5;
   transition: all 0.3s ease;
-  cursor: default;
+  cursor: pointer;
 }
 
-.backend-logo:hover {
+a.backend-logo:hover {
   filter: grayscale(0%) brightness(1);
   opacity: 1;
   transform: translateY(-2px);
+  text-decoration: none !important;
 }
 
 .backend-logo svg {
@@ -213,23 +235,32 @@ html { overflow-x: hidden; }
 }
 
 .backend-logo span {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: 'Syne', sans-serif;
   font-size: 1.15rem;
   font-weight: 600;
   letter-spacing: 0.02em;
 }
 
-.backend-logo--numpy span { color: #4DABCF; }
-.backend-logo--jax span { color: #5B4B8A; }
-.backend-logo--torch span { color: #EE4C2C; }
+.backend-logo--numpy:hover span { color: #4DABCF; }
+.backend-logo--jax:hover span { color: #5B4B8A; }
+.backend-logo--torch:hover span { color: #EE4C2C; }
+.backend-logo--optree:hover span { color: #4CAF50; }
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .hero__letter { font-size: 3.5rem; }
+  .hero__logo canvas { width: 120px; height: 120px; }
+  .backends__logos { gap: 1.5rem; }
+}
 </style>
 
-<div class="hero">
 <div id="shapix-visual"></div>
+
+<div class="hero">
 <div class="hero__content" markdown>
 
 <div class="hero__logo">
-<canvas id="shapix-logo" width="140" height="140"></canvas>
+<canvas id="shapix-logo" width="160" height="160"></canvas>
 <div class="hero__title" id="shapix-title">Shapix</div>
 </div>
 
@@ -249,8 +280,6 @@ Elegant shape and dtype validation for NumPy, JAX, and PyTorch arrays — powere
 
 </div>
 </div>
-
----
 
 <div class="features-section" markdown>
 
@@ -308,28 +337,31 @@ Each thread gets independent dimension bindings via `threading.local()`. Safe fo
 
 </div>
 
----
-
 <div class="backends" markdown>
 
 ### Supported Backends
 
 <div class="backends__logos">
 
-<div class="backend-logo backend-logo--numpy">
-<svg viewBox="0 0 128 128" fill="#4DABCF"><path d="M54.7 26.5L37 17.2 18.5 27.5l17.8 9.3 18.4-10.3zm3.7 1.8L40 38.5v43.3l18.4-10.3V28.3zm-22 10.2L18.5 48.8v43.3l17.9-10.3V38.5zm40.2-33L58.7 4.2l-18 10.1 17.8 9.3 18-8.6zm3.7 1.8L62.4 17.5v43.3l17.9-10.3V7.3zm-22 10.2L40.4 27.8v43.3l17.9-10.3V17.5z"/></svg>
+<a href="https://numpy.org/doc/stable/" class="backend-logo backend-logo--numpy" target="_blank" rel="noopener">
+<svg viewBox="0 0 24 24" fill="#4DABCF"><path d="M10.315 4.876L6.3048 2.8517l-4.401 2.1965 4.1186 2.0683zm1.8381.9277l4.2045 2.1223-4.3622 2.1906-4.125-2.0718zm5.6153-2.9213l4.3193 2.1658-3.863 1.9402-4.2131-2.1252zm-1.859-.9329L12.021 0 8.1742 1.9193l4.0068 2.0208zm-3.0401 16.7443V24l4.7107-2.3507-.0053-5.3085zm4.7037-4.2057l-.0052-5.2528-4.6985 2.3356v5.2546zm5.6553-.9845v5.327l-4.0178 2.0052-.0029-5.3028zm0-1.8626V6.4214l-4.0253 2.001.0034 5.2633zM11.2062 11.571L8.0333 9.9756v6.895s-3.8804-8.2564-4.2399-8.998c-.0463-.0957-.2371-.2007-.2858-.2262C2.8118 7.2812.773 6.2485.773 6.2485V18.43l2.8204 1.5076v-6.3674s3.8392 7.3775 3.878 7.458c.0389.0807.4245.8582.8362 1.1314.5485.363 2.8992 1.7766 2.8992 1.7766z"/></svg>
 <span>NumPy</span>
-</div>
+</a>
 
-<div class="backend-logo backend-logo--jax">
-<svg viewBox="0 0 128 128" fill="#5B4B8A"><path d="M30 32h14l20 32-20 32H30l20-32-20-32zm34 0h14l20 32-20 32H64l20-32-20-32z"/></svg>
+<a href="https://jax.readthedocs.io/" class="backend-logo backend-logo--jax" target="_blank" rel="noopener">
+<svg viewBox="0 0 24 24" fill="#5B4B8A"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>
 <span>JAX</span>
-</div>
+</a>
 
-<div class="backend-logo backend-logo--torch">
-<svg viewBox="0 0 128 128" fill="#EE4C2C"><path d="M64 8L48 28v12c-14 8-24 24-24 42 0 26.5 21.5 48 48 48s48-21.5 48-48c0-30-24-52-48-68l-8-6zm4 24a6 6 0 110 12 6 6 0 010-12z"/></svg>
+<a href="https://pytorch.org/docs/stable/" class="backend-logo backend-logo--torch" target="_blank" rel="noopener">
+<svg viewBox="0 0 24 24" fill="#EE4C2C"><path d="M12.005 0L4.952 7.053a9.865 9.865 0 000 14.022 9.866 9.866 0 0014.022 0c3.984-3.9 3.986-10.205.085-14.023l-1.744 1.743c2.904 2.905 2.904 7.634 0 10.538s-7.634 2.904-10.538 0-2.904-7.634 0-10.538l4.647-4.646.582-.665zm3.568 3.899a1.327 1.327 0 00-1.327 1.327 1.327 1.327 0 001.327 1.328A1.327 1.327 0 0016.9 5.226 1.327 1.327 0 0015.573 3.9z"/></svg>
 <span>PyTorch</span>
-</div>
+</a>
+
+<a href="https://optree.readthedocs.io/" class="backend-logo backend-logo--optree" target="_blank" rel="noopener">
+<svg viewBox="0 0 24 24" fill="#4CAF50"><path d="M17 16l-4-4V8.82C14.16 8.4 15 7.3 15 6c0-1.66-1.34-3-3-3S9 4.34 9 6c0 1.3.84 2.4 2 2.82V12l-4 4H3v5h5v-3.05l4-4.2 4 4.2V21h5v-5h-4z"/></svg>
+<span>optree</span>
+</a>
 
 </div>
 

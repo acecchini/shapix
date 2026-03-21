@@ -1,17 +1,33 @@
 /**
- * Shapix Visual — Premium 3D light rays with bloom post-processing,
- * 4D polytope logo (24-cell), and animated title.
+ * Shapix Visual v3 — Subdued 3D light rays with bloom post-processing,
+ * icosahedron logo, and animated 3D title with mouse interaction.
  * Two-pass WebGL2 rendering: scene FBO -> composite with bloom/CA/vignette.
  * Zero dependencies.
  */
 ;(function () {
   'use strict'
 
+  // Global mouse state (shared across all components)
+  var tmx = 0.5, tmy = 0.5, mx = 0.5, my = 0.5
+
+  document.addEventListener('mousemove', function (e) {
+    tmx = e.clientX / window.innerWidth
+    tmy = 1 - e.clientY / window.innerHeight
+  })
+  document.addEventListener('touchmove', function (e) {
+    if (e.touches.length > 0) {
+      tmx = e.touches[0].clientX / window.innerWidth
+      tmy = 1 - e.touches[0].clientY / window.innerHeight
+    }
+  }, { passive: true })
+
   function start() {
     var el = document.getElementById('shapix-visual')
     if (!el) return
-    if (!el.offsetWidth) { requestAnimationFrame(function(){ setTimeout(start,30) }); return }
-
+    if (!el.offsetWidth) {
+      requestAnimationFrame(function () { setTimeout(start, 30) })
+      return
+    }
     initBg(el)
     initLogo()
     initTitle()
@@ -19,6 +35,7 @@
 
   /* ================================================================
    * BACKGROUND — 3D light rays with multi-pass post-processing
+   * Stronger mouse interaction, more curves, reduced brightness
    * ================================================================ */
   function initBg(el) {
     var canvas = document.createElement('canvas')
@@ -31,7 +48,6 @@
       return
     }
 
-    // Enable float render targets for HDR bloom
     gl.getExtension('EXT_color_buffer_float')
 
     var VERT = '#version 300 es\nlayout(location=0) in vec2 p;void main(){gl_Position=vec4(p,0,1);}'
@@ -46,10 +62,10 @@
       'uniform float D;',
       'out vec4 O;',
       '',
-      '#define NC 12',
-      '#define NS 48',
+      '#define NC 16',
+      '#define NS 56',
       '#define PI 3.14159265',
-      '#define NPART 25',
+      '#define NPART 30',
       '',
       'vec3 hash33(vec3 p){',
       '  p=fract(p*vec3(.1031,.103,.0973));',
@@ -84,17 +100,17 @@
       '  float fx=1.+mod(fi*3.,4.),fy=1.+mod(fi*2.+1.,5.),fz=.5+mod(fi*1.5,3.);',
       '  float speed=.7+mod(fi*.73,.8);',
       '  float drift=t*(.15+fi*.02)*speed;',
-      '  float ax=2.2+sin(t*.1+phase)*.6;',
-      '  float ay=1.5+cos(t*.13+phase*.7)*.5;',
-      '  float az=2.0+sin(t*.08+phase*1.3)*.7;',
+      '  float ax=2.8+sin(t*.1+phase)*.8;',
+      '  float ay=2.0+cos(t*.13+phase*.7)*.7;',
+      '  float az=2.5+sin(t*.08+phase*1.3)*.9;',
       '  float x=ax*sin(s*fx*PI+drift+phase);',
       '  float y=ay*sin(s*fy*PI+drift*1.3+phase*2.1);',
       '  float z=az*cos(s*fz*PI+drift*.7+phase*.5)-.2;',
       '  vec3 p=vec3(x,y,z);',
       '  float ns=s*5.+fi*2.+t*.15;',
-      '  p.x+=sin(ns*1.3+t*.4)*cos(ns*.7+fi)*.15;',
-      '  p.y+=cos(ns*1.1+t*.3)*sin(ns*.9+fi*1.5)*.12;',
-      '  p.z+=sin(ns*.8+t*.2)*cos(ns*1.2+fi*.7)*.08;',
+      '  p.x+=sin(ns*1.3+t*.4)*cos(ns*.7+fi)*.25;',
+      '  p.y+=cos(ns*1.1+t*.3)*sin(ns*.9+fi*1.5)*.20;',
+      '  p.z+=sin(ns*.8+t*.2)*cos(ns*1.2+fi*.7)*.15;',
       '  return p;',
       '}',
       '',
@@ -113,7 +129,11 @@
       '  vec2 uv=(gl_FragCoord.xy-.5*R)/min(R.x,R.y);',
       '  vec2 m=(M-.5);',
       '',
-      '  float ry=m.x*.5,rx=m.y*.4;',
+      '  // Mouse lens warp',
+      '  uv+=m*.12*length(uv);',
+      '',
+      '  // Strong camera rotation from mouse',
+      '  float ry=m.x*1.0,rx=m.y*.8;',
       '  float cy2=cos(ry),sy2=sin(ry),cx2=cos(rx),sx2=sin(rx);',
       '  mat3 cam=mat3(cy2,sx2*sy2,-cx2*sy2, 0.,cx2,sx2, sy2,-sx2*cy2,cx2*cy2);',
       '',
@@ -169,10 +189,10 @@
       '    rc=mix(rc,hsl2rgb(hue,.7,.55),.25);',
       '',
       '    vec3 ct=vec3(0);',
-      '    ct+=vec3(1,.97,.92)*core*1.8;',
-      '    ct+=rc*inner*1.1;',
+      '    ct+=vec3(.72,.6,.95)*core*1.1;',
+      '    ct+=rc*inner*.9;',
       '    ct+=rc*.5*halo;',
-      '    ct+=vec3(1,.95,.85)*nf;',
+      '    ct+=vec3(.7,.58,.92)*nf*.6;',
       '    ct*=env*db*pw;',
       '',
       '    float fl=exp(-bestDelta.y*bestDelta.y*bt*3.)*exp(-bestDelta.x*bestDelta.x*5.);',
@@ -194,20 +214,20 @@
       '    float d=length(uv-pp);',
       '    float dp=clamp((pos.z+2.)/4.,0.,1.);',
       '    float sparkle=sin(T*(3.+fi*.5)+fi*10.)*.5+.5;',
-      '    col+=hsl2rgb(mod(fi*.05+T*.01,1.),.6,.7)*exp(-d*d*20000.)*dp*sparkle*.7;',
+      '    col+=hsl2rgb(mod(fi*.05+T*.01,1.),.6,.55)*exp(-d*d*20000.)*dp*sparkle*.3;',
       '  }',
       '',
       '  vec3 np=vec3(uv*2.,T*.025);',
       '  float neb=fbm(np)*.5+fbm(np*1.5+30.)*.3;',
-      '  col+=mix(vec3(.12,.04,.25),vec3(.04,.12,.25),neb)*neb*.07*D;',
+      '  col+=mix(vec3(.12,.04,.25),vec3(.04,.12,.25),neb)*neb*.09*D;',
       '',
-      '  col+=vec3(.3,.15,.5)*exp(-length(uv)*1.2)*.06;',
+      '  col+=vec3(.22,.1,.38)*exp(-length(uv)*1.2)*.04;',
       '',
       '  O=vec4(col,1);',
       '}'
     ].join('\n')
 
-    // ── Composite shader: bloom + CA + vignette + grain ──
+    // ── Composite shader: bloom + CA + mouse warp + vignette + grain ──
     var FRAG_COMP = [
       '#version 300 es',
       'precision highp float;',
@@ -215,11 +235,17 @@
       'uniform vec2 R;',
       'uniform float T;',
       'uniform float D;',
+      'uniform vec2 M;',
       'out vec4 O;',
       '',
       'void main(){',
       '  vec2 tc=gl_FragCoord.xy/R;',
       '  vec2 uv=(gl_FragCoord.xy-.5*R)/min(R.x,R.y);',
+      '  vec2 m=(M-.5);',
+      '',
+      '  // Subtle mouse lens warp',
+      '  tc+=m*.008*length(uv);',
+      '',
       '  vec3 scene=texture(uScene,tc).rgb;',
       '',
       '  vec3 bloom=vec3(0);float tw=0.;',
@@ -232,12 +258,12 @@
       '    tw+=1.75;',
       '  }',
       '  bloom/=tw;',
-      '  vec3 col=scene+bloom*.7;',
+      '  vec3 col=scene+bloom*.4;',
       '',
       '  float ca=length(uv)*.006;',
       '  vec2 cd=uv*ca;',
-      '  col.r=mix(col.r,texture(uScene,tc+cd).r+bloom.r*.7,.5);',
-      '  col.b=mix(col.b,texture(uScene,tc-cd).b+bloom.b*.7,.5);',
+      '  col.r=mix(col.r,texture(uScene,tc+cd).r+bloom.r*.4,.5);',
+      '  col.b=mix(col.b,texture(uScene,tc-cd).b+bloom.b*.4,.5);',
       '',
       '  col=col*(2.51*col+.03)/(col*(2.43*col+.59)+.14);',
       '  col=clamp(col,0.,1.);',
@@ -245,7 +271,7 @@
       '  col*=1.-dot(uv,uv)*.35;',
       '',
       '  float grain=fract(sin(dot(gl_FragCoord.xy+fract(T*100.),vec2(12.9898,78.233)))*43758.5453);',
-      '  col+=(grain-.5)*.018;',
+      '  col+=(grain-.5)*.015;',
       '',
       '  vec3 bg=mix(vec3(.97,.97,.99),vec3(.035,.042,.07),D);',
       '  float alpha=max(max(col.r,col.g),col.b);',
@@ -288,7 +314,7 @@
       return
     }
 
-    // Fullscreen quad (shared via layout location 0)
+    // Fullscreen quad
     var buf = gl.createBuffer()
     gl.bindBuffer(gl.ARRAY_BUFFER, buf)
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,1,1]), gl.STATIC_DRAW)
@@ -305,6 +331,7 @@
     var uCR = gl.getUniformLocation(compProg, 'R')
     var uCT = gl.getUniformLocation(compProg, 'T')
     var uCD = gl.getUniformLocation(compProg, 'D')
+    var uCM = gl.getUniformLocation(compProg, 'M')
 
     // ── FBO for scene render ──
     var fboObj = null
@@ -324,7 +351,6 @@
       gl.bindFramebuffer(gl.FRAMEBUFFER, fb)
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0)
       if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
-        // Fall back to RGBA8 if HDR not supported
         gl.bindTexture(gl.TEXTURE_2D, tex)
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null)
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0)
@@ -333,24 +359,22 @@
       fboObj = { fbo: fb, tex: tex, w: w, h: h }
     }
 
-    var mx=.5,my=.5,tmx=.5,tmy=.5,aid=null
+    var aid = null
 
-    function dk(){var e=document.querySelector('[data-md-color-scheme]');return e&&e.getAttribute('data-md-color-scheme')==='slate'?1:0}
+    function dk() {
+      var e = document.querySelector('[data-md-color-scheme]')
+      return e && e.getAttribute('data-md-color-scheme') === 'slate' ? 1 : 0
+    }
 
     function resize() {
-      var r = el.getBoundingClientRect()
+      var w = window.innerWidth, h = window.innerHeight
       var d = Math.min(window.devicePixelRatio || 1, 1.5)
-      canvas.width = r.width * d; canvas.height = r.height * d
+      canvas.width = w * d; canvas.height = h * d
       makeFBO(canvas.width, canvas.height)
     }
 
-    document.addEventListener('mousemove', function(e) {
-      tmx = e.clientX / window.innerWidth
-      tmy = 1 - e.clientY / window.innerHeight
-    })
-
     function frame(t) {
-      mx += (tmx - mx) * .04; my += (tmy - my) * .04
+      mx += (tmx - mx) * .06; my += (tmy - my) * .06
       var time = t * .001, dark = dk()
 
       // Pass 1: Scene -> FBO
@@ -373,6 +397,7 @@
       gl.uniform2f(uCR, canvas.width, canvas.height)
       gl.uniform1f(uCT, time)
       gl.uniform1f(uCD, dark)
+      gl.uniform2f(uCM, mx, my)
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
 
       aid = requestAnimationFrame(frame)
@@ -382,139 +407,156 @@
     window.addEventListener('resize', resize)
     aid = requestAnimationFrame(frame)
 
-    if (typeof IntersectionObserver !== 'undefined') {
-      new IntersectionObserver(function(e) {
-        if (e[0].isIntersecting) { if (!aid) aid=requestAnimationFrame(frame) }
-        else { if (aid) { cancelAnimationFrame(aid); aid=null } }
-      }).observe(el)
-    }
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) {
+        if (aid) { cancelAnimationFrame(aid); aid = null }
+      } else {
+        if (!aid) aid = requestAnimationFrame(frame)
+      }
+    })
   }
 
   /* ================================================================
-   * LOGO — 24-cell (regular 4D polytope) with solid semi-transparent faces
+   * LOGO — Icosahedron with glowing edges and semi-transparent faces
    * ================================================================ */
   function initLogo() {
     var c = document.getElementById('shapix-logo')
     if (!c) return
     var ctx = c.getContext('2d')
-    var S = 140, dpr = Math.min(window.devicePixelRatio || 1, 2)
+    var S = 160, dpr = Math.min(window.devicePixelRatio || 1, 2)
     c.width = S * dpr; c.height = S * dpr
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
-    // 24-cell vertices: all permutations of (+-1, +-1, 0, 0)
-    var V = []
-    for (var a = 0; a < 4; a++)
-      for (var b = a + 1; b < 4; b++)
-        for (var sa = -1; sa <= 1; sa += 2)
-          for (var sb = -1; sb <= 1; sb += 2) {
-            var v = [0, 0, 0, 0]
-            v[a] = sa; v[b] = sb
-            V.push(v)
-          }
+    // Icosahedron geometry
+    var phi = (1 + Math.sqrt(5)) / 2
+    var raw = [
+      [0, 1, phi], [0, 1, -phi], [0, -1, phi], [0, -1, -phi],
+      [1, phi, 0], [1, -phi, 0], [-1, phi, 0], [-1, -phi, 0],
+      [phi, 0, 1], [phi, 0, -1], [-phi, 0, 1], [-phi, 0, -1]
+    ]
+    var V = raw.map(function (v) {
+      var l = Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2])
+      return [v[0] / l, v[1] / l, v[2] / l]
+    })
 
-    // Edges: vertices at distance^2 = 2
+    // Build edges
     var E = [], adj = []
-    for (var i = 0; i < 24; i++) adj.push([])
-    for (var i = 0; i < 24; i++)
-      for (var j = i + 1; j < 24; j++) {
-        var d2 = 0
-        for (var k = 0; k < 4; k++) d2 += (V[i][k] - V[j][k]) * (V[i][k] - V[j][k])
-        if (d2 === 2) {
+    for (var i = 0; i < 12; i++) adj.push([])
+    for (var i = 0; i < 12; i++)
+      for (var j = i + 1; j < 12; j++) {
+        var dx = V[i][0] - V[j][0], dy = V[i][1] - V[j][1], dz = V[i][2] - V[j][2]
+        if (dx * dx + dy * dy + dz * dz < 1.25) {
           E.push([i, j])
           adj[i].push(j)
           adj[j].push(i)
         }
       }
 
-    // Triangular faces: all triples of mutually adjacent vertices
+    // Build triangular faces
     var F = []
-    for (var i = 0; i < 24; i++)
+    for (var i = 0; i < 12; i++)
       for (var ji = 0; ji < adj[i].length; ji++) {
-        var j = adj[i][ji]
-        if (j <= i) continue
-        for (var ki = 0; ki < adj[i].length; ki++) {
-          var k = adj[i][ki]
-          if (k <= j) continue
-          if (adj[j].indexOf(k) !== -1) F.push([i, j, k])
+        var jj = adj[i][ji]
+        if (jj <= i) continue
+        for (var ki = ji + 1; ki < adj[i].length; ki++) {
+          var kk = adj[i][ki]
+          if (kk <= jj) continue
+          if (adj[jj].indexOf(kk) !== -1) F.push([i, jj, kk])
         }
       }
 
-    function rot4(v, a1, a2, a3) {
-      var x=v[0],y=v[1],z=v[2],w=v[3],co,si,t
-      co=Math.cos(a1);si=Math.sin(a1);t=x*co-w*si;w=x*si+w*co;x=t
-      co=Math.cos(a2);si=Math.sin(a2);t=y*co-z*si;z=y*si+z*co;y=t
-      co=Math.cos(a3);si=Math.sin(a3);t=x*co-y*si;y=x*si+y*co;x=t
-      return [x,y,z,w]
+    function rotY(v, a) {
+      var co = Math.cos(a), si = Math.sin(a)
+      return [v[0] * co + v[2] * si, v[1], -v[0] * si + v[2] * co]
     }
-
-    function proj(v) {
-      var d=3.5,s=1/(d-v[3]),d2=3,s2=1/(d2-v[2]*s)
-      return {x:v[0]*s*s2, y:v[1]*s*s2, d:s*d}
+    function rotX(v, a) {
+      var co = Math.cos(a), si = Math.sin(a)
+      return [v[0], v[1] * co - v[2] * si, v[1] * si + v[2] * co]
+    }
+    function rotZ(v, a) {
+      var co = Math.cos(a), si = Math.sin(a)
+      return [v[0] * co - v[1] * si, v[0] * si + v[1] * co, v[2]]
     }
 
     function draw() {
       var t = performance.now() * 0.001
       ctx.clearRect(0, 0, S, S)
-      var cx=S/2,cy=S/2,sc=S*0.26
+      var cx = S / 2, cy = S / 2, sc = S * 0.33
 
-      var pts = V.map(function(v) {
-        var r = rot4(v, t*0.4, t*0.31, t*0.19)
-        var p = proj(r)
-        return {x: cx+p.x*sc, y: cy+p.y*sc, d: p.d}
+      // Floating bob animation
+      var floatY = Math.sin(t * 0.8) * 5
+
+      // Mouse tilt
+      var tiltX = (my - 0.5) * 0.5
+      var tiltY = (mx - 0.5) * 0.5
+
+      var pts = V.map(function (v) {
+        var r = rotY(v, t * 0.35)
+        r = rotX(r, t * 0.22)
+        r = rotZ(r, t * 0.13)
+        r = rotX(r, tiltX)
+        r = rotY(r, tiltY)
+        var d = 2.8, s = 1 / (d - r[2])
+        return { x: cx + r[0] * sc * s, y: cy + r[1] * sc * s + floatY, z: r[2], d: s * d }
       })
 
-      // Draw faces (back to front)
-      F.slice().sort(function(a,b) {
-        return (pts[a[0]].d+pts[a[1]].d+pts[a[2]].d)-(pts[b[0]].d+pts[b[1]].d+pts[b[2]].d)
-      }).forEach(function(f) {
-        var p0=pts[f[0]],p1=pts[f[1]],p2=pts[f[2]]
-        var avgD=(p0.d+p1.d+p2.d)/3
-        var alpha=Math.max(0.015, Math.min(0.09, (avgD-0.5)*0.1))
-        var hue=(avgD*.8+t*.05)%1
-        var r=Math.round(124+hue*110)
-        var g=Math.round(77+(1-hue)*60)
-        var b=Math.round(255-hue*30)
+      // Draw faces (back to front by z)
+      F.slice().sort(function (a, b) {
+        return (pts[a[0]].z + pts[a[1]].z + pts[a[2]].z) - (pts[b[0]].z + pts[b[1]].z + pts[b[2]].z)
+      }).forEach(function (f) {
+        var p0 = pts[f[0]], p1 = pts[f[1]], p2 = pts[f[2]]
+        var avgZ = (p0.z + p1.z + p2.z) / 3
+        var alpha = 0.06 + (avgZ + 1) * 0.1
+        alpha = Math.max(0.04, Math.min(0.22, alpha))
+        var hue = ((avgZ + 1) * 0.25 + t * 0.04) % 1
+        var r = Math.round(95 + hue * 90)
+        var g = Math.round(55 + (1 - hue) * 55)
+        var b = Math.round(210 + hue * 45)
+
         ctx.beginPath()
-        ctx.moveTo(p0.x,p0.y)
-        ctx.lineTo(p1.x,p1.y)
-        ctx.lineTo(p2.x,p2.y)
+        ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y)
         ctx.closePath()
-        ctx.fillStyle='rgba('+r+','+g+','+b+','+alpha+')'
+        ctx.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')'
         ctx.fill()
       })
 
       // Draw edges (back to front)
-      E.slice().sort(function(a,b) {
-        return (pts[a[0]].d+pts[a[1]].d)-(pts[b[0]].d+pts[b[1]].d)
-      }).forEach(function(e) {
-        var p0=pts[e[0]],p1=pts[e[1]]
-        var avgD=(p0.d+p1.d)/2
-        var alpha=Math.max(0.06, Math.min(0.45, avgD*0.32))
-        var g=ctx.createLinearGradient(p0.x,p0.y,p1.x,p1.y)
-        g.addColorStop(0,'rgba(124,77,255,'+alpha+')')
-        g.addColorStop(.5,'rgba(179,136,255,'+alpha+')')
-        g.addColorStop(1,'rgba(234,128,252,'+alpha+')')
+      E.slice().sort(function (a, b) {
+        return (pts[a[0]].z + pts[a[1]].z) - (pts[b[0]].z + pts[b[1]].z)
+      }).forEach(function (e) {
+        var p0 = pts[e[0]], p1 = pts[e[1]]
+        var avgZ = (p0.z + p1.z) / 2
+        var alpha = 0.15 + (avgZ + 1) * 0.3
+        alpha = Math.max(0.1, Math.min(0.75, alpha))
+
+        var g = ctx.createLinearGradient(p0.x, p0.y, p1.x, p1.y)
+        g.addColorStop(0, 'rgba(124,77,255,' + alpha + ')')
+        g.addColorStop(0.5, 'rgba(179,136,255,' + alpha + ')')
+        g.addColorStop(1, 'rgba(210,150,255,' + alpha + ')')
+
         ctx.beginPath()
-        ctx.moveTo(p0.x,p0.y)
-        ctx.lineTo(p1.x,p1.y)
-        ctx.strokeStyle=g
-        ctx.lineWidth=.3+avgD*.45
-        ctx.shadowColor='rgba(179,136,255,'+alpha*.4+')'
-        ctx.shadowBlur=3
+        ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y)
+        ctx.strokeStyle = g
+        ctx.lineWidth = 0.8 + (avgZ + 1) * 0.9
+        ctx.shadowColor = 'rgba(160,120,255,' + alpha * 0.7 + ')'
+        ctx.shadowBlur = 8
         ctx.stroke()
-        ctx.shadowBlur=0
+        ctx.shadowBlur = 0
       })
 
-      // Draw vertices
-      pts.forEach(function(p) {
-        var alpha=Math.max(0.12, Math.min(0.8, p.d*0.45))
+      // Draw vertices with glow
+      pts.forEach(function (p) {
+        var alpha = 0.2 + (p.z + 1) * 0.35
+        alpha = Math.max(0.15, Math.min(0.85, alpha))
+        var size = 1.2 + (p.z + 1) * 0.9
+
         ctx.beginPath()
-        ctx.arc(p.x,p.y,.5+p.d*.7,0,Math.PI*2)
-        ctx.fillStyle='rgba(234,128,252,'+alpha+')'
-        ctx.shadowColor='rgba(179,136,255,'+alpha*.5+')'
-        ctx.shadowBlur=4
+        ctx.arc(p.x, p.y, size, 0, Math.PI * 2)
+        ctx.fillStyle = 'rgba(210,175,255,' + alpha + ')'
+        ctx.shadowColor = 'rgba(160,120,255,' + alpha * 0.8 + ')'
+        ctx.shadowBlur = 10
         ctx.fill()
-        ctx.shadowBlur=0
+        ctx.shadowBlur = 0
       })
 
       requestAnimationFrame(draw)
@@ -523,7 +565,7 @@
   }
 
   /* ================================================================
-   * TITLE — Animated 3D wave letters
+   * TITLE — Animated letters + continuous mouse 3D tilt
    * ================================================================ */
   function initTitle() {
     var el = document.getElementById('shapix-title')
@@ -531,8 +573,19 @@
     var text = 'Shapix'
     var html = ''
     for (var i = 0; i < text.length; i++)
-      html += '<span class="hero__letter" style="animation-delay:'+i*0.12+'s">'+text[i]+'</span>'
+      html += '<span class="hero__letter" style="animation-delay:' + i * 0.12 + 's">' + text[i] + '</span>'
     el.innerHTML = html
+
+    // Continuous mouse 3D tilt on the logo+title container
+    var logoEl = document.querySelector('.hero__logo')
+    if (logoEl) {
+      ;(function updateTilt() {
+        var dx = (mx - 0.5) * 15
+        var dy = -(my - 0.5) * 10
+        logoEl.style.transform = 'rotateY(' + dx + 'deg) rotateX(' + dy + 'deg)'
+        requestAnimationFrame(updateTilt)
+      })()
+    }
   }
 
   if (document.readyState === 'loading')
