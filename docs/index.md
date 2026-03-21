@@ -203,6 +203,16 @@ body { background: transparent !important; }
   border-color: rgba(179,136,255,0.08);
 }
 
+.backends__title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--md-primary-fg-color);
+  opacity: 0.5;
+}
+
 .backends__logos {
   display: flex;
   gap: 3rem;
@@ -344,9 +354,9 @@ Each thread gets independent dimension bindings via `threading.local()`. Safe fo
 
 </div>
 
-<div class="backends" markdown>
+<div class="backends">
 
-### Supported Backends
+<div class="backends__title">Supported Backends</div>
 
 <div class="backends__logos">
 
