@@ -12,7 +12,7 @@ hide:
 .md-typeset h1 { display: none; }
 .md-content__button { display: none !important; }
 .md-content__inner { padding: 0; margin: 0; max-width: none; }
-.md-main__inner { margin-top: -1rem; }
+.md-main__inner { margin-top: clamp(-2rem, -1.5vh, -0.5rem); }
 .md-content { padding-top: 0; }
 .md-footer { display: none !important; }
 html { overflow-x: hidden; }
@@ -56,8 +56,10 @@ body { background: transparent !important; }
 }
 
 .hero__logo canvas {
+  width: clamp(140px, 15vh, 220px);
+  height: clamp(140px, 15vh, 220px);
   filter: drop-shadow(0 0 22px rgba(140, 90, 255, 0.3));
-  margin-bottom: -58px;
+  margin-bottom: clamp(-40px, -4vh, -20px);
 }
 
 /* ── 3D extruded title ── */
@@ -71,7 +73,7 @@ body { background: transparent !important; }
 .hero__letter {
   display: inline-block;
   font-family: 'Outfit', sans-serif;
-  font-size: 3.6rem;
+  font-size: clamp(2.4rem, 3.5vh, 3.6rem);
   font-weight: 900;
   letter-spacing: -0.04em;
   color: #c9b3ff;
@@ -128,7 +130,7 @@ body { background: transparent !important; }
 }
 
 .hero__powered .beartype-link {
-  font-size: 2rem;
+  font-size: clamp(1.4rem, 2vh, 2rem);
   font-weight: 700;
   white-space: nowrap;
   color: inherit !important;
@@ -136,11 +138,11 @@ body { background: transparent !important; }
 }
 
 .beartype-logo-inline {
-  height: 44px !important;
+  height: clamp(28px, 3.5vh, 44px) !important;
   max-height: 44px !important;
   width: auto !important;
   max-width: 48px !important;
-  vertical-align: -6px;
+  vertical-align: clamp(-4px, -0.5vh, -2px);
   margin-right: 5px;
   opacity: 0.4;
   filter: grayscale(100%) brightness(0.5);
@@ -170,14 +172,14 @@ body { background: transparent !important; }
   gap: 1rem;
   justify-content: center;
   flex-wrap: wrap;
-  margin-bottom: 1.2rem;
+  margin-bottom: clamp(0.5rem, 1vh, 1.2rem);
 }
 
 .hero__actions .md-button {
   font-family: 'Outfit', sans-serif;
-  font-size: 0.72rem;
+  font-size: clamp(0.65rem, 0.8vh, 0.72rem);
   font-weight: 700;
-  padding: 0.35rem 1rem;
+  padding: clamp(0.25rem, 0.4vh, 0.35rem) clamp(0.7rem, 1vh, 1rem);
   border-radius: 2rem;
   border: 2px solid var(--md-primary-fg-color);
   color: var(--md-primary-fg-color);
@@ -210,18 +212,18 @@ body { background: transparent !important; }
   z-index: 1;
   max-width: 61rem;
   margin: 0 auto;
-  padding: 0.2rem 1.5rem 1rem;
+  padding: clamp(0.1rem, 0.3vh, 0.2rem) 1.5rem clamp(0.5rem, 1vh, 1rem);
 }
 
 .features-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 0.5rem;
-  padding: 0.2rem 0;
+  gap: clamp(0.3rem, 0.5vh, 0.5rem);
+  padding: clamp(0.1rem, 0.3vh, 0.2rem) 0;
 }
 
 .feature-card {
-  padding: 0.5rem 0.8rem;
+  padding: clamp(0.3rem, 0.5vh, 0.5rem) 0.8rem;
   border-radius: 14px;
   background: rgba(255,255,255,0.55);
   backdrop-filter: blur(16px);
@@ -266,8 +268,8 @@ body { background: transparent !important; }
   z-index: 1;
   text-align: center;
   max-width: 61rem;
-  margin: 0 auto 0.5rem;
-  padding: 0.75rem 1.5rem 1rem;
+  margin: 0 auto clamp(0.2rem, 0.5vh, 0.5rem);
+  padding: clamp(0.4rem, 0.7vh, 0.75rem) 1.5rem clamp(0.5rem, 0.8vh, 1rem);
   border-radius: 16px;
   background: rgba(255,255,255,0.4);
   backdrop-filter: blur(12px);
