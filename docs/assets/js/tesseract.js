@@ -587,6 +587,104 @@
     }
   }
 
+  /* ================================================================
+   * STARS — Lightweight canvas for non-home pages
+   * Per-star twinkling, 4 groups with quarter-cycle phase offsets
+   * ================================================================ */
+  var _starCanvas = null
+  var _starAf = null
+
+  function initStars() {
+    // Only on non-home pages
+    if (document.getElementById('shapix-visual')) {
+      killStars()
+      return
+    }
+    if (_starCanvas) return // already running
+
+    var canvas = document.createElement('canvas')
+    canvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;'
+    document.body.appendChild(canvas)
+    _starCanvas = canvas
+
+    var ctx = canvas.getContext('2d')
+    var dpr = Math.min(window.devicePixelRatio || 1, 2)
+
+    function resize() {
+      canvas.width = window.innerWidth * dpr
+      canvas.height = window.innerHeight * dpr
+    }
+    resize()
+    window.addEventListener('resize', resize)
+
+    // Generate stars — spread across max viewport
+    var NUM = 220
+    var stars = []
+    // Simple seeded pseudo-random
+    var seed = 12345
+    function rand() { seed = (seed * 16807 + 0) % 2147483647; return seed / 2147483647 }
+    for (var i = 0; i < NUM; i++) {
+      stars.push({
+        x: rand(),  // 0-1 normalized
+        y: rand(),
+        size: rand() < 0.7 ? 1 : 1.5,
+        group: i % 4,
+        phase: rand() * Math.PI * 2,
+        speed: 1.8 + rand() * 0.8,
+        maxB: 0.8 + rand() * 0.2,
+        // Color: mix white and purple-tinted
+        r: rand() < 0.65 ? 255 : 200 + Math.floor(rand() * 20),
+        g: rand() < 0.65 ? 255 : 190 + Math.floor(rand() * 15),
+        b: 255
+      })
+    }
+
+    function isDark() {
+      var e = document.querySelector('[data-md-color-scheme]')
+      return e && e.getAttribute('data-md-color-scheme') === 'slate'
+    }
+
+    function frame(t) {
+      var T = t * 0.001 + tOff
+      var dark = isDark()
+      var w = canvas.width, h = canvas.height
+
+      ctx.clearRect(0, 0, w, h)
+
+      for (var i = 0; i < NUM; i++) {
+        var s = stars[i]
+        var groupPhase = s.group * 1.5708 // pi/2
+        var raw = Math.sin(T * s.speed + groupPhase + s.phase)
+        var pulse = raw * 0.5 + 0.5
+        pulse = pulse * pulse
+        var brightness = 0.08 + pulse * s.maxB
+
+        if (dark) {
+          ctx.globalAlpha = brightness
+          ctx.fillStyle = 'rgb(' + s.r + ',' + s.g + ',' + s.b + ')'
+        } else {
+          // Light mode: dark purple dust
+          ctx.globalAlpha = brightness * 0.6
+          ctx.fillStyle = 'rgba(80,40,150,0.7)'
+        }
+
+        var px = s.x * w
+        var py = s.y * h
+        var sz = s.size * dpr
+        ctx.fillRect(px, py, sz, sz)
+      }
+
+      ctx.globalAlpha = 1
+      _starAf = requestAnimationFrame(frame)
+    }
+    _starAf = requestAnimationFrame(frame)
+  }
+
+  function killStars() {
+    if (_starAf) { cancelAnimationFrame(_starAf); _starAf = null }
+    if (_starCanvas) { _starCanvas.remove(); _starCanvas = null }
+  }
+
   function cleanup() {
     for (var i = 0; i < _afs.length; i++) cancelAnimationFrame(_afs[i])
     _afs = []
@@ -597,6 +695,7 @@
   function init() {
     cleanup()
     start()
+    initStars()
   }
 
   // Initial load

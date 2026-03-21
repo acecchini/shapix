@@ -179,17 +179,7 @@
   --md-default-bg-color--lightest: #151a2a;
 }
 
-/* ── 4-layer star/particle system (div-based, independent animations) ── */
-
-.star-layer {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  background: transparent;
-}
-
-/* ── Make content backgrounds transparent so layers show through ── */
+/* ── Make content backgrounds transparent so star canvas shows through ── */
 
 body {
   background: var(--md-default-bg-color) !important;
@@ -203,107 +193,7 @@ body {
   background: transparent !important;
 }
 
-/* ══════════════════════════════════════════════════════
-   DARK MODE — 4 star layers (60 each), quarter-cycle offsets
-   ══════════════════════════════════════════════════════ */
-
-[data-md-color-scheme="slate"] .star-layer-1 {
-  width: 1px; height: 1px;
-  box-shadow: 2391px 1424px #fff, 1999px 343px #fff, 1995px 589px #fff, 1419px 737px #fff, 1077px 84px #fff, 406px 604px #fff, 708px 1178px #fff, 2288px 428px #fff, 2482px 1105px #fff, 164px 978px #fff, 1027px 208px #fff, 1294px 1071px #fff, 1352px 182px #fff, 274px 995px #fff, 495px 555px #fff, 555px 14px #fff, 1812px 780px #fff, 995px 670px #fff, 1640px 232px #fff, 1212px 1362px #fff, 1103px 719px #fff, 131px 49px #fff, 971px 1035px #fff, 766px 662px #fff, 470px 690px #fff, 231px 372px #fff, 1246px 627px #fff, 517px 378px #fff, 97px 1233px #fff, 854px 498px #fff, 1101px 398px #fff, 2494px 101px #fff, 967px 471px #fff, 2543px 590px #fff, 549px 264px #fff, 313px 1007px #fff, 1347px 452px #fff, 1421px 1050px #fff, 668px 361px #fff, 345px 16px #fff, 2412px 1149px rgba(200,190,255,0.9), 1671px 1289px rgba(200,190,255,0.9), 1721px 1165px rgba(200,190,255,0.9), 1727px 616px rgba(200,190,255,0.9), 2013px 83px rgba(200,190,255,0.9), 1933px 1207px rgba(200,190,255,0.9), 310px 92px rgba(200,190,255,0.9), 532px 1254px rgba(200,190,255,0.9), 447px 96px rgba(200,190,255,0.9), 304px 961px rgba(200,190,255,0.9), 2123px 1035px rgba(200,190,255,0.9), 851px 273px rgba(200,190,255,0.9), 1327px 397px rgba(200,190,255,0.9), 2323px 1003px rgba(200,190,255,0.9), 1859px 1382px rgba(200,190,255,0.9), 1630px 49px rgba(200,190,255,0.9), 1339px 466px rgba(200,190,255,0.9), 1966px 421px rgba(200,190,255,0.9), 2424px 578px rgba(200,190,255,0.9), 1033px 1228px rgba(200,190,255,0.9);
-  animation: starPulseA 8s ease-in-out infinite;
-}
-
-[data-md-color-scheme="slate"] .star-layer-2 {
-  width: 1px; height: 1px;
-  box-shadow: 1378px 61px #fff, 2037px 1090px #fff, 1994px 1056px #fff, 708px 6px #fff, 836px 528px #fff, 2185px 434px #fff, 820px 1246px #fff, 1559px 86px #fff, 2517px 664px #fff, 1767px 688px #fff, 910px 72px #fff, 24px 1130px #fff, 1610px 954px #fff, 1947px 689px #fff, 1372px 137px #fff, 612px 1109px #fff, 936px 189px #fff, 348px 1262px #fff, 546px 312px #fff, 1470px 1106px #fff, 2524px 1211px #fff, 996px 683px #fff, 1132px 1090px #fff, 827px 292px #fff, 701px 91px #fff, 416px 421px #fff, 733px 225px #fff, 1369px 662px #fff, 1069px 1033px #fff, 959px 1248px #fff, 2459px 945px #fff, 637px 1233px #fff, 1647px 550px #fff, 2298px 1165px #fff, 126px 1138px #fff, 770px 1269px #fff, 2238px 693px #fff, 1281px 1190px #fff, 192px 616px #fff, 726px 706px #fff, 696px 897px rgba(200,190,255,0.9), 170px 65px rgba(200,190,255,0.9), 505px 1077px rgba(200,190,255,0.9), 2398px 1274px rgba(200,190,255,0.9), 2347px 1309px rgba(200,190,255,0.9), 1426px 459px rgba(200,190,255,0.9), 745px 25px rgba(200,190,255,0.9), 1659px 1142px rgba(200,190,255,0.9), 2131px 870px rgba(200,190,255,0.9), 874px 1340px rgba(200,190,255,0.9), 2035px 384px rgba(200,190,255,0.9), 1625px 716px rgba(200,190,255,0.9), 1641px 442px rgba(200,190,255,0.9), 1696px 772px rgba(200,190,255,0.9), 132px 731px rgba(200,190,255,0.9), 51px 722px rgba(200,190,255,0.9), 2442px 1097px rgba(200,190,255,0.9), 1860px 287px rgba(200,190,255,0.9), 850px 890px rgba(200,190,255,0.9), 102px 62px rgba(200,190,255,0.9);
-  animation: starPulseB 8s ease-in-out infinite;
-  animation-delay: -2s;
-}
-
-[data-md-color-scheme="slate"] .star-layer-3 {
-  width: 1px; height: 1px;
-  box-shadow: 499px 433px #fff, 2395px 155px #fff, 292px 151px #fff, 1981px 192px #fff, 2128px 630px #fff, 2321px 82px #fff, 2118px 1332px #fff, 2234px 653px #fff, 2030px 69px #fff, 537px 1402px #fff, 405px 383px #fff, 2481px 38px #fff, 1755px 622px #fff, 2380px 909px #fff, 525px 40px #fff, 1049px 1205px #fff, 462px 772px #fff, 2381px 629px #fff, 1003px 863px #fff, 1235px 355px #fff, 1920px 632px #fff, 2083px 1115px #fff, 1625px 1190px #fff, 578px 540px #fff, 475px 1165px #fff, 1245px 674px #fff, 1542px 832px #fff, 1449px 1304px #fff, 2243px 925px #fff, 511px 116px #fff, 1795px 377px #fff, 408px 978px #fff, 1985px 124px #fff, 305px 277px #fff, 78px 250px #fff, 1860px 541px #fff, 1494px 113px #fff, 2137px 704px #fff, 1594px 296px #fff, 381px 351px #fff, 305px 906px rgba(200,190,255,0.9), 2463px 880px rgba(200,190,255,0.9), 2215px 1220px rgba(200,190,255,0.9), 1359px 237px rgba(200,190,255,0.9), 991px 457px rgba(200,190,255,0.9), 5px 726px rgba(200,190,255,0.9), 848px 879px rgba(200,190,255,0.9), 1870px 328px rgba(200,190,255,0.9), 33px 383px rgba(200,190,255,0.9), 1384px 1422px rgba(200,190,255,0.9), 2474px 1192px rgba(200,190,255,0.9), 551px 1271px rgba(200,190,255,0.9), 1046px 279px rgba(200,190,255,0.9), 1720px 1052px rgba(200,190,255,0.9), 1500px 908px rgba(200,190,255,0.9), 1077px 498px rgba(200,190,255,0.9), 385px 274px rgba(200,190,255,0.9), 2172px 373px rgba(200,190,255,0.9), 901px 135px rgba(200,190,255,0.9), 673px 611px rgba(200,190,255,0.9);
-  animation: starPulseC 8s ease-in-out infinite;
-  animation-delay: -4s;
-}
-
-[data-md-color-scheme="slate"] .star-layer-4 {
-  width: 1px; height: 1px;
-  box-shadow: 1505px 916px #fff, 2505px 927px #fff, 1737px 849px #fff, 1952px 790px #fff, 592px 1175px #fff, 1004px 676px #fff, 1667px 177px #fff, 974px 682px #fff, 970px 372px #fff, 1804px 784px #fff, 2282px 419px #fff, 1794px 826px #fff, 587px 270px #fff, 1187px 140px #fff, 1597px 1177px #fff, 1625px 415px #fff, 2471px 839px #fff, 2034px 498px #fff, 25px 363px #fff, 2130px 379px #fff, 1960px 978px #fff, 933px 345px #fff, 811px 930px #fff, 1859px 465px #fff, 2405px 291px #fff, 1880px 416px #fff, 647px 901px #fff, 1175px 585px #fff, 1814px 989px #fff, 328px 976px #fff, 417px 1343px #fff, 1875px 72px #fff, 1682px 1183px #fff, 629px 1355px #fff, 1998px 817px #fff, 36px 576px #fff, 985px 1317px #fff, 1129px 354px #fff, 2389px 1166px #fff, 507px 290px #fff, 898px 1147px rgba(200,190,255,0.9), 911px 629px rgba(200,190,255,0.9), 436px 1175px rgba(200,190,255,0.9), 1758px 706px rgba(200,190,255,0.9), 2507px 684px rgba(200,190,255,0.9), 2528px 140px rgba(200,190,255,0.9), 921px 272px rgba(200,190,255,0.9), 2247px 697px rgba(200,190,255,0.9), 653px 251px rgba(200,190,255,0.9), 533px 346px rgba(200,190,255,0.9), 1454px 553px rgba(200,190,255,0.9), 1377px 413px rgba(200,190,255,0.9), 106px 478px rgba(200,190,255,0.9), 1451px 27px rgba(200,190,255,0.9), 2161px 908px rgba(200,190,255,0.9), 1725px 530px rgba(200,190,255,0.9), 631px 1285px rgba(200,190,255,0.9), 641px 1140px rgba(200,190,255,0.9), 719px 355px rgba(200,190,255,0.9), 2466px 159px rgba(200,190,255,0.9);
-  animation: starPulseD 8s ease-in-out infinite;
-  animation-delay: -6s;
-}
-
-@keyframes starPulseA {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 1; }
-}
-
-@keyframes starPulseB {
-  0%, 100% { opacity: 0.25; }
-  50% { opacity: 0.9; }
-}
-
-@keyframes starPulseC {
-  0%, 100% { opacity: 0.35; }
-  50% { opacity: 0.85; }
-}
-
-@keyframes starPulseD {
-  0%, 100% { opacity: 0.28; }
-  50% { opacity: 0.95; }
-}
-
-/* ══════════════════════════════════════════════════════
-   LIGHT MODE — 4 dark-dust layers (30 each), same offsets
-   ══════════════════════════════════════════════════════ */
-
-[data-md-color-scheme="default"] .star-layer-1 {
-  width: 2px; height: 2px;
-  box-shadow: 110px 459px rgba(80,40,150,0.35), 2116px 282px rgba(80,40,150,0.35), 171px 849px rgba(80,40,150,0.35), 545px 1064px rgba(80,40,150,0.35), 777px 412px rgba(80,40,150,0.35), 2507px 110px rgba(80,40,150,0.35), 2304px 1269px rgba(80,40,150,0.35), 1659px 90px rgba(80,40,150,0.35), 2004px 1198px rgba(80,40,150,0.35), 969px 1134px rgba(80,40,150,0.35), 153px 757px rgba(80,40,150,0.35), 1633px 608px rgba(80,40,150,0.35), 1961px 1012px rgba(80,40,150,0.35), 538px 518px rgba(80,40,150,0.35), 654px 264px rgba(80,40,150,0.35), 1946px 1162px rgba(80,40,150,0.35), 1217px 1089px rgba(80,40,150,0.35), 2111px 1224px rgba(80,40,150,0.35), 1702px 418px rgba(80,40,150,0.35), 2335px 29px rgba(80,40,150,0.35), 2062px 1391px rgba(80,40,150,0.35), 431px 558px rgba(80,40,150,0.35), 1085px 128px rgba(80,40,150,0.35), 683px 162px rgba(80,40,150,0.35), 1997px 581px rgba(80,40,150,0.35), 1071px 447px rgba(80,40,150,0.35), 1030px 435px rgba(80,40,150,0.35), 446px 897px rgba(80,40,150,0.35), 771px 717px rgba(80,40,150,0.35), 1506px 516px rgba(80,40,150,0.35);
-  animation: dustPulseA 8s ease-in-out infinite;
-}
-
-[data-md-color-scheme="default"] .star-layer-2 {
-  width: 2px; height: 2px;
-  box-shadow: 1263px 1269px rgba(80,40,150,0.35), 1313px 206px rgba(80,40,150,0.35), 321px 408px rgba(80,40,150,0.35), 1043px 92px rgba(80,40,150,0.35), 1995px 932px rgba(80,40,150,0.35), 569px 418px rgba(80,40,150,0.35), 2515px 1249px rgba(80,40,150,0.35), 1000px 927px rgba(80,40,150,0.35), 37px 532px rgba(80,40,150,0.35), 2240px 934px rgba(80,40,150,0.35), 2127px 415px rgba(80,40,150,0.35), 9px 974px rgba(80,40,150,0.35), 792px 130px rgba(80,40,150,0.35), 1794px 1364px rgba(80,40,150,0.35), 713px 359px rgba(80,40,150,0.35), 790px 1227px rgba(80,40,150,0.35), 1369px 503px rgba(80,40,150,0.35), 860px 780px rgba(80,40,150,0.35), 147px 989px rgba(80,40,150,0.35), 499px 1198px rgba(80,40,150,0.35), 156px 1382px rgba(80,40,150,0.35), 524px 817px rgba(80,40,150,0.35), 1971px 503px rgba(80,40,150,0.35), 1330px 30px rgba(80,40,150,0.35), 895px 787px rgba(80,40,150,0.35), 179px 855px rgba(80,40,150,0.35), 1013px 781px rgba(80,40,150,0.35), 1099px 120px rgba(80,40,150,0.35), 2402px 585px rgba(80,40,150,0.35), 595px 676px rgba(80,40,150,0.35);
-  animation: dustPulseB 8s ease-in-out infinite;
-  animation-delay: -2s;
-}
-
-[data-md-color-scheme="default"] .star-layer-3 {
-  width: 2px; height: 2px;
-  box-shadow: 1482px 584px rgba(80,40,150,0.35), 1611px 31px rgba(80,40,150,0.35), 2326px 14px rgba(80,40,150,0.35), 1512px 831px rgba(80,40,150,0.35), 409px 1109px rgba(80,40,150,0.35), 2147px 754px rgba(80,40,150,0.35), 2221px 1292px rgba(80,40,150,0.35), 564px 637px rgba(80,40,150,0.35), 1788px 637px rgba(80,40,150,0.35), 744px 719px rgba(80,40,150,0.35), 1521px 12px rgba(80,40,150,0.35), 1437px 750px rgba(80,40,150,0.35), 1807px 429px rgba(80,40,150,0.35), 177px 910px rgba(80,40,150,0.35), 1281px 1223px rgba(80,40,150,0.35), 782px 1141px rgba(80,40,150,0.35), 1530px 685px rgba(80,40,150,0.35), 267px 246px rgba(80,40,150,0.35), 920px 649px rgba(80,40,150,0.35), 561px 31px rgba(80,40,150,0.35), 291px 720px rgba(80,40,150,0.35), 1796px 474px rgba(80,40,150,0.35), 137px 743px rgba(80,40,150,0.35), 2109px 1402px rgba(80,40,150,0.35), 1942px 28px rgba(80,40,150,0.35), 924px 50px rgba(80,40,150,0.35), 2192px 267px rgba(80,40,150,0.35), 2030px 527px rgba(80,40,150,0.35), 2392px 1247px rgba(80,40,150,0.35), 2401px 1141px rgba(80,40,150,0.35);
-  animation: dustPulseC 8s ease-in-out infinite;
-  animation-delay: -4s;
-}
-
-[data-md-color-scheme="default"] .star-layer-4 {
-  width: 2px; height: 2px;
-  box-shadow: 682px 1382px rgba(80,40,150,0.35), 2274px 650px rgba(80,40,150,0.35), 1471px 486px rgba(80,40,150,0.35), 2486px 1204px rgba(80,40,150,0.35), 1735px 787px rgba(80,40,150,0.35), 2218px 140px rgba(80,40,150,0.35), 1581px 1316px rgba(80,40,150,0.35), 988px 1052px rgba(80,40,150,0.35), 2432px 32px rgba(80,40,150,0.35), 1679px 676px rgba(80,40,150,0.35), 953px 70px rgba(80,40,150,0.35), 829px 239px rgba(80,40,150,0.35), 1975px 873px rgba(80,40,150,0.35), 584px 437px rgba(80,40,150,0.35), 52px 1254px rgba(80,40,150,0.35), 2325px 1215px rgba(80,40,150,0.35), 1261px 559px rgba(80,40,150,0.35), 209px 1071px rgba(80,40,150,0.35), 1073px 922px rgba(80,40,150,0.35), 1202px 1017px rgba(80,40,150,0.35), 1826px 1118px rgba(80,40,150,0.35), 449px 231px rgba(80,40,150,0.35), 1088px 571px rgba(80,40,150,0.35), 1553px 789px rgba(80,40,150,0.35), 631px 93px rgba(80,40,150,0.35), 2451px 511px rgba(80,40,150,0.35), 1170px 1160px rgba(80,40,150,0.35), 384px 1253px rgba(80,40,150,0.35), 1487px 818px rgba(80,40,150,0.35), 2294px 1395px rgba(80,40,150,0.35);
-  animation: dustPulseD 8s ease-in-out infinite;
-  animation-delay: -6s;
-}
-
-@keyframes dustPulseA {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 0.9; }
-}
-
-@keyframes dustPulseB {
-  0%, 100% { opacity: 0.25; }
-  50% { opacity: 0.85; }
-}
-
-@keyframes dustPulseC {
-  0%, 100% { opacity: 0.35; }
-  50% { opacity: 0.8; }
-}
-
-@keyframes dustPulseD {
-  0%, 100% { opacity: 0.28; }
-  50% { opacity: 0.9; }
-}
+/* Star/dust rendering is now handled by JS canvas (tesseract.js) */
 
 /* ── Smooth scrolling ── */
 

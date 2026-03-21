@@ -19,7 +19,6 @@ hide:
 .md-typeset .hero__content p { margin: 0; }
 .md-typeset .hero__content .hero__powered { margin: 0 auto 0.3rem; }
 .md-footer { display: none !important; }
-.star-layer { display: none !important; }
 html { overflow-x: hidden; }
 
 /* Make page transparent so fixed visual shows through */
