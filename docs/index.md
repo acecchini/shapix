@@ -307,6 +307,11 @@ a.backend-logo:hover {
   width: auto;
 }
 
+.backend-logo--optree svg {
+  width: 38px;
+  height: 38px;
+}
+
 .backend-logo span {
   font-family: 'Outfit', sans-serif;
   font-size: 1.15rem;
