@@ -350,7 +350,7 @@
     var c = document.getElementById('shapix-logo')
     if (!c) return
     var ctx = c.getContext('2d')
-    var S = 270, dpr = Math.min(window.devicePixelRatio || 1, 2)
+    var S = 200, dpr = Math.min(window.devicePixelRatio || 1, 2)
     c.width = S * dpr; c.height = S * dpr
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 

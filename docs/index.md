@@ -14,6 +14,7 @@ hide:
 .md-content__inner { padding: 0; margin: 0; max-width: none; }
 .md-main__inner { margin-top: 0; }
 .md-content { padding-top: 0; }
+.md-footer { display: none !important; }
 html { overflow-x: hidden; }
 
 /* Make page transparent so fixed visual shows through */
@@ -35,7 +36,7 @@ body { background: transparent !important; }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 0 1rem 1rem;
+  padding: 0 1rem 0;
 }
 
 .hero__content {
@@ -69,7 +70,7 @@ body { background: transparent !important; }
 .hero__letter {
   display: inline-block;
   font-family: 'Outfit', sans-serif;
-  font-size: 3.8rem;
+  font-size: 3.2rem;
   font-weight: 900;
   letter-spacing: -0.04em;
   color: #c9b3ff;
@@ -80,10 +81,8 @@ body { background: transparent !important; }
     0 4px 0 #5336a5,
     0 5px 0 #4b2f9d,
     0 6px 0 #432895,
-    0 7px 0 #3b218d,
-    0 8px 0 #331a85,
-    0 9px 3px rgba(40,15,100,0.5),
-    0 0 20px rgba(124,77,255,0.15);
+    0 7px 3px rgba(40,15,100,0.5),
+    0 0 16px rgba(124,77,255,0.15);
   animation: letterFloat 3.5s ease-in-out infinite;
 }
 
@@ -111,8 +110,8 @@ body { background: transparent !important; }
   font-weight: 500;
   color: var(--md-default-fg-color--light);
   max-width: 580px;
-  margin: 0 auto 1.5rem;
-  line-height: 1.7;
+  margin: 0 auto 0.75rem;
+  line-height: 1.5;
 }
 
 .beartype-link {
@@ -150,14 +149,14 @@ body { background: transparent !important; }
   gap: 1rem;
   justify-content: center;
   flex-wrap: wrap;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .hero__actions .md-button {
   font-family: 'Outfit', sans-serif;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 700;
-  padding: 0.7rem 2rem;
+  padding: 0.5rem 1.6rem;
   border-radius: 2rem;
   border: 2px solid var(--md-primary-fg-color);
   color: var(--md-primary-fg-color);
@@ -190,18 +189,18 @@ body { background: transparent !important; }
   z-index: 1;
   max-width: 61rem;
   margin: 0 auto;
-  padding: 2rem 1.5rem;
+  padding: 0.5rem 1.5rem;
 }
 
 .features-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
-  padding: 2rem 0;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
 }
 
 .feature-card {
-  padding: 1.5rem;
+  padding: 0.8rem 1rem;
   border-radius: 14px;
   background: rgba(255,255,255,0.55);
   backdrop-filter: blur(16px);
@@ -228,14 +227,15 @@ body { background: transparent !important; }
 
 .feature-card h3 {
   margin-top: 0;
-  font-size: 1.05rem;
+  margin-bottom: 0.3rem;
+  font-size: 0.95rem;
 }
 
 .feature-card h3 .headerlink { display: none; }
 
 .feature-card p {
   color: var(--md-default-fg-color--light);
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   margin-bottom: 0;
 }
 
@@ -245,8 +245,8 @@ body { background: transparent !important; }
   z-index: 1;
   text-align: center;
   max-width: 61rem;
-  margin: 0 auto 2rem;
-  padding: 2rem 1.5rem 2.5rem;
+  margin: 0 auto 0.5rem;
+  padding: 0.75rem 1.5rem 1rem;
   border-radius: 16px;
   background: rgba(255,255,255,0.4);
   backdrop-filter: blur(12px);
@@ -275,7 +275,7 @@ body { background: transparent !important; }
   justify-content: center;
   align-items: center;
   flex-wrap: wrap;
-  margin-top: 1.5rem;
+  margin-top: 0.75rem;
 }
 
 a.backend-logo {
@@ -326,8 +326,8 @@ a.backend-logo:hover {
 
 /* ── Responsive ── */
 @media (max-width: 600px) {
-  .hero__letter { font-size: 3rem; }
-  .hero__logo canvas { width: 180px; height: 180px; }
+  .hero__letter { font-size: 2.6rem; }
+  .hero__logo canvas { width: 140px; height: 140px; }
   .backends__logos { gap: 1.5rem; }
 }
 </style>
@@ -338,7 +338,7 @@ a.backend-logo:hover {
 <div class="hero__content" markdown>
 
 <div class="hero__logo">
-<canvas id="shapix-logo" width="270" height="270"></canvas>
+<canvas id="shapix-logo" width="200" height="200"></canvas>
 <div class="hero__title" id="shapix-title">Shapix</div>
 </div>
 
