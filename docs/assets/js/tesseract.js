@@ -405,7 +405,7 @@
     function draw() {
       var t = performance.now() * 0.001 + tOff
       ctx.clearRect(0, 0, S, S)
-      var cx = S / 2, cy = S / 2, sc = S * 0.26
+      var cx = S / 2, cy = S / 2, sc = S * 0.30
 
       var floatY = Math.sin(t * 0.7) * 6
       var breath = 1 + 0.1 * Math.sin(t * 0.6)
@@ -483,16 +483,25 @@
 
         var lineW = 1.0 + (avgZ + 1) * 0.8
 
-        // Purple gradient that evolves over time
-        var phase = t * 0.05 + (e[0] + e[1]) * 0.2
-        var r = Math.round(140 + 60 * Math.sin(phase) + (avgZ + 1) * 30)
-        var g = Math.round(80 + 40 * Math.sin(phase + 2.0) + (avgZ + 1) * 20)
-        var b = Math.round(200 + 55 * Math.sin(phase + 4.0))
+        // Per-vertex color phases — gradient flows along each edge
+        var ph0 = t * 0.15 + e[0] * 0.4
+        var ph1 = t * 0.15 + e[1] * 0.4
+        var zb = (avgZ + 1) * 30
+        var r0 = Math.round(140 + 60 * Math.sin(ph0) + zb)
+        var g0 = Math.round(80 + 40 * Math.sin(ph0 + 2.0) + (avgZ + 1) * 20)
+        var b0 = Math.round(200 + 55 * Math.sin(ph0 + 4.0))
+        var r1 = Math.round(140 + 60 * Math.sin(ph1) + zb)
+        var g1 = Math.round(80 + 40 * Math.sin(ph1 + 2.0) + (avgZ + 1) * 20)
+        var b1 = Math.round(200 + 55 * Math.sin(ph1 + 4.0))
+
+        var grad = ctx.createLinearGradient(p0.x, p0.y, p1.x, p1.y)
+        grad.addColorStop(0, 'rgba(' + r0 + ',' + g0 + ',' + b0 + ',' + alpha + ')')
+        grad.addColorStop(1, 'rgba(' + r1 + ',' + g1 + ',' + b1 + ',' + alpha + ')')
 
         ctx.beginPath()
         ctx.moveTo(p0.x, p0.y)
         ctx.lineTo(p1.x, p1.y)
-        ctx.strokeStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')'
+        ctx.strokeStyle = grad
         ctx.lineWidth = lineW
         ctx.stroke()
       })

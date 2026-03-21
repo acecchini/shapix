@@ -49,7 +49,7 @@ body { background: transparent !important; }
   flex-direction: column;
   align-items: center;
   gap: 0;
-  margin-bottom: 0.3rem;
+  margin-bottom: 0;
   transform-style: preserve-3d;
   transition: transform 0.08s ease-out;
 }
@@ -100,7 +100,8 @@ body { background: transparent !important; }
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--md-primary-fg-color);
-  margin-bottom: 0.5rem;
+  margin-top: 0;
+  margin-bottom: 0.3rem;
   opacity: 0.7;
 }
 
@@ -121,10 +122,10 @@ body { background: transparent !important; }
 }
 
 .beartype-logo-inline {
-  height: 0.7em;
+  height: 0.4em;
   width: auto;
-  vertical-align: -0.05em;
-  margin-right: 0.1em;
+  vertical-align: -0.02em;
+  margin-right: 0.05em;
   opacity: 0.4;
   filter: grayscale(100%) brightness(0.5);
   transition: all 0.3s ease;
