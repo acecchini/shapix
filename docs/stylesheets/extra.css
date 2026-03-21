@@ -66,6 +66,21 @@
   z-index: 4;
 }
 
+/* Prevent search from expanding into tabs / repo area */
+.md-search {
+  max-width: 2.4rem;
+  overflow: visible;
+}
+
+.md-search--active {
+  max-width: none;
+}
+
+.md-header__source {
+  margin-left: 0.5rem;
+  flex-shrink: 0;
+}
+
 .md-nav__link {
   font-size: 0.85rem;
 }

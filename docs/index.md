@@ -101,7 +101,7 @@ body { background: transparent !important; }
   text-transform: uppercase;
   color: var(--md-primary-fg-color);
   margin-top: 0;
-  margin-bottom: 0.3rem;
+  margin-bottom: 0.15rem;
   opacity: 0.7;
 }
 
@@ -111,8 +111,8 @@ body { background: transparent !important; }
   font-weight: 500;
   color: var(--md-default-fg-color--light);
   max-width: 580px;
-  margin: 0 auto 0.75rem;
-  line-height: 1.5;
+  margin: 0 auto 0.4rem;
+  line-height: 1.4;
 }
 
 .hero__powered {
@@ -120,7 +120,7 @@ body { background: transparent !important; }
   font-size: 1rem;
   font-weight: 600;
   text-align: center;
-  margin: 0 auto 0.75rem;
+  margin: 0 auto 0.4rem;
   opacity: 0.6;
   color: var(--md-default-fg-color--light);
   transition: all 0.3s ease;
