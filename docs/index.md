@@ -128,6 +128,26 @@ body { background: transparent !important; }
   font-weight: 700;
   padding: 0.7rem 2rem;
   border-radius: 2rem;
+  border: 2px solid var(--md-primary-fg-color);
+  color: var(--md-primary-fg-color);
+  background: transparent;
+  transition: all 0.2s ease;
+}
+
+.hero__actions .md-button--primary {
+  background: var(--md-primary-fg-color);
+  color: white;
+  border-color: var(--md-primary-fg-color);
+}
+
+.hero__actions .md-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(124, 77, 255, 0.3);
+}
+
+.hero__actions .md-button--primary:hover {
+  background: var(--md-primary-fg-color--dark);
+  border-color: var(--md-primary-fg-color--dark);
 }
 
 /* ── Features grid with glassmorphism ── */
