@@ -12,7 +12,7 @@ hide:
 .md-typeset h1 { display: none; }
 .md-content__button { display: none !important; }
 .md-content__inner { padding: 0; margin: 0; max-width: none; }
-.md-main__inner { margin-top: -2.2rem; }
+.md-main__inner { margin-top: -1rem; }
 .md-content { padding-top: 0; }
 .md-footer { display: none !important; }
 html { overflow-x: hidden; }

@@ -34,50 +34,36 @@
 
 /* ── Navigation refinements ── */
 
-/* ── Inline header + tabs: single bar ── */
+/* ── Glassmorphism header + tabs ── */
 
-/* Glassmorphism header */
 .md-header {
-  z-index: 3 !important;
   background: rgba(124, 77, 255, 0.15) !important;
   backdrop-filter: blur(20px) saturate(1.4);
   -webkit-backdrop-filter: blur(20px) saturate(1.4);
-  border-bottom: 1px solid rgba(124, 77, 255, 0.12);
-  box-shadow: 0 2px 16px rgba(124, 77, 255, 0.08);
+  border-bottom: none !important;
+  box-shadow: none !important;
 }
 
 [data-md-color-scheme="slate"] .md-header {
   background: rgba(179, 136, 255, 0.08) !important;
-  border-bottom: 1px solid rgba(179, 136, 255, 0.1);
-  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.2);
 }
 
 .md-tabs {
-  margin-top: calc(-1 * var(--md-header-height, 3rem));
-  height: var(--md-header-height, 3rem);
-  background: transparent !important;
-  border-bottom: none;
-  position: relative;
-  z-index: 5;
-  pointer-events: none;
+  background: rgba(124, 77, 255, 0.1) !important;
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  border-bottom: 1px solid rgba(124, 77, 255, 0.1);
+  box-shadow: 0 2px 16px rgba(124, 77, 255, 0.06);
 }
 
-.md-tabs__inner {
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-  max-width: none;
-  padding: 0 10rem 0 17rem;
+[data-md-color-scheme="slate"] .md-tabs {
+  background: rgba(179, 136, 255, 0.05) !important;
+  border-bottom: 1px solid rgba(179, 136, 255, 0.08);
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.15);
 }
 
 .md-tabs__list {
-  pointer-events: none;
-}
-
-.md-tabs__item {
-  pointer-events: auto;
+  justify-content: center;
 }
 
 .md-nav__link {
