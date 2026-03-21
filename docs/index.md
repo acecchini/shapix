@@ -12,7 +12,7 @@ hide:
 .md-typeset h1 { display: none; }
 .md-content__button { display: none !important; }
 .md-content__inner { padding: 0; margin: 0; max-width: none; }
-.md-main__inner { margin-top: clamp(-2rem, -1.5vh, -0.5rem); }
+.md-main__inner { margin-top: clamp(-2.5rem, -2vh, -0.5rem); }
 .md-content { padding-top: 0; }
 .md-footer { display: none !important; }
 html { overflow-x: hidden; }
@@ -172,7 +172,7 @@ body { background: transparent !important; }
   gap: 1rem;
   justify-content: center;
   flex-wrap: wrap;
-  margin-bottom: clamp(0.5rem, 1vh, 1.2rem);
+  margin-bottom: clamp(0.4rem, 1.5vh, 2rem);
 }
 
 .hero__actions .md-button {
@@ -212,18 +212,18 @@ body { background: transparent !important; }
   z-index: 1;
   max-width: 61rem;
   margin: 0 auto;
-  padding: clamp(0.1rem, 0.3vh, 0.2rem) 1.5rem clamp(0.5rem, 1vh, 1rem);
+  padding: clamp(0.1rem, 0.3vh, 0.2rem) 1.5rem clamp(0.4rem, 1.5vh, 1.8rem);
 }
 
 .features-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: clamp(0.3rem, 0.5vh, 0.5rem);
+  gap: clamp(0.2rem, 0.4vh, 0.5rem);
   padding: clamp(0.1rem, 0.3vh, 0.2rem) 0;
 }
 
 .feature-card {
-  padding: clamp(0.3rem, 0.5vh, 0.5rem) 0.8rem;
+  padding: clamp(0.2rem, 0.4vh, 0.5rem) 0.8rem;
   border-radius: 14px;
   background: rgba(255,255,255,0.55);
   backdrop-filter: blur(16px);
