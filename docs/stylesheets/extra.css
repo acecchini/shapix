@@ -146,6 +146,10 @@
   --md-primary-fg-color--dark: #651fff;
   --md-accent-fg-color: #7c4dff;
   --md-accent-fg-color--transparent: rgba(124, 77, 255, 0.1);
+  --md-default-bg-color: #faf8ff;
+  --md-default-bg-color--light: #f5f2fc;
+  --md-default-bg-color--lighter: #f0ecf7;
+  --md-default-bg-color--lightest: #ebe6f2;
 }
 
 [data-md-color-scheme="slate"] {
