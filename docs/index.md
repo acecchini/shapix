@@ -177,6 +177,8 @@ body { background: transparent !important; }
   font-size: 1.05rem;
 }
 
+.feature-card h3 .headerlink { display: none; }
+
 .feature-card p {
   color: var(--md-default-fg-color--light);
   font-size: 0.9rem;
