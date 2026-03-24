@@ -155,7 +155,8 @@ __all__ = [
   "ShapedLike",
 ]
 
-from ._array_types import make_array_like_type, make_array_type
+from ._array_types import make_array_like_type as _make_array_like_type
+from ._array_types import make_array_type
 from ._dtypes import (
   BOOL,
   BYTES,
@@ -190,6 +191,38 @@ from ._dtypes import (
   VOID,
   DtypeSpec,
 )
+
+# ---------------------------------------------------------------------------
+# Backend-scoped fast-path trust: only np.ndarray skips conversion.
+# Foreign-backend arrays (e.g. torch.Tensor, jax.Array) fall through to the
+# slow path where np.asarray() verifies actual convertibility.
+# ---------------------------------------------------------------------------
+
+_NUMPY_TRUSTED: tuple[type, ...] = (np.ndarray,)
+
+
+def make_array_like_type(
+  dtype_spec: object,
+  *,
+  casting: str = "same_kind",
+  name: str = "ArrayLike",
+  asarray: object | None = None,
+  trusted_types: object | None = _NUMPY_TRUSTED,
+) -> tp.Any:
+  """NumPy-aware version of :func:`shapix.make_array_like_type`.
+
+  The fast path only trusts ``np.ndarray``; other backend arrays
+  (e.g. ``torch.Tensor``, ``jax.Array``) go through the slow path
+  where ``np.asarray()`` verifies actual convertibility.
+  """
+  return _make_array_like_type(
+    dtype_spec,  # type: ignore[arg-type]
+    casting=casting,
+    name=name,
+    asarray=asarray,  # type: ignore[arg-type]
+    trusted_types=trusted_types,  # type: ignore[arg-type]
+  )
+
 
 # ---------------------------------------------------------------------------
 # Numeric bounds (used by ScalarLike range validation at runtime)

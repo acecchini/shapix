@@ -127,3 +127,19 @@ async def async_identity(x: NDArray[np.float32]) -> NDArray[np.float32]:
 
 async def call_async() -> NDArray[np.float32]:
   return await async_identity(np.ones((4,), dtype=np.float32))
+
+
+@check
+async def async_count(x: NDArray[np.float32]) -> int:
+  return int(x.size)
+
+
+@check
+async def async_noop(x: NDArray[np.float32]) -> None:
+  _ = x
+
+
+async def call_async_variants() -> None:
+  count: int = await async_count(np.ones((4,), dtype=np.float32))
+  _ = count
+  await async_noop(np.ones((4,), dtype=np.float32))

@@ -1,6 +1,6 @@
 # Shapix
 
-Elegant runtime shape and dtype checking for NumPy, JAX, and PyTorch arrays — powered by [beartype](https://github.com/beartype/beartype).
+Elegant runtime shape and dtype checking for NumPy, JAX, PyTorch, and CuPy arrays — powered by [beartype](https://github.com/beartype/beartype).
 
 ```python
 from beartype import beartype
@@ -22,7 +22,7 @@ Shapix turns array shape annotations into **Python objects** that beartype valid
 - **Readable annotations** — `F32[N, C, H, W]` reads like documentation.
 - **Full `BeartypeConf` support** — unlike jaxtyping, shapix doesn't replace your beartype configuration.
 - **Thread-safe** — each thread gets independent dimension bindings.
-- **Multi-backend** — NumPy, JAX, and PyTorch out of the box, plus a factory for custom array types.
+- **Multi-backend** — NumPy, JAX, PyTorch, and CuPy out of the box, plus a factory for custom array types.
 
 ## Installation
 
@@ -39,14 +39,16 @@ Avoid extras-style installs such as `shapix[numpy]` or `shapix[torch]` (shapix i
 pip install shapix numpy          # NumPy
 pip install shapix torch          # PyTorch
 pip install shapix jax            # JAX
+pip install shapix numpy cupy     # CuPy
 pip install shapix numpy optree   # NumPy + tree support (optree or jax)
 ```
 
-For `shapix.jax` and `shapix.torch`, install `numpy` alongside the backend:
+For `shapix.jax`, `shapix.torch`, and `shapix.cupy`, install `numpy` alongside the backend:
 
 ```bash
 pip install shapix numpy jax
 pip install shapix numpy torch
+pip install shapix numpy cupy
 ```
 
 ## Quick start
@@ -365,6 +367,14 @@ from shapix.torch import F32, BF16
 ```
 
 Most NumPy type names, plus `BF16` and `BF16Like`. Base type is `torch.Tensor`. PyTorch does not expose NumPy-only extended-precision array aliases such as `F128` / `C256`. Also exports `Like` types.
+
+### CuPy
+
+```python
+from shapix.cupy import F32, I64
+```
+
+Most NumPy type names. Base type is `cupy.ndarray`. CuPy does not support `F128` / `C256`, `BF16`, or non-numeric dtypes (`V`, `Str`, `Bytes`, `Obj`, `DT64`, `TD64`). Also exports `Like` types and `ScalarLike` types (re-exported from numpy).
 
 ### Endianness variants
 
@@ -822,6 +832,19 @@ Add to your `pyproject.toml` or `pyrightconfig.json` to suppress the most common
 reportInvalidTypeForm = false
 ```
 
+In strict mode, you may also need:
+
+```toml
+[tool.pyright]
+reportInvalidTypeForm = false
+reportUnknownLambdaType = false
+reportUnknownMemberType = false
+reportUnknownVariableType = false
+reportUnknownArgumentType = false
+reportUnusedClass = false
+reportPrivateUsage = false
+```
+
 #### mypy
 
 ```toml
@@ -894,7 +917,7 @@ else:
 
 ### Array types (`shapix.numpy`)
 
-**Concrete:** `Bool`, `I8`, `I16`, `I32`, `I64`, `U8`, `U16`, `U32`, `U64`, `F16`, `F32`, `F64`, `C64`, `C128`
+**Concrete:** `Bool`, `I8`, `I16`, `I32`, `I64`, `U8`, `U16`, `U32`, `U64`, `F16`, `F32`, `F64`, `F128`, `C64`, `C128`, `C256`
 **Categories:** `Int`, `UInt`, `Integer`, `Float`, `Real`, `Complex`, `Inexact`, `Num`, `Shaped`
 **Other:** `V`, `Str`, `Bytes`, `Obj`, `DT64`, `TD64`
 **Endianness:** Programmatic via `make_array_type(np.ndarray, FLOAT32_LE)` using `DtypeSpec` constants
@@ -908,6 +931,10 @@ else:
 ### JAX/PyTorch (`shapix.jax`, `shapix.torch`)
 
 Most NumPy array types, plus `BF16` and `BF16Like`. NumPy-only extended-precision array aliases such as `F128` / `C256` stay in `shapix.numpy`. Both export `Like` types, `ScalarLike` types (re-exported from numpy), and `make_scalar_like_type`. JAX also exports `Tree`.
+
+### CuPy (`shapix.cupy`)
+
+Most NumPy array types (no `BF16`, `F128`, `C256`, or non-numeric dtypes). Exports `Like` types and `ScalarLike` types (re-exported from numpy).
 
 ### Factories
 

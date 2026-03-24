@@ -19,9 +19,11 @@ from shapix.numpy import (
   Bool,
   C64,
   C128,
+  C256,
   F16,
   F32,
   F64,
+  F128,
   I8,
   I16,
   I32,
@@ -118,6 +120,16 @@ def c64_fn(x: C64[N]) -> C64[N]:
 
 @beartype
 def c128_fn(x: C128[N]) -> C128[N]:
+  return x
+
+
+@beartype
+def f128_fn(x: F128[N]) -> F128[N]:
+  return x
+
+
+@beartype
+def c256_fn(x: C256[N]) -> C256[N]:
   return x
 
 

@@ -1793,6 +1793,65 @@ class TestScalarLikeCastingVariants:
     assert not hasattr(shapix, "make_scalar_like_type")
 
 
+class TestNumpyLikeForeignArrayRejection:
+  """NumPy Like types must reject foreign arrays that aren't np.asarray-convertible."""
+
+  def test_torch_meta_tensor_rejected_by_numpy_like(self) -> None:
+    """torch.Tensor on meta device has shape/dtype but can't be np.asarray'd."""
+    import torch
+
+    from shapix.numpy import F32Like
+
+    meta = torch.empty((3,), dtype=torch.float32, device="meta")
+    assert not is_bearable(meta, F32Like[N])
+
+  def test_torch_cpu_tensor_accepted_by_numpy_like(self) -> None:
+    """torch.Tensor on CPU is convertible via np.asarray — should pass."""
+    import torch
+
+    from shapix.numpy import F32Like
+
+    cpu = torch.ones((3,), dtype=torch.float32)
+    assert is_bearable(cpu, F32Like[N])
+
+  def test_jax_array_accepted_by_numpy_like(self) -> None:
+    """jax.Array is convertible via np.asarray — should pass."""
+    import jax.numpy as jnp
+
+    from shapix.numpy import F32Like
+
+    arr = jnp.ones((3,), dtype=jnp.float32)
+    assert is_bearable(arr, F32Like[N])
+
+
+class TestStructuredLikeDtypeEnforcement:
+  """Structured Like types must enforce exact field layout regardless of casting."""
+
+  def test_wrong_fields_rejected(self) -> None:
+    from shapix.numpy import make_array_like_type
+
+    dt_xy = np.dtype([("x", np.float32), ("y", np.float32)])
+    StructLike = make_array_like_type(DtypeSpec.structured(dt_xy), name="StructLike")
+    wrong = np.zeros(5, dtype=[("x", np.float32), ("y", np.float32), ("z", np.float32)])
+    assert not is_bearable(wrong, StructLike[N])
+
+  def test_correct_fields_accepted(self) -> None:
+    from shapix.numpy import make_array_like_type
+
+    dt_xy = np.dtype([("x", np.float32), ("y", np.float32)])
+    StructLike = make_array_like_type(DtypeSpec.structured(dt_xy), name="StructLike")
+    correct = np.zeros(5, dtype=dt_xy)
+    assert is_bearable(correct, StructLike[N])
+
+  def test_wrong_field_names_rejected(self) -> None:
+    from shapix.numpy import make_array_like_type
+
+    dt_xy = np.dtype([("x", np.float32), ("y", np.float32)])
+    StructLike = make_array_like_type(DtypeSpec.structured(dt_xy), name="StructLike")
+    wrong_names = np.zeros(5, dtype=[("a", np.float32), ("b", np.float32)])
+    assert not is_bearable(wrong_names, StructLike[N])
+
+
 class TestNumericScalarBooleanRejection:
   """Numeric scalar aliases must reject booleans."""
 

@@ -613,3 +613,47 @@ class TestMixedScalarRejection:
 
     with pytest.raises(TypeError, match="Negative dimension"):
       F32[Dimension("-3")]
+
+
+class TestScalarArithmeticRejection:
+  """Scalar must not be used in arithmetic expressions."""
+
+  def test_scalar_add_raises(self) -> None:
+    from shapix import Scalar
+
+    with pytest.raises(TypeError, match="Cannot use Scalar"):
+      Scalar + 1
+
+  def test_scalar_sub_raises(self) -> None:
+    from shapix import Scalar
+
+    with pytest.raises(TypeError, match="Cannot use Scalar"):
+      Scalar - 1
+
+  def test_scalar_mul_raises(self) -> None:
+    from shapix import Scalar
+
+    with pytest.raises(TypeError, match="Cannot use Scalar"):
+      Scalar * 2
+
+  def test_scalar_neg_raises(self) -> None:
+    from shapix import Scalar
+
+    with pytest.raises(TypeError, match="Cannot use Scalar"):
+      -Scalar  # noqa: B018
+
+  def test_int_add_scalar_raises(self) -> None:
+    from shapix import Scalar
+
+    with pytest.raises(TypeError, match="Cannot use Scalar"):
+      1 + Scalar  # type: ignore[operator]
+
+  def test_int_sub_scalar_raises(self) -> None:
+    from shapix import Scalar
+
+    with pytest.raises(TypeError, match="Cannot use Scalar"):
+      1 - Scalar  # type: ignore[operator]
+
+  def test_dimension_empty_add_raises(self) -> None:
+    with pytest.raises(TypeError, match="Cannot use Scalar"):
+      Dimension("") + 1

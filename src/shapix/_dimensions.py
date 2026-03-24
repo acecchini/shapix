@@ -74,6 +74,12 @@ __all__ = [
 
 def _binop(left: object, op: str, right: object) -> Dimension:
   """Build a binary expression.  Returns ``Value`` if either operand is one."""
+  if isinstance(left, Dimension) and str(left) == "":
+    msg = "Cannot use Scalar in arithmetic expressions"
+    raise TypeError(msg)
+  if isinstance(right, Dimension) and str(right) == "":
+    msg = "Cannot use Scalar in arithmetic expressions"
+    raise TypeError(msg)
   if isinstance(left, Value) or isinstance(right, Value):
     return Value(f"({left}{op}{right})")  # type: ignore[return-value]
   return Dimension(f"({left}{op}{right})")
@@ -149,6 +155,9 @@ class Dimension(str):
     return _binop(other, "%", self)
 
   def __neg__(self) -> Dimension:
+    if str(self) == "":
+      msg = "Cannot use Scalar in arithmetic expressions"
+      raise TypeError(msg)
     return Dimension(f"-{self}")
 
   def __invert__(self) -> Dimension:

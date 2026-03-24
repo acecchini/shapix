@@ -53,6 +53,22 @@ class TestByteorderEdgePaths:
     # int8 has "|" byte order, so _check_byteorder returns True
     assert spec.matches(arr)
 
+  def test_multi_byte_little_endian_matches(self) -> None:
+    """Multi-byte dtype with matching endianness spec should pass."""
+    from shapix._dtypes import DtypeSpec
+
+    spec = DtypeSpec("F32LE", frozenset({"float32"}), byteorder="little")
+    arr = np.zeros(2, dtype="<f4")  # explicit little-endian float32
+    assert spec.matches(arr)
+
+  def test_multi_byte_big_endian_rejected(self) -> None:
+    """Multi-byte dtype with mismatched endianness spec should fail."""
+    from shapix._dtypes import DtypeSpec
+
+    spec = DtypeSpec("F32LE", frozenset({"float32"}), byteorder="little")
+    arr = np.zeros(2, dtype=">f4")  # explicit big-endian float32
+    assert not spec.matches(arr)
+
   def test_extract_dtype_str_dtype_type_without_name(self) -> None:
     """dtype.type exists but __name__ is None should fall through."""
     from shapix._dtypes import extract_dtype_str

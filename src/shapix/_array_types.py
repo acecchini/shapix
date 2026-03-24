@@ -24,6 +24,7 @@ factories for custom array classes or dtype combinations.
 
 from __future__ import annotations
 
+import functools
 from collections.abc import Callable
 from typing import Annotated
 
@@ -55,16 +56,10 @@ _VALID_CASTINGS = frozenset({"no", "equiv", "safe", "same_kind", "unsafe"})
 # Trusted array type cache (for ArrayLike fast-path gating)
 # ---------------------------------------------------------------------------
 
-_trusted_array_cache: dict[type, bool] = {}
 
-
-def _is_trusted_array(obj: object) -> bool:
-  """True if *obj* is an instance of a known array class."""
-  cls = type(obj)
-  result = _trusted_array_cache.get(cls)
-  if result is not None:
-    return result
-
+@functools.lru_cache(maxsize=256)
+def _is_trusted_array_type(cls: type) -> bool:
+  """True if *cls* is a known array class (or subclass of one)."""
   import sys
 
   import numpy as np
@@ -83,9 +78,18 @@ def _is_trusted_array(obj: object) -> bool:
     if tensor is not None:
       trusted = (*trusted, tensor)
 
-  is_trusted = isinstance(obj, trusted)
-  _trusted_array_cache[cls] = is_trusted
-  return is_trusted
+  cupy_mod = sys.modules.get("cupy")
+  if cupy_mod is not None:
+    cupy_array = getattr(cupy_mod, "ndarray", None)
+    if cupy_array is not None:
+      trusted = (*trusted, cupy_array)
+
+  return issubclass(cls, trusted)
+
+
+def _is_trusted_array(obj: object) -> bool:
+  """True if *obj* is an instance of a known array class."""
+  return _is_trusted_array_type(type(obj))
 
 
 # ---------------------------------------------------------------------------
@@ -281,6 +285,7 @@ class _ArrayLikeChecker:
     "_dtype_spec",
     "_shape_spec",
     "_casting",
+    "_is_structured",
     "_asarray",
     "_trusted_types",
     "_repr",
@@ -302,6 +307,7 @@ class _ArrayLikeChecker:
     self._dtype_spec = dtype_spec
     self._shape_spec = shape_spec
     self._casting = casting
+    self._is_structured: bool = dtype_spec._structured is not None  # noqa: SLF001
     self._asarray = asarray
     self._trusted_types = trusted_types
     self._fail_obj: object | None = None
@@ -403,6 +409,11 @@ class _ArrayLikeChecker:
     """Check dtype using numpy casting rules."""
     # Strictest level: exact dtype match only
     if self._casting == "no":
+      return self._dtype_spec.matches(obj)
+
+    # Structured dtypes require exact field layout comparison regardless of
+    # casting mode — np.can_cast("void", "void") would accept any void dtype.
+    if self._is_structured:
       return self._dtype_spec.matches(obj)
 
     source = extract_dtype_str(obj)

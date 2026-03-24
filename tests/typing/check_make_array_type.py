@@ -28,3 +28,21 @@ MyInt = make_array_type(np.ndarray, int_spec)
 
 # Repr should be available
 repr_str: str = repr(MyF32)
+
+# ---------------------------------------------------------------------------
+# Structured dtype factory
+# ---------------------------------------------------------------------------
+
+from shapix.numpy import Structured
+
+MyStruct = Structured([("x", np.float32), ("y", np.float32)])
+repr_struct: str = repr(MyStruct)
+
+# ---------------------------------------------------------------------------
+# Endianness via DtypeSpec constants
+# ---------------------------------------------------------------------------
+
+from shapix._dtypes import FLOAT32_LE
+
+F32LE = make_array_type(np.ndarray, FLOAT32_LE)
+repr_le: str = repr(F32LE)
