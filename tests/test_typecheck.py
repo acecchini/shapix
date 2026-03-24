@@ -8,6 +8,7 @@ All flagship annotation files are tested by all checkers.
 
 from __future__ import annotations
 
+import importlib.util
 import shutil
 import subprocess
 from pathlib import Path
@@ -30,6 +31,12 @@ ALL_FILES = [
   "check_annotations_jax.py",
   "check_annotations_torch.py",
 ]
+
+# Backend-optional typing fixtures — included only when the backend is installed.
+_OPTIONAL_TYPING: dict[str, str] = {"cupy": "check_annotations_cupy.py"}
+for _mod, _file in _OPTIONAL_TYPING.items():
+  if importlib.util.find_spec(_mod) is not None:
+    ALL_FILES.append(_file)
 
 
 # ---------------------------------------------------------------------------

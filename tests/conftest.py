@@ -21,6 +21,7 @@ _BACKEND_TESTS: dict[str, set[str]] = {
   },
   "jax": {"test_jax.py", "test_dtypes.py"},
   "torch": {"test_torch.py", "test_dtypes.py"},
+  "cupy": {"test_cupy.py", "test_dtypes.py"},
   "optree": {"test_tree.py", "test_dtypes.py"},
 }
 

@@ -1,7 +1,7 @@
 [project]
 name = "shapix"
 version = "0.1.0"
-description = "Elegant runtime shape and dtype checking for NumPy, JAX, and PyTorch arrays — powered by beartype."
+description = "Elegant runtime shape and dtype checking for NumPy, JAX, PyTorch, and CuPy arrays — powered by beartype."
 readme = "README.md"
 license = "MIT"
 authors = [{ name = "acecchini", email = "ale.cecchini.valette@gmail.com" }]
@@ -14,6 +14,7 @@ keywords = [
   "numpy",
   "jax",
   "pytorch",
+  "cupy",
   "beartype",
 ]
 classifiers = [
@@ -37,7 +38,8 @@ Issues = "https://github.com/acecchini/shapix/issues"
 
 [dependency-groups]
 # Backends are CPU-only for dev/CI. Shapix is device-agnostic — it checks
-# .shape and .dtype only. Users install their own numpy/jax/torch/optree.
+# .shape and .dtype only. Users install their own numpy/jax/torch/cupy/optree.
+# CuPy requires CUDA and is not included here; install separately for GPU envs.
 optional = ["numpy>=2.2.0", "torch>=2.6.0", "jax[cpu]>=0.5.0", "optree>=0.14.0"]
 static = ["pyright>=1.1.408", "mypy>=1.19.1", "ty>=0.0.20"]
 dev = [
@@ -73,6 +75,9 @@ ignore-words-list = "numbe"
 [tool.pyright]
 typeCheckingMode = "strict"
 include = ["src", "tests/typing"]
+# CuPy requires CUDA — exclude its typing fixture from default analysis.
+# test_typecheck.py runs it conditionally when cupy is installed.
+exclude = ["tests/typing/check_annotations_cupy.py"]
 # Beartype's Is[lambda ...] validators produce unknown types in closures
 reportUnknownLambdaType = false
 reportUnknownMemberType = false
