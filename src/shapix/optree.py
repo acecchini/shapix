@@ -31,8 +31,9 @@ def _get_optree() -> tp.Any:
 
 
 if tp.TYPE_CHECKING:
+  _T = tp.TypeVar("_T")
 
-  class Tree[_T]:
+  class Tree(tp.Generic[_T]):
     """Static type stub — ``Tree[LeafType]`` for type checkers."""
 
     def __class_getitem__(cls, item: object) -> type: ...

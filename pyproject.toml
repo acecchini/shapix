@@ -5,7 +5,7 @@ description = "Elegant runtime shape and dtype checking for NumPy, JAX, PyTorch,
 readme = "README.md"
 license = "MIT"
 authors = [{ name = "acecchini", email = "ale.cecchini.valette@gmail.com" }]
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 dependencies = ["beartype>=0.20,<0.23"] # Tested with 0.20-0.22; see tox.toml
 keywords = [
   "type-checking",
@@ -23,6 +23,7 @@ classifiers = [
   "Intended Audience :: Science/Research",
   "License :: OSI Approved :: MIT License",
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",

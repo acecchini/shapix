@@ -31,6 +31,7 @@ import ast
 import functools
 import numbers
 import operator
+import typing as tp
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 
@@ -135,7 +136,7 @@ class _AnonymousVariadic:
 ANONYMOUS = _Anonymous()
 ANONYMOUS_VARIADIC = _AnonymousVariadic()
 
-type DimSpec = (
+DimSpec: tp.TypeAlias = (
   NamedDim
   | FixedDim
   | SymbolicDim

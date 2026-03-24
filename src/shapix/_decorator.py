@@ -21,18 +21,21 @@ from ._memo import pop_memo, push_memo
 if tp.TYPE_CHECKING:
   from beartype import BeartypeConf
 
+P = tp.ParamSpec("P")
+R = tp.TypeVar("R")
+
 __all__ = ["check", "check_context"]
 
 
 @overload
-def check[**P, R](fn: Callable[P, R], /) -> Callable[P, R]: ...
+def check(fn: Callable[P, R], /) -> Callable[P, R]: ...
 @overload
-def check[**P, R](
+def check(
   *, conf: BeartypeConf = ...
 ) -> Callable[[Callable[P, R]], Callable[P, R]]: ...
 
 
-def check[**P, R](
+def check(
   fn: Callable[P, R] | None = None, /, *, conf: BeartypeConf | None = None
 ) -> Callable[P, R] | Callable[[Callable[P, R]], Callable[P, R]]:
   """Decorator that manages the dimension memo around a function call.

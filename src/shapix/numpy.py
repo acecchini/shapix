@@ -264,57 +264,70 @@ _nb = Is[_not_bool]
 # Scalar "Like" types (range-validated via beartype)
 # ---------------------------------------------------------------------------
 
-type StringLike = str | np.str_
-type BoolScalarLike = bool | np.bool_
+StringLike: tp.TypeAlias = str | np.str_
+BoolScalarLike: tp.TypeAlias = bool | np.bool_
 
-type I8ScalarLike = A[int | np.integer[tp.Any], _ge(_INT8_MIN) & _le(_INT8_MAX) & _nb]
-type I16ScalarLike = A[
+I8ScalarLike: tp.TypeAlias = A[
+  int | np.integer[tp.Any], _ge(_INT8_MIN) & _le(_INT8_MAX) & _nb
+]
+I16ScalarLike: tp.TypeAlias = A[
   int | np.integer[tp.Any], _ge(_INT16_MIN) & _le(_INT16_MAX) & _nb
 ]
-type I32ScalarLike = A[
+I32ScalarLike: tp.TypeAlias = A[
   int | np.integer[tp.Any], _ge(_INT32_MIN) & _le(_INT32_MAX) & _nb
 ]
-type I64ScalarLike = A[
+I64ScalarLike: tp.TypeAlias = A[
   int | np.integer[tp.Any], _ge(_INT64_MIN) & _le(_INT64_MAX) & _nb
 ]
 
-type U8ScalarLike = A[int | np.integer[tp.Any], _ge(0) & _le(_UINT8_MAX) & _nb]
-type U16ScalarLike = A[int | np.integer[tp.Any], _ge(0) & _le(_UINT16_MAX) & _nb]
-type U32ScalarLike = A[int | np.integer[tp.Any], _ge(0) & _le(_UINT32_MAX) & _nb]
-type U64ScalarLike = A[int | np.integer[tp.Any], _ge(0) & _le(_UINT64_MAX) & _nb]
+U8ScalarLike: tp.TypeAlias = A[int | np.integer[tp.Any], _ge(0) & _le(_UINT8_MAX) & _nb]
+U16ScalarLike: tp.TypeAlias = A[
+  int | np.integer[tp.Any], _ge(0) & _le(_UINT16_MAX) & _nb
+]
+U32ScalarLike: tp.TypeAlias = A[
+  int | np.integer[tp.Any], _ge(0) & _le(_UINT32_MAX) & _nb
+]
+U64ScalarLike: tp.TypeAlias = A[
+  int | np.integer[tp.Any], _ge(0) & _le(_UINT64_MAX) & _nb
+]
 
-type F16ScalarLike = A[
+F16ScalarLike: tp.TypeAlias = A[
   float | np.floating[tp.Any], _ge(_FLOAT16_MIN) & _le(_FLOAT16_MAX) & _nb
 ]
-type F32ScalarLike = A[
+F32ScalarLike: tp.TypeAlias = A[
   float | np.floating[tp.Any], _ge(_FLOAT32_MIN) & _le(_FLOAT32_MAX) & _nb
 ]
-type F64ScalarLike = A[
+F64ScalarLike: tp.TypeAlias = A[
   float | np.floating[tp.Any], _ge(_FLOAT64_MIN) & _le(_FLOAT64_MAX) & _nb
 ]
-type F128ScalarLike = A[
+F128ScalarLike: tp.TypeAlias = A[
   float | np.floating[tp.Any], _ge(_FLOAT128_MIN) & _le(_FLOAT128_MAX) & _nb
 ]
 
-type C64ScalarLike = A[complex | np.complexfloating[tp.Any, tp.Any], _nb]
-type C128ScalarLike = A[complex | np.complexfloating[tp.Any, tp.Any], _nb]
-type C256ScalarLike = A[complex | np.complexfloating[tp.Any, tp.Any], _nb]
+C64ScalarLike: tp.TypeAlias = A[complex | np.complexfloating[tp.Any, tp.Any], _nb]
+C128ScalarLike: tp.TypeAlias = A[complex | np.complexfloating[tp.Any, tp.Any], _nb]
+C256ScalarLike: tp.TypeAlias = A[complex | np.complexfloating[tp.Any, tp.Any], _nb]
 
-type IntScalarLike = I64ScalarLike
-type UIntScalarLike = U64ScalarLike
-type IntegerScalarLike = A[int | np.integer[tp.Any], _nb]
-type FloatScalarLike = F64ScalarLike
-type RealScalarLike = A[int | float | np.integer[tp.Any] | np.floating[tp.Any], _nb]
-type ComplexScalarLike = A[complex | np.complexfloating[tp.Any, tp.Any], _nb]
-type InexactScalarLike = A[float | complex | np.inexact[tp.Any], _nb]
-type NumScalarLike = A[int | float | complex | np.number[tp.Any], _nb]
-type ShapedScalarLike = bool | np.bool_ | NumScalarLike
+IntScalarLike: tp.TypeAlias = I64ScalarLike
+UIntScalarLike: tp.TypeAlias = U64ScalarLike
+IntegerScalarLike: tp.TypeAlias = A[int | np.integer[tp.Any], _nb]
+FloatScalarLike: tp.TypeAlias = F64ScalarLike
+RealScalarLike: tp.TypeAlias = A[
+  int | float | np.integer[tp.Any] | np.floating[tp.Any], _nb
+]
+ComplexScalarLike: tp.TypeAlias = A[complex | np.complexfloating[tp.Any, tp.Any], _nb]
+InexactScalarLike: tp.TypeAlias = A[float | complex | np.inexact[tp.Any], _nb]
+NumScalarLike: tp.TypeAlias = A[int | float | complex | np.number[tp.Any], _nb]
+ShapedScalarLike: tp.TypeAlias = bool | np.bool_ | NumScalarLike
 
 # ---------------------------------------------------------------------------
 # ArrayLike template (static type checking only)
 # ---------------------------------------------------------------------------
 
-type ArrayLike[_Scalar, _Dtype: np.generic] = (
+_Scalar = tp.TypeVar("_Scalar")
+_Dtype = tp.TypeVar("_Dtype", bound=np.generic)
+
+ArrayLike: tp.TypeAlias = (
   _Scalar
   | _SupportsArray[np.dtype[_Dtype]]
   | _NestedSequence[_Scalar | _SupportsArray[np.dtype[_Dtype]]]

@@ -4,7 +4,7 @@ env_list = [
   # Runtime: {python}-{beartype}-{backend}
   # Oldest + newest of each axis — intermediate versions can be tested manually.
   { product = [
-    ["py312", "py313"],
+    ["py311", "py312", "py313"],
     ["bt020", "bt022"],
     ["numpy22", "numpy24",
      "jax05", "jax09",
