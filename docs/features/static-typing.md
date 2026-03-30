@@ -79,9 +79,9 @@ Prefer narrow, annotation-local ignores like these instead of weakening global c
 
 That is also the main repo-tested baseline in `tests/typing/`.
 
-## Notebook-style checker-only aliases
+## Checker-only aliases for runtime-only tokens
 
-The tour notebook shows a second pattern that can keep signatures cleaner when you use runtime-only tokens frequently: define a checker-only placeholder under `TYPE_CHECKING`, and bind it to the real runtime token in the `else` branch.
+When you use runtime-only tokens frequently, you can keep signatures cleaner by defining a checker-only placeholder under `TYPE_CHECKING` and binding it to the real runtime token in the `else` branch.
 
 ### Fixed integer literals
 

@@ -152,8 +152,8 @@ def rgb_to_gray(x: F32[N, 3, H, W]) -> F32[N, 1, H, W]: ...
 At runtime this is fully supported. Static type checkers still treat integer
 literal dimensions as runtime-only syntax, so use a targeted `# type: ignore`
 on the annotation when you need checker-clean files. If you prefer cleaner
-signatures, the tour notebook also shows a checker-only alias pattern using
-`tp.Literal[3]` under `TYPE_CHECKING` and `Dimension(3)` at runtime.
+signatures, you can also use a checker-only alias pattern with `tp.Literal[3]`
+under `TYPE_CHECKING` and `Dimension(3)` at runtime.
 
 ### Symbolic dimensions
 
@@ -863,7 +863,7 @@ Avoid disabling diagnostics globally just for shapix. Narrow, per-annotation
 ignores are usually the right tradeoff for syntax that is meaningful at runtime
 but not representable in Python's static type grammar.
 
-The tour notebook also shows an advanced alias pattern for some of these runtime-only tokens. For example, fixed literal dims can use `tp.Literal[3]` under `TYPE_CHECKING` and `Dimension(3)` at runtime, and variadic or symbolic tokens can use a checker-only placeholder alias in the same way. That is a convenience pattern; the simpler, better-tested baseline remains targeted `# type: ignore`.
+You can also use a checker-only alias pattern for some of these runtime-only tokens. For example, fixed literal dims can use `tp.Literal[3]` under `TYPE_CHECKING` and `Dimension(3)` at runtime, and variadic or symbolic tokens can use a checker-only placeholder alias in the same way. That is a convenience pattern; the simpler, better-tested baseline remains targeted `# type: ignore`.
 
 ### Inline `# type: ignore`
 
