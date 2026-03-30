@@ -1,126 +1,103 @@
 ---
 title: Examples
-description: Hands-on examples and notebooks demonstrating Shapix.
+description: Copyable examples covering the main shapix runtime and typing patterns.
 ---
 
 # Examples
 
 ## Shapix Tour Notebook
 
-The interactive tour notebook covers all major features with runnable examples:
+The tour notebook is still the broadest runnable walkthrough in the repository:
 
-1. **Basic usage** — `@beartype` + `F32[N, C]`, wrong dtype/rank caught
-2. **Cross-argument consistency** — `N` and `C` enforced across `x` and `y`
-3. **Sequential calls** — each invocation gets fresh bindings
-4. **Return type checking** — return values validated against spec
-5. **Fixed dimensions** — exact-size matching with integers
-6. **Symbolic dimensions** — `N + 2`, `N * C` arithmetic
-7. **Variadic dimensions** — `~B` for zero or more batch dims
-8. **Broadcastable dimensions** — `+N` allows size 1
-9. **Anonymous dimensions** — `__` matches anything
-10. **Ellipsis** — `...` as alias for `~__`
-11. **Custom dimensions** — `Dimension("Vocab")` with `TYPE_CHECKING` pattern
-12. **Nested function calls** — independent memos
-13. **Multiple dtype arrays** — `F32`, `I32`, `F64`, `Float` category
-14. **Custom array types** — `make_array_type` + `DtypeSpec`
-15. **Explicit memo** — `@shapix.check` + `check_context`
-16. **Full example** — mini neural network with `linear`, `relu`, `classifier`
-17. **Tree annotations** — `Tree[F32[N, C]]`, `Tree[F32[N], T]`, `Tree[F32[N], T, ...]`
+- basic `@beartype` usage
+- named dimensions and cross-argument consistency
+- return checking
+- fixed, variadic, broadcastable, anonymous, and symbolic dimensions
+- `Value(...)`
+- custom array types
+- explicit memo helpers
+- tree annotations
 
 [:material-notebook: View on GitHub](https://github.com/acecchini/shapix/blob/main/examples/shapix_tour.ipynb){ .md-button .md-button--primary }
 
----
-
-## Mini Neural Network
-
-A complete example combining multiple features:
+## Example 1: Plain `@beartype`
 
 ```python
 import numpy as np
 from beartype import beartype
-from shapix import N, C, H, W, Dimension
+from shapix import C, N
 from shapix.numpy import F32
 
-# Custom dimensions
-Features = Dimension("Features")
-Classes = Dimension("Classes")
-
 @beartype
-def linear(x: F32[N, C], w: F32[C, Features], b: F32[Features]) -> F32[N, Features]:
-    return x @ w + b
+def normalize(x: F32[N, C]) -> F32[N, C]:
+  return x / x.sum(axis=1, keepdims=True)
 
-@beartype
-def relu(x: F32[N, Features]) -> F32[N, Features]:
-    return np.maximum(x, 0)
-
-@beartype
-def classifier(x: F32[N, C]) -> F32[N, Classes]:
-    # Two-layer network: C -> 128 -> 10
-    w1 = np.random.randn(x.shape[1], 128).astype(np.float32)
-    b1 = np.zeros(128, dtype=np.float32)
-    w2 = np.random.randn(128, 10).astype(np.float32)
-    b2 = np.zeros(10, dtype=np.float32)
-
-    h = relu(linear(x, w1, b1))
-    return linear(h, w2, b2)
-
-# All shapes are checked at runtime!
-batch = np.random.randn(32, 784).astype(np.float32)
-logits = classifier(batch)  # F32[32, 10]
+normalize(np.ones((4, 3), dtype=np.float32))  # OK
+normalize(np.ones((4,), dtype=np.float32))  # Raises
 ```
 
-## Tree Operations
-
-Working with nested structures:
+## Example 2: `@shapix.check` for explicit runtime scope
 
 ```python
-import numpy as np
+import shapix
 from beartype import beartype
-from shapix import T, N
+from shapix import Value
+from shapix.numpy import F32
+
+@shapix.check
+@beartype
+async def make_batch(size: int) -> F32[Value("size")]:  # type: ignore[valid-type]
+  ...
+```
+
+## Example 3: Custom dimensions that stay checker-friendly
+
+```python
+import typing as tp
+from beartype import beartype
+from shapix import Dimension, N
+from shapix.numpy import F32, I64
+
+if tp.TYPE_CHECKING:
+  type Vocab = int
+  type Embed = int
+else:
+  Vocab = Dimension("Vocab")
+  Embed = Dimension("Embed")
+
+@beartype
+def embed_lookup(tokens: I64[N], table: F32[Vocab, Embed]) -> F32[N, Embed]:
+  return table[tokens]
+```
+
+## Example 4: Tree leaf and structure checking
+
+```python
+from beartype import beartype
+from shapix import N, T
+from shapix.numpy import F32
 from shapix.optree import Tree
-from shapix.numpy import F32
 
 @beartype
-def tree_add(x: Tree[F32[N], T], y: Tree[F32[N], T]) -> Tree[F32[N]]:
-    """Add two trees with matching structure and shapes."""
-    import optree
-    x_leaves, x_struct = optree.tree_flatten(x)
-    y_leaves, _ = optree.tree_flatten(y)
-    return optree.tree_unflatten(
-        x_struct,
-        [a + b for a, b in zip(x_leaves, y_leaves)]
-    )
-
-params = {
-    "layer1": {"weight": np.ones((64,), dtype=np.float32),
-               "bias": np.zeros((64,), dtype=np.float32)},
-    "layer2": {"weight": np.ones((64,), dtype=np.float32),
-               "bias": np.zeros((64,), dtype=np.float32)},
-}
-
-grads = {
-    "layer1": {"weight": np.random.randn(64).astype(np.float32),
-               "bias": np.random.randn(64).astype(np.float32)},
-    "layer2": {"weight": np.random.randn(64).astype(np.float32),
-               "bias": np.random.randn(64).astype(np.float32)},
-}
-
-updated = tree_add(params, grads)  # Structure T enforced to match!
+def accumulate(params: Tree[F32[N], T],
+               grads: Tree[F32[N], T]) -> Tree[F32[N]]:  # type: ignore[valid-type]
+  ...
 ```
 
-## Comparison with jaxtyping
+Use leaf-only `Tree[F32[N]]` when you want cleaner static typing. Add structure symbols like `T` when you want runtime structure equality too.
 
-| | jaxtyping | shapix |
-|---|---|---|
-| Decorator | Custom `@jaxtyped` replaces `@beartype` | Standard `@beartype` |
-| Shape syntax | String-based: `"batch channels"` | Python objects: `N, C` |
-| BeartypeConf | Not supported (decorator conflict) | Fully supported |
-| Type checker | Metaclass magic (confuses pyright) | `Annotated` aliases (clean) |
-| Backends | NumPy, JAX | NumPy, JAX, PyTorch |
-| Tree | Built-in with structure binding | Built-in with structure binding (via optree) |
-| Dependencies | jaxtyping + beartype | beartype only |
-| Custom decorator | Required | Not required |
-| Endianness | Not supported | Programmatic LE/BE/N variants |
-| Structured dtypes | Not supported | `Structured()` helper |
-| ArrayLike | Not supported | `F32Like`, `IntLike`, etc. |
-| ScalarLike | Not supported | Range-validated scalar types |
+## Example 5: Like inputs and scalar ranges
+
+```python
+from beartype import beartype
+from shapix import Scalar
+from shapix.numpy import F32Like, U8ScalarLike
+
+@beartype
+def to_scalar_array(x: F32Like[Scalar]) -> float:
+  ...
+
+@beartype
+def clamp_pixel(value: U8ScalarLike) -> int:
+  return int(value)
+```

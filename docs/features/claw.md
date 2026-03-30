@@ -5,14 +5,13 @@ description: Package-wide instrumentation with beartype.claw — no per-function
 
 # Import Hook (beartype.claw)
 
-Instead of decorating each function with `@beartype`, you can instrument an entire package at once. Every function using shapix type annotations will be checked automatically.
+If you want package-wide instrumentation rather than decorating individual functions, use `beartype.claw` or shapix's thin wrapper around it.
 
 ## Usage
 
 === "Via shapix"
 
     ```python
-    # In your_package/__init__.py
     from shapix.claw import shapix_this_package
     shapix_this_package()
     ```
@@ -20,31 +19,32 @@ Instead of decorating each function with `@beartype`, you can instrument an enti
 === "Via beartype directly"
 
     ```python
-    # In your_package/__init__.py
     from beartype.claw import beartype_this_package
     beartype_this_package()
     ```
 
-Both are equivalent. `shapix_this_package` is a thin wrapper around `beartype_this_package` that exists as a semantic entry point.
+`shapix_this_package()` is a semantic wrapper around `beartype.claw.beartype_this_package()`. Runtime behavior is the same.
 
-## How it works
+## What it gives you
 
-Once activated in your package's `__init__.py`, **all subsequently imported submodules** get `@beartype` applied automatically:
+Once called in `your_package.__init__`, all subsequently imported submodules in that package are instrumented as if their annotated callables had been decorated with `@beartype`.
 
 ```python
 # your_package/__init__.py
 from shapix.claw import shapix_this_package
 shapix_this_package()
 
-# your_package/model.py — automatically instrumented
+# your_package/model.py
 from shapix import N, C
 from shapix.numpy import F32
 
-def forward(x: F32[N, C]) -> F32[N, C]:  # checked at runtime!
-    ...
+def forward(x: F32[N, C]) -> F32[N, C]:
+  ...
 ```
 
-## Custom configuration
+Because shapix integrates through standard beartype validators, the usual cross-argument dimension semantics still apply.
+
+## Configuration
 
 Pass a `BeartypeConf` to customize the checking behavior:
 
@@ -53,7 +53,7 @@ from beartype import BeartypeConf
 from shapix.claw import shapix_this_package
 
 shapix_this_package(conf=BeartypeConf(
-    is_color=False,  # disable colored error messages
+  is_color=False,
 ))
 ```
 
@@ -63,6 +63,3 @@ shapix_this_package(conf=BeartypeConf(
 |----------|----------|
 | `@beartype` per function | Fine-grained control, specific functions |
 | `beartype.claw` / `shapix_this_package` | Entire packages, library-wide checking |
-
-!!! tip
-    The import hook approach is especially useful for large codebases where adding `@beartype` to every function would be tedious. It also catches functions that might otherwise be missed.

@@ -1,51 +1,51 @@
 ---
 title: "shapix.optree"
-description: Tree annotations backed by optree.
+description: Explicit Tree backend using optree.
 ---
 
 # `shapix.optree`
 
-Tree annotations using [optree](https://github.com/metaopt/optree) as the backend for tree operations.
+`shapix.optree` provides the explicit optree-backed `Tree` annotation plus the shared `Structure` type.
 
 ```python
 from shapix.optree import Tree, Structure
 ```
 
----
-
 ## `Tree`
 
-Subscriptable tree type factory backed explicitly by `optree`. Functionally identical to `shapix.Tree` when optree is the detected backend.
-
-See [Tree Annotations](../features/tree-annotations.md) for full usage patterns.
+At runtime, `Tree` validates pytree leaves and optional structure bindings using optree.
 
 ```python
 from beartype import beartype
-from shapix.optree import Tree
-from shapix import N, T, Structure
+from shapix import N, T
 from shapix.numpy import F32
-
-Params = Structure("Params")
+from shapix.optree import Tree
 
 @beartype
-def update(params: Tree[F32[N], Params], grads: Tree[F32[N], Params]):
-    ...
+def update(params: Tree[F32[N], T],
+           grads: Tree[F32[N], T]) -> Tree[F32[N]]:  # type: ignore[valid-type]
+  ...
 ```
 
----
+Static typing split:
+
+- `Tree[F32[N]]` is checker-friendly
+- `Tree[F32[N], T]` and any other structure-bearing form are runtime-only
 
 ## `Structure`
 
-Re-exported from `shapix._tree`. See [`shapix.Structure`](shapix.md#structure).
+`Structure` is the same structure-symbol type exported from the root `shapix` module.
 
----
+```python
+from shapix import Structure
+
+Params = Structure("Params")
+```
 
 ## When to use `shapix.optree`
 
-| Import | Backend |
-|--------|---------|
-| `from shapix import Tree` | Auto-detect (optree > jax) |
-| `from shapix.optree import Tree` | Always optree |
-| `from shapix.jax import Tree` | Always jax.tree_util |
+Use this module when:
 
-Use `shapix.optree` when you want to **explicitly** use optree regardless of whether JAX is installed. This is useful in pure-NumPy or PyTorch projects that don't depend on JAX.
+- you want tree annotations without bringing in JAX
+- you want an explicit, stable tree backend in a NumPy or Torch project
+- you do not want tree behavior to depend on which optional packages happen to be installed

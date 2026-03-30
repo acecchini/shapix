@@ -1,13 +1,15 @@
 ---
 title: Quick Start
-description: Write your first shape-checked function with Shapix.
+description: Write your first shape-checked function and learn the core execution model.
 ---
 
 # Quick Start
 
-## Basic shape and dtype checking
+This page uses NumPy for concreteness, but the same shape language works across `shapix.jax`, `shapix.torch`, and `shapix.cupy`.
 
-Import dimension symbols and array types, then annotate your functions:
+## 1. Start with standard `@beartype`
+
+Import dimension symbols from the root module and array aliases from a backend module:
 
 ```python
 import numpy as np
@@ -17,58 +19,90 @@ from shapix.numpy import F32
 
 @beartype
 def normalize(x: F32[N, C]) -> F32[N, C]:
-    return x / x.sum(axis=1, keepdims=True)
+  return x / x.sum(axis=1, keepdims=True)
 
-normalize(np.ones((4, 3), dtype=np.float32))   # OK
-normalize(np.ones((4, 3), dtype=np.float64))   # Raises — wrong dtype
-normalize(np.ones((4,), dtype=np.float32))     # Raises — wrong rank
+normalize(np.ones((4, 3), dtype=np.float32))  # OK
+normalize(np.ones((4, 3), dtype=np.float64))  # Raises: wrong dtype
+normalize(np.ones((4,), dtype=np.float32))  # Raises: wrong rank
 ```
 
-`F32[N, C]` means: a `float32` array with exactly 2 dimensions. `N` and `C` are **named dimensions** — they bind to concrete sizes at runtime and enforce consistency.
+`F32[N, C]` means:
 
-## Cross-argument consistency
+- the object must be a NumPy `float32` array
+- it must have rank 2
+- the first axis is named `N`
+- the second axis is named `C`
 
-Named dimensions are tracked within each function call. If `N` is bound to 4 by the first argument, all subsequent arguments must agree:
+`N` and `C` are runtime dimension symbols. They bind on first use inside one call and are checked everywhere else in that call.
+
+## 2. Cross-argument consistency is automatic
+
+You do not need a separate decorator to share dimension bindings between parameters:
 
 ```python
 @beartype
 def add(x: F32[N, C], y: F32[N, C]) -> F32[N, C]:
-    return x + y
+  return x + y
 
 add(np.ones((4, 3), dtype=np.float32),
-    np.ones((4, 3), dtype=np.float32))   # OK — N=4, C=3 in both
+    np.ones((4, 3), dtype=np.float32))  # OK
 
 add(np.ones((4, 3), dtype=np.float32),
-    np.ones((5, 3), dtype=np.float32))   # Raises — N=4 vs N=5
+    np.ones((5, 3), dtype=np.float32))  # Raises: N mismatch
 ```
 
-## Sequential calls are independent
+## 3. Return values are checked too
+
+Return annotations are part of the same contract:
+
+```python
+@beartype
+def bad_flatten(x: F32[N, C]) -> F32[N, C]:
+  return x.reshape(-1)
+```
+
+Calling `bad_flatten` raises because the returned array no longer has shape `(N, C)`.
+
+## 4. Calls are independent
 
 Each function invocation gets a fresh set of dimension bindings:
 
 ```python
 @beartype
 def f(x: F32[N]) -> F32[N]:
-    return x
+  return x
 
-f(np.ones((3,), dtype=np.float32))    # N=3
-f(np.ones((100,), dtype=np.float32))  # N=100 — no conflict
+f(np.ones((3,), dtype=np.float32))  # N = 3
+f(np.ones((100,), dtype=np.float32))  # N = 100, no conflict with the prior call
 ```
 
-## Return type checking
+## 5. Add `@shapix.check` only when you need explicit memo scope
 
-Return values are validated too:
+Most code should stop at `@beartype`. Add `@shapix.check` when you want explicit memo management:
 
 ```python
+import shapix
+from beartype import beartype
+from shapix import Value
+from shapix.numpy import F32
+
+@shapix.check
 @beartype
-def bad_reshape(x: F32[N, C]) -> F32[N, C]:
-    return x.reshape(-1)  # Returns 1D — raises!
+async def make_batch(size: int) -> F32[Value("size")]:  # type: ignore[valid-type]
+  ...
 ```
 
-## What's next?
+That helper matters most when:
+
+- extra decorators or framework wrappers make call-stack detection brittle
+- you want `Value(...)` scope to be explicit across an `await`
+- you want to pair memo management with `BeartypeConf`
+
+## What's next
 
 !!! tip "Next steps"
 
-    - :material-ruler: **[Dimensions](../features/dimensions.md)** — Named, fixed, variadic, broadcastable, symbolic — the full dimension system.
-    - :material-grid: **[Array Types](../features/array-types.md)** — Concrete dtypes, categories, and custom types for any backend.
-    - :material-file-tree: **[Tree Annotations](../features/tree-annotations.md)** — Validate leaves and structure of nested dicts, lists, and tuples.
+    - :material-ruler: **[Dimensions](../features/dimensions.md)** — Named, fixed, variadic, broadcastable, symbolic, `Scalar`, and `Value(...)`.
+    - :material-check-decagram: **[Static Typing](../features/static-typing.md)** — What works directly on pyright, mypy, and ty, and where targeted ignores are still required.
+    - :material-grid: **[Array Types](../features/array-types.md)** — Dtype families, structured dtypes, endianness, and backend differences.
+    - :material-file-tree: **[Tree Annotations](../features/tree-annotations.md)** — Leaf checking and structure binding for pytrees.

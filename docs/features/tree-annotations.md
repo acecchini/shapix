@@ -1,13 +1,13 @@
 ---
 title: Tree Annotations
-description: Validate leaves and enforce structure consistency in nested containers.
+description: Validate pytree leaves and optionally bind tree structure across arguments.
 ---
 
 # Tree Annotations
 
-Tree annotations validate all leaves in a nested structure (dicts, lists, tuples, namedtuples). Import `Tree` from an explicit backend module:
+Tree annotations validate nested container structures such as dicts, lists, tuples, namedtuples, and other pytree-compatible objects.
 
-## Importing Tree
+Import `Tree` from an explicit backend module:
 
 === "optree"
 
@@ -21,64 +21,59 @@ Tree annotations validate all leaves in a nested structure (dicts, lists, tuples
     from shapix.jax import Tree
     ```
 
+The root `shapix` module exports `Structure`, `T`, and `S`, but not `Tree` itself.
+
 ## Basic leaf checking
 
-`Tree[LeafType]` validates that every leaf in the structure matches the given type:
+`Tree[LeafType]` means "every leaf in the pytree must satisfy `LeafType`".
 
 ```python
 import numpy as np
 from beartype import beartype
 from shapix import N, C
-from shapix.optree import Tree  # or: from shapix.jax import Tree
 from shapix.numpy import F32
+from shapix.optree import Tree
 
 @beartype
 def process(data: Tree[F32[N, C]]) -> Tree[F32[N, C]]:
-    ...
+  ...
 
-# All leaves must be F32 arrays with consistent N and C
-process({"params": np.ones((3, 4), dtype=np.float32),
-         "state": np.ones((3, 4), dtype=np.float32)})
+process({
+  "params": np.ones((3, 4), dtype=np.float32),
+  "state": np.ones((3, 4), dtype=np.float32),
+})
 ```
 
-Dimension bindings are shared across leaves — `N` and `C` must be consistent across the entire tree.
+Dimension bindings are shared across the whole tree, so `N` and `C` must agree across all leaves.
 
 ## Structure binding
 
 Named structure symbols (`T`, `S`) enforce that multiple arguments share identical tree shapes:
 
 ```python
-from shapix import T, N
-from shapix.optree import Tree
+import numpy as np
+from beartype import beartype
+from shapix import N, T
 from shapix.numpy import F32
+from shapix.optree import Tree
 
 @beartype
-def add_trees(x: Tree[F32[N], T], y: Tree[F32[N], T]) -> Tree[F32[N]]:
-    ...
-
-x = {"a": np.ones((3,), dtype=np.float32),
-     "b": np.ones((3,), dtype=np.float32)}
-
-y = {"a": np.ones((3,), dtype=np.float32),
-     "b": np.ones((3,), dtype=np.float32)}
-
-add_trees(x, y)  # OK — same structure {"a": ..., "b": ...}
-
-add_trees({"a": np.ones((3,), dtype=np.float32)},
-          [np.ones((3,), dtype=np.float32)])  # Raises — different structure
+def add_trees(x: Tree[F32[N], T], y: Tree[F32[N], T]) -> Tree[F32[N]]:  # type: ignore[valid-type]
+  ...
 ```
+
+Structure symbols are runtime-only. Static type checkers understand `Tree[F32[N]]`, but not the extra structure arguments, so those function signatures need a targeted `# type: ignore`.
 
 ## Multi-level structure matching
 
-Structure names are listed left-to-right from outer to inner. The behavior depends on whether `...` is present:
+Structure names are interpreted from outer to inner unless `...` changes the direction or truncates the match.
 
 ### Full structure binding
 
 ```python
-# T = full tree structure (all levels)
 @beartype
-def f(x: Tree[F32[N], T], y: Tree[F32[N], T]):
-    ...
+def f(x: Tree[F32[N], T], y: Tree[F32[N], T]):  # type: ignore[valid-type]
+  ...
 ```
 
 ### Top-level only
@@ -86,10 +81,9 @@ def f(x: Tree[F32[N], T], y: Tree[F32[N], T]):
 Trailing `...` makes each name capture only one level, with inner levels unchecked:
 
 ```python
-# T = top-level only, subtrees can differ
 @beartype
-def f(x: Tree[F32[N], T, ...], y: Tree[F32[N], T, ...]):
-    ...
+def f(x: Tree[F32[N], T, ...], y: Tree[F32[N], T, ...]):  # type: ignore[valid-type]
+  ...
 ```
 
 ### Bottom-level only
@@ -97,29 +91,25 @@ def f(x: Tree[F32[N], T, ...], y: Tree[F32[N], T, ...]):
 Leading `...` matches names from the bottom up:
 
 ```python
-# T = bottom-level only (leaf-adjacent container)
 @beartype
-def f(x: Tree[F32[N], ..., T], y: Tree[F32[N], ..., T]):
-    ...
+def f(x: Tree[F32[N], ..., T], y: Tree[F32[N], ..., T]):  # type: ignore[valid-type]
+  ...
 ```
 
 ### Two-level matching
 
 ```python
-# T = top level (one level), S = full remaining structure below
 @beartype
-def f(x: Tree[int, T, S], y: Tree[int, T, S]):
-    ...
+def f(x: Tree[int, T, S], y: Tree[int, T, S]):  # type: ignore[valid-type]
+  ...
 
-# T = top, S = next, inner levels unchecked
 @beartype
-def f(x: Tree[F32[N], T, S, ...]):
-    ...
+def g(x: Tree[F32[N], T, S, ...]):  # type: ignore[valid-type]
+  ...
 
-# S = bottom, T = second-from-bottom
 @beartype
-def f(x: Tree[F32[N], ..., T, S]):
-    ...
+def h(x: Tree[F32[N], ..., T, S]):  # type: ignore[valid-type]
+  ...
 ```
 
 ## Custom structure symbols
@@ -127,15 +117,35 @@ def f(x: Tree[F32[N], ..., T, S]):
 Create your own with `Structure`:
 
 ```python
-from shapix import Structure
+from beartype import beartype
+from shapix import N, Structure
+from shapix.numpy import F32, I64
+from shapix.optree import Tree
 
 Params = Structure("Params")
 State = Structure("State")
 
 @beartype
-def train(params: Tree[F32[N], Params], state: Tree[I64[N], State]):
-    ...
+def train(params: Tree[F32[N], Params],
+          state: Tree[I64[N], State]):  # type: ignore[valid-type]
+  ...
 ```
+
+## Static typing split
+
+Checker-friendly:
+
+- `Tree[object]`
+- `Tree[int]`
+- `Tree[F32[N]]`
+- `Tree[F32[N, C]]`
+
+Runtime-only add-ons:
+
+- `Tree[F32[N], T]`
+- `Tree[F32[N], T, ...]`
+- `Tree[F32[N], ..., T]`
+- any custom `Structure` symbol inside the subscript
 
 ## Summary
 

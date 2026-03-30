@@ -1,129 +1,119 @@
 ---
 title: "shapix.numpy"
-description: NumPy array types, scalar Like types, and ArrayLike.
+description: NumPy array aliases, Like aliases, ScalarLike aliases, and NumPy-specific helpers.
 ---
 
 # `shapix.numpy`
 
-NumPy array types with dtype and shape checking. Base type: `np.ndarray`.
+`shapix.numpy` is the main NumPy-facing module. It exports:
+
+- strict array aliases such as `F32[N, C]`
+- `Like` aliases such as `F32Like[...]`
+- `ScalarLike` aliases such as `U8ScalarLike`
+- `Structured(...)`
+- `ArrayLike`
+- `make_scalar_like_type(...)`
 
 ```python
-from shapix.numpy import F32, I64, Bool, Shaped, Float, DT64, Structured
-from shapix.numpy import F32Like, IntLike, F32ScalarLike
-from shapix.numpy import make_scalar_like_type, ArrayLike
+from shapix.numpy import (
+  F32, I64, DT64, TD64, Shaped, Structured,
+  F32Like, IntLike,
+  U8ScalarLike, ArrayLike, make_scalar_like_type,
+)
 ```
 
----
+## Strict array aliases
 
-## Array Types
+Concrete families:
 
-All array types are subscriptable with [dimension symbols](../features/dimensions.md). At runtime they produce `Annotated[np.ndarray, Is[checker]]`.
+- `Bool`
+- `I8`, `I16`, `I32`, `I64`
+- `U8`, `U16`, `U32`, `U64`
+- `F16`, `F32`, `F64`, `F128`
+- `C64`, `C128`, `C256`
 
-### Concrete dtypes
+Category families:
 
-| Type | Dtype | Example |
-|------|-------|---------|
-| `Bool` | `bool` | `Bool[N]` |
-| `I8` | `int8` | `I8[N, C]` |
-| `I16` | `int16` | `I16[N]` |
-| `I32` | `int32` | `I32[N, C]` |
-| `I64` | `int64` | `I64[N]` |
-| `U8` | `uint8` | `U8[H, W]` |
-| `U16` | `uint16` | `U16[N]` |
-| `U32` | `uint32` | `U32[N]` |
-| `U64` | `uint64` | `U64[N]` |
-| `F16` | `float16` | `F16[N, C]` |
-| `F32` | `float32` | `F32[N, C, H, W]` |
-| `F64` | `float64` | `F64[N]` |
-| `F128` | `float128` / `longdouble` | `F128[N]` |
-| `C64` | `complex64` | `C64[N]` |
-| `C128` | `complex128` | `C128[N]` |
-| `C256` | `complex256` / `clongdouble` | `C256[N]` |
-| `V` | `void` | `V[N]` |
-| `Str` | `string` | `Str[N]` |
-| `Bytes` | `bytes` | `Bytes[N]` |
-| `Obj` | `object` | `Obj[N]` |
-| `DT64` | `datetime64` | `DT64[N]` |
-| `TD64` | `timedelta64` | `TD64[N]` |
+- `Int`, `UInt`, `Integer`
+- `Float`, `Real`, `Complex`, `Inexact`, `Num`
+- `Shaped`
 
-### Category dtypes
+Additional NumPy-only aliases:
 
-| Type | Includes |
-|------|----------|
-| `Int` | `int8`, `int16`, `int32`, `int64` |
-| `UInt` | `uint8`, `uint16`, `uint32`, `uint64` |
-| `Integer` | `Int` + `UInt` |
-| `Float` | `bfloat16`, `float16`, `float32`, `float64` |
-| `Real` | `Integer` + `Float` |
-| `Complex` | `complex64`, `complex128` |
-| `Inexact` | `Float` + `Complex` |
-| `Num` | `Integer` + `Float` + `Complex` |
-| `Shaped` | Any dtype (shape-only checking) |
+- `V`
+- `Str`
+- `Bytes`
+- `Obj`
+- `DT64`
+- `TD64`
 
----
+Notes:
 
-## Like Types (Array-Like)
-
-Subscriptable types accepting scalars, arrays, or nested sequences. Must be subscripted with shape dims or `[...]`.
-
-**Concrete:** `BoolLike`, `I8Like`–`I64Like`, `U8Like`–`U64Like`, `F16Like`–`F128Like`, `C64Like`–`C256Like`
-
-**Category:** `IntLike`, `UIntLike`, `IntegerLike`, `FloatLike`, `RealLike`, `ComplexLike`, `InexactLike`, `NumLike`, `ShapedLike`
-
----
-
-## ScalarLike Types
-
-Range-validated scalar types. Numeric scalars reject `bool` values.
-
-**Concrete:** `BoolScalarLike`, `I8ScalarLike`–`I64ScalarLike`, `U8ScalarLike`–`U64ScalarLike`, `F16ScalarLike`–`F128ScalarLike`, `C64ScalarLike`, `C128ScalarLike`, `C256ScalarLike`
-
-**Category:** `IntScalarLike`, `UIntScalarLike`, `IntegerScalarLike`, `FloatScalarLike`, `RealScalarLike`, `ComplexScalarLike`, `InexactScalarLike`, `NumScalarLike`, `ShapedScalarLike`
-
-**Other:** `StringLike` (`str | np.str_`)
-
----
-
-## `make_scalar_like_type`
-
-```python
-def make_scalar_like_type(
-    target_dtype: np.dtype,
-    *,
-    casting: str = "same_kind",
-    name: str = "ScalarLike",
-) -> type:
-    """Create a casting-aware scalar type using np.can_cast at runtime."""
-```
-
----
+- `DT64` and `TD64` accept unit-qualified NumPy dtypes such as `datetime64[ns]` and `timedelta64[ms]`.
+- `Shaped` accepts any dtype at runtime and checks only shape.
 
 ## `Structured`
 
-```python
-def Structured(fields) -> _ArrayFactory:
-    """Create a subscriptable array type for NumPy structured/record dtypes.
+`Structured(fields)` creates a strict array alias for one exact NumPy structured dtype.
 
-    Parameters
-    ----------
-    fields
-        NumPy dtype fields, e.g. [("x", np.float32), ("y", np.float32)].
-    """
+```python
+import numpy as np
+from shapix import N
+from shapix.numpy import Structured
+
+Point = Structured([("x", np.float32), ("y", np.float32)])
 ```
 
----
+This is a convenience wrapper over `DtypeSpec.structured(...)`.
+
+## `Like` aliases
+
+`Like` aliases are subscripted input contracts. Examples:
+
+- `F32Like[...]`
+- `I64Like[N]`
+- `NumLike[N, C]`
+- `ShapedLike[...]`
+
+At runtime they accept scalars, nested sequences, arrays, and convertible values. Static type checkers see a narrower model.
+
+## `ScalarLike` aliases
+
+`ScalarLike` aliases validate individual scalar values:
+
+- `BoolScalarLike`
+- `I8ScalarLike` through `I64ScalarLike`
+- `U8ScalarLike` through `U64ScalarLike`
+- `F16ScalarLike` through `F128ScalarLike`
+- `C64ScalarLike`, `C128ScalarLike`, `C256ScalarLike`
+- category aliases such as `IntScalarLike`, `FloatScalarLike`, `NumScalarLike`
+- `StringLike`
+
+Numeric scalar aliases intentionally reject booleans.
+
+## `make_scalar_like_type`
+
+Use `make_scalar_like_type(target_dtype, *, casting="same_kind", name="ScalarLike")` when the built-in scalar aliases are close but not exact enough.
+
+```python
+import numpy as np
+from shapix.numpy import make_scalar_like_type
+
+F32ScalarStrict = make_scalar_like_type(np.float32, casting="no")
+F32ScalarSafe = make_scalar_like_type(np.float32, casting="safe")
+```
+
+`make_scalar_like_type` is deliberately documented here rather than on the root module, because the root import stays NumPy-optional.
 
 ## `ArrayLike`
 
-```python
-type ArrayLike[_Scalar, _Array] = _Scalar | _Array | Sequence[ArrayLike[_Scalar, _Array]]
-```
-
-PEP 695 recursive type alias — accepts scalars, arrays, or nested sequences of any depth.
+`ArrayLike` is the public recursive typing template behind the static `Like` surface:
 
 ```python
+import numpy as np
 from shapix.numpy import ArrayLike
 
 type MyInput = ArrayLike[float, np.ndarray]
-# float | np.ndarray | Sequence[float | np.ndarray | Sequence[...]]
 ```
+
+It is useful when you want a checker-friendly custom alias that still follows the shapix "scalar or nested sequence or array" model.

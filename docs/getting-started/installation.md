@@ -1,14 +1,14 @@
 ---
 title: Installation
-description: Install Shapix with your preferred array backend.
+description: Install shapix with your preferred array backend.
 ---
 
 # Installation
 
 ## Requirements
 
-- **Python** >= 3.12
-- **beartype** >= 0.20 (installed automatically)
+- **Python** >= 3.10
+- **beartype** >= 0.20, installed automatically with `shapix`
 
 ## Install with pip
 
@@ -16,7 +16,7 @@ description: Install Shapix with your preferred array backend.
 pip install shapix
 ```
 
-Shapix has one dependency: [beartype](https://github.com/beartype/beartype). Install your preferred array framework separately — shapix does not provide extras-style installs:
+Shapix intentionally does **not** use extras such as `shapix[numpy]`. Install `shapix` and your backend packages explicitly.
 
 === "NumPy"
 
@@ -36,14 +36,20 @@ Shapix has one dependency: [beartype](https://github.com/beartype/beartype). Ins
     pip install shapix numpy jax
     ```
 
+=== "CuPy"
+
+    ```bash
+    pip install shapix numpy cupy
+    ```
+
 === "NumPy + Trees"
 
     ```bash
-    pip install shapix numpy optree  # or jax for jax.tree_util
+    pip install shapix numpy optree  # or install jax and use shapix.jax.Tree
     ```
 
 !!! note
-    For `shapix.jax` and `shapix.torch`, install `numpy` alongside the backend.
+    `shapix.jax`, `shapix.torch`, and `shapix.cupy` require `numpy` alongside the backend. The lightweight root import `import shapix` does not.
 
 ## Install with uv
 
@@ -55,14 +61,43 @@ uv add shapix
 
 | Package | Purpose |
 |---------|---------|
-| `numpy` | NumPy array support, ScalarLike types |
-| `torch` | PyTorch tensor support |
-| `jax` | JAX array + tree support |
-| `optree` | Tree annotations (alternative to JAX) |
+| `numpy` | NumPy array aliases, `ScalarLike`, and backend dtype helpers |
+| `torch` | PyTorch tensor aliases and Torch `Like` types |
+| `jax` | JAX array aliases, JAX `Like` types, and JAX `Tree` |
+| `cupy` | CuPy array aliases and CuPy `Like` types |
+| `optree` | Explicit pytree backend via `shapix.optree.Tree` |
+
+## Import boundaries
+
+The root package is designed to stay optional-dependency-safe:
+
+```python
+import shapix
+
+print(shapix.__version__)
+print(shapix.N, shapix.C)
+```
+
+That works even in a plain source checkout without installed package metadata. In that case `__version__` falls back to a non-empty string such as `0+unknown`.
+
+Backend modules are stricter:
+
+- `shapix.numpy` needs `numpy`
+- `shapix.jax` needs `jax` and `numpy`
+- `shapix.torch` needs `torch` and `numpy`
+- `shapix.cupy` needs `cupy` and `numpy`
+- `shapix.optree` needs `optree`
 
 ## Verify installation
 
 ```python
 import shapix
 print(shapix.__version__)
+```
+
+Then verify the backend you actually plan to use:
+
+```python
+from shapix import N, C
+from shapix.numpy import F32
 ```

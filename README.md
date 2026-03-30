@@ -18,10 +18,10 @@ Shapix turns array shape annotations into **Python objects** that beartype valid
 
 - **Zero boilerplate** — works with standard `@beartype` decorators and `beartype.claw` import hooks. No custom decorator required.
 - **Cross-argument consistency** — named dimensions are enforced across all parameters and the return value within a single function call.
-- **Static type checker friendly** — under `TYPE_CHECKING`, array types resolve to proper `NDArray` / `Array` / `Tensor` aliases. Works with pyright, mypy, and ty.
+- **Static type checker friendly** — the core annotation surface type-checks on pyright, mypy, and ty; runtime-only patterns use targeted `# type: ignore` comments.
 - **Readable annotations** — `F32[N, C, H, W]` reads like documentation.
 - **Full `BeartypeConf` support** — unlike jaxtyping, shapix doesn't replace your beartype configuration.
-- **Thread-safe** — each thread gets independent dimension bindings.
+- **Thread-safe and async-safe** — `@shapix.check` and `check_context()` use task-local memo state for explicit checks.
 - **Multi-backend** — NumPy, JAX, PyTorch, and CuPy out of the box, plus a factory for custom array types.
 
 ## Installation
@@ -36,20 +36,26 @@ Install optional dependencies alongside `shapix` with plain package names.
 Avoid extras-style installs such as `shapix[numpy]` or `shapix[torch]` (shapix intentionally does not provide extras).
 
 ```bash
+pip install shapix                # lightweight root import only
 pip install shapix numpy          # NumPy
-pip install shapix torch          # PyTorch
-pip install shapix jax            # JAX
+pip install shapix numpy torch    # PyTorch
+pip install shapix numpy jax      # JAX
 pip install shapix numpy cupy     # CuPy
 pip install shapix numpy optree   # NumPy + tree support (optree or jax)
 ```
 
-For `shapix.jax`, `shapix.torch`, and `shapix.cupy`, install `numpy` alongside the backend:
+For backend modules, install `numpy` alongside the backend:
 
 ```bash
 pip install shapix numpy jax
 pip install shapix numpy torch
 pip install shapix numpy cupy
 ```
+
+`import shapix` stays lightweight and does not require NumPy. Backend modules do:
+`shapix.numpy` requires `numpy`, `shapix.jax` requires `jax` + `numpy`,
+`shapix.torch` requires `torch` + `numpy`, `shapix.cupy` requires `cupy` + `numpy`,
+and `shapix.optree` requires `optree`.
 
 ## Quick start
 
@@ -142,6 +148,10 @@ Use plain integers for dimensions that must match an exact size:
 @beartype
 def rgb_to_gray(x: F32[N, 3, H, W]) -> F32[N, 1, H, W]: ...
 ```
+
+At runtime this is fully supported. Static type checkers still treat integer
+literal dimensions as runtime-only syntax, so use a targeted `# type: ignore`
+on the annotation when you need checker-clean files.
 
 ### Symbolic dimensions
 
@@ -808,57 +818,41 @@ Shapix uses three key mechanisms:
 
 ## Static type checkers (pyright, mypy, ty)
 
-Shapix supports **pyright**, **mypy**, and **ty**. Under `TYPE_CHECKING`, pre-defined dimension symbols (`N`, `C`, `H`, `W`, …) resolve to `TypeVar` and array types resolve to `TypeAliasType`, so core annotations like `F32[N, C]` are valid type expressions across all three checkers.
+Shapix ships typing fixtures exercised by **pyright**, **mypy**, and **ty**
+in `tests/test_typecheck.py`. Under `TYPE_CHECKING`, built-in dimensions such as
+`N`, `C`, `H`, and `W` resolve to checker-friendly placeholders, and array aliases
+resolve to backend-appropriate static types.
 
-However, some patterns are fundamentally runtime-only and produce type checker errors regardless of the checker:
+These patterns work directly across all three checkers:
+
+- `F32[N, C]`, `F32[N, C, H, W]`
+- `F32[Scalar]`
+- `F32[__, C]`
+- backend aliases such as `shapix.jax.F32[...]`, `shapix.torch.F32[...]`, and `shapix.cupy.F32[...]`
+- Like types such as `F32Like[N, C]`
+- leaf-only tree annotations such as `Tree[F32[N]]` and `Tree[F32[N, C]]`
+- sync and async functions decorated with `@shapix.check`
+
+Some syntax is intentionally runtime-only and still needs targeted `# type: ignore`
+comments:
 
 | Pattern | Example | Workaround |
 |---------|---------|------------|
-| Integer literals | `F32[N, 3, H, W]` | Wrap in `Dimension("3")` |
-| Unary operators | `F32[~B, C]`, `F32[+N, C]` | `# type: ignore` |
-| Arithmetic | `F32[N + 2]` | `# type: ignore` |
-| Custom dimensions | `F32[Vocab, Embed]` | `# type: ignore` or `TYPE_CHECKING` pattern |
-| `Value(...)` | `F32[Value("size")]` | `# type: ignore` |
-| Tree structure args | `Tree[F32[N], T]`, `Tree[F32[N], T, ...]` | `# type: ignore` — leaf-only `Tree[F32[N, C]]` works |
+| Integer literals | `F32[N, 3, H, W]` | Add `# type: ignore` on that annotation |
+| Unary operators | `F32[~B, C]`, `F32[+N, C]` | Add `# type: ignore` on that annotation |
+| Arithmetic | `F32[N + 2]` | Add `# type: ignore` on that annotation |
+| `Value(...)` | `F32[Value("size")]` | Add `# type: ignore` on that annotation |
+| Tree structure args | `Tree[F32[N], T]`, `Tree[F32[N], T, ...]` | Add `# type: ignore`; leaf-only `Tree[...]` is checker-friendly |
+| Custom dimensions | `F32[Vocab, Embed]` | Use the `TYPE_CHECKING` pattern below or add `# type: ignore` |
 
-### Recommended type checker config
-
-#### pyright
-
-Add to your `pyproject.toml` or `pyrightconfig.json` to suppress the most common shapix-related diagnostics:
-
-```toml
-[tool.pyright]
-reportInvalidTypeForm = false
-```
-
-In strict mode, you may also need:
-
-```toml
-[tool.pyright]
-reportInvalidTypeForm = false
-reportUnknownLambdaType = false
-reportUnknownMemberType = false
-reportUnknownVariableType = false
-reportUnknownArgumentType = false
-reportUnusedClass = false
-reportPrivateUsage = false
-```
-
-#### mypy
-
-```toml
-[tool.mypy]
-ignore_missing_imports = true
-```
-
-#### ty
-
-No special configuration needed for ty.
+Avoid disabling diagnostics globally just for shapix. Narrow, per-annotation
+ignores are usually the right tradeoff for syntax that is meaningful at runtime
+but not representable in Python's static type grammar.
 
 ### Inline `# type: ignore`
 
-For patterns that all three checkers reject (arithmetic dims, Value(), custom dims), use blanket `# type: ignore`:
+For runtime-only patterns such as arithmetic, unary operators, literal dims, and
+`Value(...)`, use targeted ignores on the affected annotation:
 
 ```python
 @beartype
@@ -868,6 +862,11 @@ def pad(x: F32[N]) -> F32[N + 2]:  # type: ignore
 
 @beartype
 def f(x: F32[~B, C]) -> F32[~B, C]:  # type: ignore
+  ...
+
+
+@beartype
+def rgb_to_gray(x: F32[N, 3, H, W]) -> F32[N, 1, H, W]:  # type: ignore
   ...
 ```
 
@@ -894,9 +893,9 @@ else:
 | Decorator | Custom `@jaxtyped` replaces `@beartype` | Standard `@beartype` |
 | Shape syntax | String-based: `"batch channels"` | Python objects: `N, C` |
 | BeartypeConf | Not supported (decorator conflict) | Fully supported |
-| Type checker | Metaclass magic (confuses pyright) | `Annotated` aliases (clean) |
-| Backends | NumPy, JAX | NumPy, JAX, PyTorch |
-| Tree | Built-in with structure binding | Built-in with structure binding (via optree) |
+| Type checker | Metaclass magic (harder on static checkers) | `Annotated` aliases exercised with pyright, mypy, and ty |
+| Backends | NumPy, JAX | NumPy, JAX, PyTorch, CuPy |
+| Tree | Built-in with structure binding | Built-in with structure binding (via optree or `jax.tree_util`) |
 | Dependencies | jaxtyping + beartype | beartype only |
 | Custom decorator | Required | Not required |
 | Endianness | Not supported | Programmatic LE/BE/N variants |
@@ -906,7 +905,10 @@ else:
 
 ## Complete API reference
 
-### Dimension symbols (`shapix`)
+### Root module (`shapix`)
+
+The root import is intentionally lightweight and optional-dependency-safe.
+`import shapix` does not require NumPy.
 
 `N`, `B`, `C`, `D`, `K`, `H`, `W`, `L`, `P` — named dimensions
 `__` — anonymous dimension
@@ -914,6 +916,15 @@ else:
 `T`, `S` — tree structure symbols
 `Dimension("Name")` — custom dimension
 `Structure("Name")` — custom structure symbol
+`DtypeSpec` — custom dtype specification
+`make_array_type(...)` — custom array type factory
+`make_array_like_type(...)` — custom Like-type factory
+`@shapix.check` — explicit memo management for sync and async functions
+`shapix.check_context()` — shared memo for manual checks
+
+The root module does **not** export `Tree` or `make_scalar_like_type`.
+Import `Tree` from `shapix.optree` or `shapix.jax`, and import
+`make_scalar_like_type` from `shapix.numpy` or the backend re-exports.
 
 ### Array types (`shapix.numpy`)
 
@@ -928,13 +939,23 @@ else:
 **ScalarLike:** `BoolScalarLike`, `I8ScalarLike`–`I64ScalarLike`, `U8ScalarLike`–`U64ScalarLike`, `F16ScalarLike`–`F128ScalarLike`, `C64ScalarLike`, `C128ScalarLike`, `C256ScalarLike`, `IntScalarLike`, `FloatScalarLike`, `NumScalarLike`, etc.
 **Other:** `StringLike`, `ArrayLike[scalar, dtype]` (template)
 
-### JAX/PyTorch (`shapix.jax`, `shapix.torch`)
+### JAX (`shapix.jax`)
 
-Most NumPy array types, plus `BF16` and `BF16Like`. NumPy-only extended-precision array aliases such as `F128` / `C256` stay in `shapix.numpy`. Both export `Like` types, `ScalarLike` types (re-exported from numpy), and `make_scalar_like_type`. JAX also exports `Tree`.
+Most NumPy array types, plus `BF16` and `BF16Like`. NumPy-only extended-precision
+array aliases such as `F128` / `C256` stay in `shapix.numpy`. Also exports Like
+types, ScalarLike types (re-exported from NumPy), `make_scalar_like_type`, and `Tree`.
+
+### PyTorch (`shapix.torch`)
+
+Most NumPy array types, plus `BF16` and `BF16Like`. NumPy-only extended-precision
+array aliases such as `F128` / `C256` stay in `shapix.numpy`. Also exports Like
+types, ScalarLike types (re-exported from NumPy), and `make_scalar_like_type`.
 
 ### CuPy (`shapix.cupy`)
 
-Most NumPy array types (no `BF16`, `F128`, `C256`, or non-numeric dtypes). Exports `Like` types and `ScalarLike` types (re-exported from numpy).
+Most NumPy array types (no `BF16`, `F128`, `C256`, or non-numeric dtypes).
+Also exports Like types, ScalarLike types (re-exported from NumPy), and
+`make_scalar_like_type`.
 
 ### Factories
 
@@ -945,7 +966,7 @@ From `shapix` (root):
 `DtypeSpec(name, allowed)` — custom dtype specification
 `DtypeSpec.structured(fields)` — structured dtype specification
 
-From `shapix.numpy` (requires NumPy):
+From `shapix.numpy` (requires NumPy, also re-exported by `shapix.jax`, `shapix.torch`, and `shapix.cupy`):
 
 `make_scalar_like_type(target_dtype, *, casting="same_kind", name="ScalarLike")` — custom ScalarLike type
 
@@ -953,7 +974,7 @@ From `shapix.numpy` (requires NumPy):
 
 `@shapix.check` — explicit memo management (supports both sync and async functions)
 `@shapix.check(conf=BeartypeConf())` — combined memo + beartype
-`shapix.check_context()` — context manager for manual checks
+`shapix.check_context()` — sync and async context manager for manual checks
 
 ## License
 

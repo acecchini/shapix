@@ -1,15 +1,20 @@
 ---
 title: Like Types
-description: Input validation types that accept scalars, arrays, or nested sequences.
+description: Input-validation types for array-like data and range-validated scalar values.
 ---
 
 # Like Types
 
-`Like` types accept **scalars**, **arrays**, or **nested sequences of any depth** — use them for function inputs that will be converted to arrays.
+Shapix has two broad input-contract families:
+
+- `Like` types such as `F32Like[N, C]`
+- `ScalarLike` types such as `U8ScalarLike`
+
+Use them when your API accepts values that will be converted, normalized, or range-checked before real work begins.
 
 ## Basic usage
 
-Like types **must be subscripted** — use `[...]` (Ellipsis) to accept any shape, or `[N, C]` to enforce specific dimensions:
+`Like` types accept scalars, backend arrays, NumPy arrays, and nested sequences. They must always be subscripted.
 
 ```python
 import numpy as np
@@ -19,85 +24,116 @@ from shapix.numpy import F32, F32Like
 
 @beartype
 def to_array(x: F32Like[...]) -> np.ndarray:
-    return np.asarray(x, dtype=np.float32)
+  return np.asarray(x, dtype=np.float32)
 
-to_array(3.14)                          # scalar
-to_array([1.0, 2.0, 3.0])              # 1D list
-to_array([[1.0, 2.0], [3.0, 4.0]])     # 2D nested list
-to_array(np.ones((3, 4)))              # ndarray
-to_array([[[[[[1.0]]]]]])              # 6D+ — no depth limit
+to_array(3.14)  # scalar
+to_array([1.0, 2.0, 3.0])  # 1D list
+to_array([[1.0, 2.0], [3.0, 4.0]])  # 2D nested list
+to_array(np.ones((3, 4)))  # ndarray
+to_array([[[[[[1.0]]]]]])  # arbitrarily deep nesting
 
 @beartype
 def process(x: F32Like[N, C]) -> F32[N, C]:
-    return np.asarray(x, dtype=np.float32)
+  return np.asarray(x, dtype=np.float32)
 ```
 
-Dtype compatibility uses NumPy's `same_kind` casting rules by default: `int32` can be passed where `float32` is expected (safe upcast), but `complex128` cannot.
+Use `[...]` to mean "any rank" or a full dimension spec when the input shape itself matters.
 
-## Available Like types
+By default, dtype compatibility follows NumPy's `"same_kind"` casting rules. For example, `int32` can flow into `F32Like[...]`, but `complex128` cannot.
 
-**Concrete:** `BoolLike`, `I8Like`–`I64Like`, `U8Like`–`U64Like`, `F16Like`–`F128Like`, `C64Like`–`C256Like`
+## Built-in Like aliases
 
-**Category:** `IntLike`, `FloatLike`, `NumLike`, `ShapedLike`, etc.
+NumPy exports the broadest set:
 
-Like types are also available in JAX and PyTorch backends:
+- concrete aliases such as `BoolLike`, `I8Like`, `F32Like`, `C128Like`
+- category aliases such as `IntLike`, `FloatLike`, `NumLike`, `ShapedLike`
 
-```python
-from shapix.jax import F32Like    # accepts jax.Array, ndarray, scalars, sequences
-from shapix.torch import F32Like  # accepts Tensor, ndarray, scalars, sequences
-```
+JAX, PyTorch, and CuPy export parallel `Like` families with backend-specific conversion behavior.
 
 ## ScalarLike types (range-validated scalars)
 
-ScalarLike types validate individual scalar values with range checking — no shape, just value.
+`ScalarLike` types validate individual scalar values. There is no shape component, only value- and dtype-family constraints.
 
 ```python
-from shapix.numpy import U8ScalarLike, F32ScalarLike
+from beartype import beartype
+from shapix.numpy import U8ScalarLike
 
 @beartype
 def clamp_pixel(value: U8ScalarLike) -> int:
-    """Accepts int in [0, 255] range."""
-    return int(value)
+  return int(value)
 
-clamp_pixel(128)   # OK
-clamp_pixel(256)   # Raises — out of uint8 range
-clamp_pixel(-1)    # Raises — negative not allowed for unsigned
+clamp_pixel(128)  # OK
+clamp_pixel(256)  # Raises
+clamp_pixel(-1)  # Raises
 ```
 
 !!! warning "Boolean exclusion"
     Numeric scalar aliases (`I8ScalarLike`, `F32ScalarLike`, `NumScalarLike`, etc.) reject `bool` and `np.bool_` values. Python `bool` is a subclass of `int`, but shapix treats booleans as non-numeric. Use `BoolScalarLike` for boolean scalars.
 
-**Available:** `BoolScalarLike`, `I8ScalarLike`–`I64ScalarLike`, `U8ScalarLike`–`U64ScalarLike`, `F16ScalarLike`–`F128ScalarLike`, `C64ScalarLike`, `C128ScalarLike`, `C256ScalarLike`, plus category aliases `IntScalarLike`, `FloatScalarLike`, `NumScalarLike`, etc.
+Available families include:
 
-Also: `StringLike` (`str | np.str_`).
+- concrete aliases: `BoolScalarLike`, `I8ScalarLike` through `I64ScalarLike`, `U8ScalarLike` through `U64ScalarLike`, `F16ScalarLike` through `F128ScalarLike`, `C64ScalarLike`, `C128ScalarLike`, `C256ScalarLike`
+- category aliases: `IntScalarLike`, `FloatScalarLike`, `RealScalarLike`, `NumScalarLike`, `ShapedScalarLike`, and others
+- `StringLike` for `str | np.str_`
 
-ScalarLike types are available from all backends:
+Backend modules re-export these NumPy-defined scalar types:
 
 ```python
-from shapix.numpy import U8ScalarLike   # defined here
-from shapix.jax import U8ScalarLike     # re-exported
-from shapix.torch import U8ScalarLike   # re-exported
+from shapix.numpy import U8ScalarLike
+from shapix.jax import U8ScalarLike
+from shapix.torch import U8ScalarLike
+from shapix.cupy import U8ScalarLike
 ```
 
-### Custom ScalarLike types
+!!! note
+    Backend-native 0-D arrays such as `jnp.array(1.0)` or `torch.tensor(1.0)` are not `ScalarLike`. Use a `Like` alias with `Scalar`, for example `F32Like[Scalar]`.
+
+## Backend-specific conversion behavior
+
+The `Like` family is intentionally backend-aware:
+
+- `shapix.numpy` slow-path conversion uses `np.asarray`
+- `shapix.jax` slow-path conversion uses `jnp.asarray`, so objects implementing `__jax_array__` are accepted
+- `shapix.torch` slow-path conversion uses `torch.as_tensor`
+- `shapix.cupy` slow-path conversion uses `cupy.asarray`
+
+Static type checkers only see the backend array type, not the broader runtime acceptance of scalars and nested sequences.
+
+## Custom `ScalarLike` types
 
 Use `make_scalar_like_type` for custom casting rules:
 
 ```python
+import numpy as np
 from shapix.numpy import make_scalar_like_type
 
-F32ScalarStrict = make_scalar_like_type(np.float32, casting="no")     # exact np.float32 only
-F32ScalarSafe = make_scalar_like_type(np.float32, casting="safe")     # float16 OK, complex rejected
+F32ScalarStrict = make_scalar_like_type(np.float32, casting="no")
+F32ScalarSafe = make_scalar_like_type(np.float32, casting="safe")
 ```
 
-## ArrayLike template
+`make_scalar_like_type` is intentionally documented on backend modules such as `shapix.numpy`; it is not part of the lightweight root `shapix` import surface.
 
-The `ArrayLike` recursive type alias is public for custom static type combinations:
+## Casting rules
+
+Both `make_array_like_type` and `make_scalar_like_type` use NumPy casting semantics:
+
+| Casting | Meaning | Example for target `float32` |
+|---------|---------|------------------------------|
+| `"no"` | Exact dtype only | only `float32` |
+| `"equiv"` | Same kind and size | `float32` but not `float64` |
+| `"safe"` | No information loss | `int16` yes, `float64` no |
+| `"same_kind"` | Same-kind conversion | `int32` yes, `complex64` no |
+| `"unsafe"` | Any cast NumPy allows | very permissive |
+
+## `ArrayLike` template
+
+`shapix.numpy.ArrayLike` is a public recursive type alias for custom static typing combinations:
 
 ```python
+import numpy as np
 from shapix.numpy import ArrayLike
 
-type MyInputType = ArrayLike[float, np.float32]
+type MyInputType = ArrayLike[float, np.ndarray]
 ```
 
-This uses PEP 695 recursive type aliases — no depth limit on nesting.
+That template is most useful when you want your own checker-friendly alias but still follow shapix's "scalar or nested sequence or array" model.

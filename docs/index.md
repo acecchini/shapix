@@ -372,7 +372,7 @@ a.backend-logo:hover {
 <div class="hero__tagline">Runtime shape checking for the array age</div>
 
 <p class="hero__subtitle">
-Elegant shape and dtype validation for NumPy, JAX, and PyTorch arrays
+Elegant shape and dtype validation for NumPy, JAX, PyTorch, and CuPy arrays
 </p>
 
 <p class="hero__powered">
@@ -434,9 +434,9 @@ Unlike jaxtyping, shapix doesn't replace your beartype configuration. Full `Bear
 
 <div class="feature-card" markdown>
 
-### :material-shield-lock: Thread-Safe
+### :material-shield-lock: Thread-Safe & Async-Safe
 
-Each thread gets independent dimension bindings via `threading.local()`. Safe for parallel workloads.
+Automatic memo discovery is thread-safe, and the explicit memo stack used by `@shapix.check` and `check_context()` is async-safe too.
 
 </div>
 

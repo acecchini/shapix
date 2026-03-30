@@ -1,11 +1,17 @@
 ---
 title: Array Types
-description: Dtype-checked array types for NumPy, JAX, PyTorch, and custom backends.
+description: Dtype-checked array aliases for NumPy, JAX, PyTorch, CuPy, and custom array classes.
 ---
 
 # Array Types
 
-Shapix provides concise, readable array type annotations for every major backend. Each type enforces both **dtype** and **shape** at runtime.
+Array aliases such as `F32[N, C]` or `DT64[...]` are the core "strict array" side of shapix. They enforce both:
+
+- the concrete backend array class
+- the allowed dtype family
+- the shape specification in the subscript
+
+At runtime these aliases become `Annotated[ArrayType, Is[validator]]`, so standard `@beartype` does the checking.
 
 ## NumPy
 
@@ -31,44 +37,49 @@ from shapix.numpy import F32, I64, Shaped  # and many more
 | `Str` | `string` |
 | `Bytes` | `bytes` |
 | `Obj` | `object` |
-| `DT64` | `datetime64` (accepts unit-qualified dtypes like `datetime64[ns]`) |
-| `TD64` | `timedelta64` (accepts unit-qualified dtypes like `timedelta64[ms]`) |
+| `DT64` | `datetime64` |
+| `TD64` | `timedelta64` |
 
 ### Category dtypes
 
-Category types accept any dtype within the category:
+| Type | Meaning |
+|------|---------|
+| `Int` | Any signed integer dtype |
+| `UInt` | Any unsigned integer dtype |
+| `Integer` | Any integer dtype |
+| `Float` | Any floating dtype |
+| `Real` | Any integer or floating dtype |
+| `Complex` | Any complex dtype |
+| `Inexact` | Any float or complex dtype |
+| `Num` | Any numeric dtype |
+| `Shaped` | Any dtype at runtime, shape-only checking |
 
-| Type | Includes |
-|------|----------|
-| `Int` | All signed integers |
-| `UInt` | All unsigned integers |
-| `Integer` | All integers (signed + unsigned) |
-| `Float` | All floats (including bfloat16) |
-| `Real` | Integers + floats |
-| `Complex` | `complex64`, `complex128` |
-| `Inexact` | Floats + complex |
-| `Num` | All numeric types |
-| `Shaped` | Any dtype (shape-only checking) |
+Notes:
+
+- `DT64` and `TD64` accept unit-qualified NumPy dtypes such as `datetime64[ns]`, `datetime64[D]`, `timedelta64[ms]`, and `timedelta64[s]`.
+- `Shaped` checks shape only at runtime. Its static alias is necessarily an approximation, not a true "any dtype ndarray" model.
 
 ### Structured dtypes
 
 Use `Structured()` for NumPy structured (record) dtypes:
 
 ```python
+import numpy as np
+from beartype import beartype
+from shapix import N
 from shapix.numpy import Structured
 
 Point = Structured([("x", np.float32), ("y", np.float32)])
 
 @beartype
 def process_points(pts: Point[N]) -> Point[N]:
-    return pts
+  return pts
 
-# Exact field match required
 pts = np.zeros(10, dtype=[("x", np.float32), ("y", np.float32)])
 process_points(pts)  # OK
 
 wrong = np.zeros(10, dtype=[("a", np.float32), ("b", np.float32)])
-process_points(wrong)  # Raises — field names don't match
+process_points(wrong)  # Raises
 ```
 
 ### Endianness variants
@@ -76,109 +87,103 @@ process_points(wrong)  # Raises — field names don't match
 For multi-byte dtypes, create endianness-constrained types programmatically using `make_array_type` with endianness `DtypeSpec` constants:
 
 ```python
-from shapix import make_array_type, N, C
-from shapix._dtypes import FLOAT32_LE, INT64_BE
+import numpy as np
+from beartype import beartype
+from shapix import N, C, make_array_type
+from shapix._dtypes import FLOAT32_LE
 
 F32LE = make_array_type(np.ndarray, FLOAT32_LE)
 
 @beartype
 def process_le(x: F32LE[N, C]) -> F32LE[N, C]:
-    """Only accepts little-endian float32 arrays."""
-    return x
+  return x
 
-process_le(np.ones((4, 3), dtype="<f4"))  # OK — little-endian
-process_le(np.ones((4, 3), dtype=">f4"))  # Raises — big-endian
+process_le(np.ones((4, 3), dtype="<f4"))  # OK
+process_le(np.ones((4, 3), dtype=">f4"))  # Raises
 ```
 
 Available suffixes: `_LE` (little-endian), `_BE` (big-endian), `_N` (native).
 
-### Usage
+## Backend differences
 
-```python
-import numpy as np
-from beartype import beartype
-from shapix import N, C
-from shapix.numpy import F32, Integer, Shaped
-
-@beartype
-def matmul(x: F32[N, C], y: F32[C, N]) -> F32[N, N]:
-    return x @ y
-
-@beartype
-def any_int(x: Integer[N]) -> Integer[N]:
-    return x  # Accepts int8, int16, int32, int64, uint8, ...
-
-@beartype
-def any_shape(x: Shaped[N, C]) -> Shaped[N, C]:
-    return x  # Any dtype, just check shape
-```
-
-## JAX
+### JAX
 
 ```python
 from shapix.jax import F32, BF16
 ```
 
-Most NumPy type names, plus **`BF16`** (bfloat16). Base type is `jax.Array`. Also exports `Like` types and `Tree`.
+`shapix.jax` uses `jax.Array` as the base array class.
 
-```python
-import jax.numpy as jnp
-from beartype import beartype
-from shapix import N, C
-from shapix.jax import BF16
+It exports:
 
-@beartype
-def forward(x: BF16[N, C]) -> BF16[N, C]:
-    return jnp.relu(x)
-```
+- most NumPy numeric aliases
+- `BF16` for JAX bfloat16 arrays
+- JAX `Like` aliases
+- `Tree` and `Structure`
 
-## PyTorch
+It does **not** expose NumPy-only aliases such as `F128`, `C256`, `V`, `Str`, `Bytes`, `Obj`, `DT64`, or `TD64`.
+
+### PyTorch
 
 ```python
 from shapix.torch import F32, BF16
 ```
 
-Most NumPy type names, plus **`BF16`** (bfloat16). Base type is `torch.Tensor`. Also exports `Like` types.
+`shapix.torch` uses `torch.Tensor` as the base array class.
+
+It exports:
+
+- most NumPy numeric aliases
+- `BF16`
+- Torch `Like` aliases
+- NumPy-defined `ScalarLike` re-exports
+
+It does **not** expose NumPy-only aliases such as `F128`, `C256`, `V`, `Str`, `Bytes`, `Obj`, `DT64`, or `TD64`.
+
+### CuPy
 
 ```python
-import torch
-from beartype import beartype
-from shapix import N, C
-from shapix.torch import F32
-
-@beartype
-def linear(x: F32[N, C], w: F32[C, C]) -> F32[N, C]:
-    return x @ w.T
+from shapix.cupy import F32, I64
 ```
+
+`shapix.cupy` uses `cupy.ndarray` as the base array class.
+
+It exports:
+
+- most NumPy numeric aliases
+- CuPy `Like` aliases
+- NumPy-defined `ScalarLike` re-exports
+
+It does **not** expose `BF16`, `F128`, `C256`, or the NumPy-only non-numeric aliases `V`, `Str`, `Bytes`, `Obj`, `DT64`, and `TD64`.
 
 ## Custom array types
 
 Use `make_array_type` and `make_array_like_type` to create types for custom array classes or dtype combinations:
 
 ```python
-from shapix import make_array_type, make_array_like_type, DtypeSpec
+import numpy as np
+from shapix import DtypeSpec, make_array_like_type, make_array_type
 
-# Custom dtype: only float32 or float16 (e.g. for mixed-precision training)
 MIXED = DtypeSpec("MixedPrecision", frozenset({"float16", "float32"}))
 
-# Strict array type — only accepts np.ndarray with matching dtype
 MixedArray = make_array_type(np.ndarray, MIXED)
-
-# Like type — accepts scalars, sequences, arrays with dtype casting
 MixedLike = make_array_like_type(MIXED, name="MixedLike")
-
-# Like type with strict casting (exact match only, no upcasting)
 MixedExact = make_array_like_type(MIXED, casting="no", name="MixedExact")
 ```
 
-### Casting rules
+`make_array_type` is the strict array factory. `make_array_like_type` is the broader input-contract factory and is covered in more detail on [Like Types](like-types.md).
 
-The `casting` parameter on `make_array_like_type` controls dtype strictness using NumPy casting rules:
+### `DtypeSpec`
 
-| Casting | Meaning | Example (target=float32) |
-|---------|---------|--------------------------|
-| `"no"` | Exact dtype only | Only `float32` accepted |
-| `"equiv"` | Same kind, same size | `float32` only |
-| `"safe"` | No data loss | `int16` OK, `float64` rejected |
-| `"same_kind"` | Same kind allowed (default) | `int32` OK, `complex64` rejected |
-| `"unsafe"` | Any cast | `complex128` OK, strings rejected |
+`DtypeSpec` is the root abstraction behind these aliases:
+
+- `allowed` is the set of canonical dtype names
+- `byteorder` can restrict acceptance to `"little"`, `"big"`, or `"native"`
+- `DtypeSpec.structured(...)` matches one exact NumPy structured dtype layout
+
+That makes it the right tool when the built-in alias set is close but not quite what you need.
+
+## When to use array types vs Like types
+
+- Use array types such as `F32[N, C]` when the function truly requires a real backend array object.
+- Use `Like` types such as `F32Like[N, C]` when callers may pass scalars, lists, tuples, or convertible foreign arrays that you immediately normalize yourself.

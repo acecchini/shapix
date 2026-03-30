@@ -1,75 +1,76 @@
 ---
 title: "shapix.torch"
-description: PyTorch tensor types and Like types.
+description: PyTorch tensor aliases, Like aliases, and ScalarLike re-exports.
 ---
 
 # `shapix.torch`
 
-PyTorch tensor types with dtype and shape checking. Base type: `torch.Tensor`.
+`shapix.torch` provides PyTorch-native array aliases based on `torch.Tensor`.
 
 ```python
-from shapix.torch import F32, BF16, Shaped
-from shapix.torch import F32Like, F32Lk
+from shapix.torch import (
+  F32, BF16, Int, Shaped,
+  F32Like, BF16Like,
+  U8ScalarLike, make_scalar_like_type,
+)
 ```
 
----
+## What it exports
 
-## Array Types
+Strict array aliases:
 
-Same type names as `shapix.numpy`, plus **`BF16`** (bfloat16).
+- concrete families such as `Bool`, `I32`, `I64`, `F16`, `F32`, `F64`, `BF16`, `C64`, `C128`
+- category families such as `Int`, `UInt`, `Integer`, `Float`, `Real`, `Complex`, `Inexact`, `Num`, `Shaped`
 
-### Concrete dtypes
+`Like` aliases:
 
-| Type | Dtype |
-|------|-------|
-| `Bool` | `bool` |
-| `I8`, `I16`, `I32`, `I64` | `int8` – `int64` |
-| `U8`, `U16`, `U32`, `U64` | `uint8` – `uint64` |
-| `BF16` | `bfloat16` |
-| `F16`, `F32`, `F64` | `float16` – `float64` |
-| `C64`, `C128` | `complex64`, `complex128` |
+- `BF16Like`
+- `BoolLike`, `I8Like` through `I64Like`, `U8Like` through `U64Like`
+- `F16Like`, `F32Like`, `F64Like`
+- `C64Like`, `C128Like`
+- category aliases such as `IntLike`, `FloatLike`, `NumLike`, `ShapedLike`
 
-### Category dtypes
+Other exports:
 
-Same as NumPy: `Int`, `UInt`, `Integer`, `Float`, `Real`, `Complex`, `Inexact`, `Num`, `Shaped`.
+- NumPy-defined `ScalarLike` aliases re-exported for convenience
+- `make_scalar_like_type`
 
----
+## Backend limits
 
-## Like Types
+`shapix.torch` does **not** export NumPy-only aliases such as:
 
-All scalar `Like` types are re-exported from `shapix.numpy`.
+- `F128`
+- `C256`
+- `V`
+- `Str`
+- `Bytes`
+- `Obj`
+- `DT64`
+- `TD64`
 
-### Array-Like (Lk) types
+It also requires `numpy` alongside `torch` at runtime.
 
-Lk types use `torch.Tensor | np.ndarray` as the array component:
+## `Like` behavior
 
-| Type | Scalar | Array |
-|------|--------|-------|
-| `BoolLk` | `BoolLike` | `Tensor \| np.ndarray` |
-| `I8Lk` – `I64Lk` | `IntNLike` | `Tensor \| np.ndarray` |
-| `F16Lk` – `F64Lk` | `FloatNLike` | `Tensor \| np.ndarray` |
-| `BF16Lk` | `FloatLike` | `Tensor \| np.ndarray` |
-| `IntLk` – `ShapedLk` | Category scalar | `Tensor \| np.ndarray` |
+Torch `Like` aliases use `torch.as_tensor` on the slow path, so they can accept:
 
----
+- real tensors
+- NumPy arrays
+- Python scalars and nested sequences
 
-## Usage
+Static type checkers still see the result as `torch.Tensor`.
 
-```python
-import torch
-from beartype import beartype
-from shapix import N, C, H, W
-from shapix.torch import F32, BF16
+## `ScalarLike` re-exports
 
-@beartype
-def attention(q: F32[N, L, C], k: F32[N, L, C], v: F32[N, L, C]) -> F32[N, L, C]:
-    scores = torch.matmul(q, k.transpose(-2, -1)) / (C ** 0.5)
-    return torch.matmul(torch.softmax(scores, dim=-1), v)
+`ScalarLike` aliases are re-exported from `shapix.numpy`. They validate Python and NumPy scalar values, not Torch 0-D tensors.
 
-@beartype
-def mixed_precision(x: BF16[N, C]) -> BF16[N, C]:
-    return x
-```
+For Torch scalar tensors, prefer a `Like` alias with `Scalar`, for example `F32Like[Scalar]`.
 
-!!! note "Tree support"
-    PyTorch users can use tree annotations via `shapix.optree.Tree` or `shapix.Tree` (which auto-detects optree or jax).
+## Trees
+
+`shapix.torch` does not export `Tree`.
+
+If you want tree annotations in a Torch project, import:
+
+- `Tree` from `shapix.optree` for an explicit optree backend
+- or `Tree` from `shapix.jax` if your project already depends on JAX's tree utilities

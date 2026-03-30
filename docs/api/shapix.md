@@ -1,58 +1,66 @@
 ---
 title: "shapix"
-description: Core module API reference.
+description: Lightweight root API for dimensions, dtype specs, memo helpers, and factories.
 ---
 
 # `shapix`
 
-The core module exports dimension symbols, the decorator system, tree annotations, and the array type factory.
+The root module is intentionally small and optional-dependency-safe. It is the place to import:
+
+- dimension symbols such as `N`, `C`, `Scalar`, and `Value`
+- tree structure symbols such as `T`, `S`, and `Structure`
+- `DtypeSpec`
+- `make_array_type` and `make_array_like_type`
+- `check` and `check_context`
+- `__version__`
+
+It does **not** export `Tree` or `make_scalar_like_type`.
+
+## Typical imports
 
 ```python
 import shapix
-from shapix import N, B, C, D, K, H, W, L, P, __, Scalar
-from shapix import Dimension, Value, DtypeSpec
-from shapix import check, check_context
-from shapix import T, S, Structure
-from shapix import make_array_type, make_array_like_type
+from shapix import (
+  B, C, D, H, K, L, N, P, S, T, W, __,
+  Scalar, Dimension, Value, Structure,
+  DtypeSpec, make_array_type, make_array_like_type,
+  check, check_context,
+)
 ```
 
----
+## `__version__`
 
-## Dimension Symbols
+```python
+import shapix
 
-### Pre-defined dimensions
+print(shapix.__version__)
+```
 
-| Symbol | Value | Typical use |
-|--------|-------|-------------|
-| `N` | `Dimension("N")` | Batch size, count |
-| `B` | `Dimension("B")` | Batch |
-| `C` | `Dimension("C")` | Channels |
-| `D` | `Dimension("D")` | Embedding dimension |
-| `K` | `Dimension("K")` | Number of heads |
-| `H` | `Dimension("H")` | Height |
-| `W` | `Dimension("W")` | Width |
-| `L` | `Dimension("L")` | Sequence length |
-| `P` | `Dimension("P")` | Points / parameters |
-| `__` | `Dimension("__")` | Anonymous (match any single dim) |
-| `Scalar` | `Dimension("")` | No dimensions (scalar array) |
+In an installed package this is the package version. In a plain source checkout without installed metadata it falls back to a non-empty string such as `0+unknown`.
 
----
+## Pre-defined dimensions
+
+| Name | Meaning |
+|------|---------|
+| `N`, `B`, `C`, `D`, `K`, `H`, `W`, `L`, `P` | Named dimensions |
+| `__` | Anonymous single dimension |
+| `Scalar` | Zero-dimensional array shape |
+| `Value("expr")` | Runtime value-based dimension expression |
+
+Use `Dimension("Name")` to create your own.
+
+## Pre-defined structure symbols
+
+| Name | Meaning |
+|------|---------|
+| `T`, `S` | Named tree structure symbols |
+| `Structure("Name")` | Custom tree structure symbol |
+
+Remember that `Tree` itself lives in `shapix.optree` or `shapix.jax`.
 
 ## `Dimension`
 
-::: shapix.Dimension
-
-```python
-class Dimension(str):
-    """A named dimension symbol that doubles as a shape spec element.
-
-    Behaves like a str for display but carries semantic meaning for
-    runtime shape checking. Arithmetic produces SymbolicDim-backed
-    expressions.
-    """
-```
-
-### Creating dimensions
+`Dimension` is a `str` subclass used to build the user-facing shape language.
 
 ```python
 from shapix import Dimension
@@ -61,66 +69,30 @@ Vocab = Dimension("Vocab")
 Embed = Dimension("Embed")
 ```
 
-### Operators
+Supported operators:
 
-| Operator | Example | Result |
-|----------|---------|--------|
-| `~` (invert) | `~N` | Variadic: match zero or more dims |
-| `+` (pos) | `+N` | Broadcastable: size 1 always matches |
-| `+` (add) | `N + 1` | Symbolic expression |
-| `-` (sub) | `N - 1` | Symbolic expression |
-| `*` (mul) | `N * C` | Symbolic expression |
-| `/` (div) | `N / 2` | Symbolic expression |
-| `//` (floordiv) | `N // 2` | Symbolic expression |
-| `**` (pow) | `N ** 2` | Symbolic expression |
-| `%` (mod) | `N % 2` | Symbolic expression |
-| `-` (neg) | `-N` | Symbolic expression |
+- `~N` for variadic dimensions
+- `+N` for broadcastable dimensions
+- arithmetic such as `N + 1`, `H * W`, or `2 * C`
 
----
+`Scalar` cannot participate in arithmetic.
 
 ## `Value`
 
-```python
-class Value:
-    """Runtime value expression for shape dimensions.
-
-    Use when a shape depends on a runtime parameter or self attribute
-    rather than a previously bound dimension.
-    """
-```
-
-### Example
+`Value("expr")` is the runtime-value dimension helper.
 
 ```python
 from shapix import Value
 
-Size = Value("size")
+Batch = Value("batch")
 WidthPlus3 = Value("self.width + 3")
-
-@beartype
-def full(size: int) -> F32[Size]:
-    return np.full((size,), 1.0, dtype=np.float32)
 ```
 
-Supports `+Value(...)` for broadcastable, but rejects `~Value(...)` (variadic).
-
----
+It supports names, attribute access, numeric literals, and arithmetic. It rejects calls, indexing, and arbitrary evaluation.
 
 ## `DtypeSpec`
 
-```python
-@dataclass(frozen=True, slots=True)
-class DtypeSpec:
-    """Describes a set of allowed dtypes by their canonical string names."""
-
-    name: str
-    allowed: frozenset[str]
-
-    def matches(self, obj: object) -> bool:
-        """Return True if obj's dtype is in the allowed set."""
-```
-
-### Example
+`DtypeSpec` describes an allowed dtype set and optional byte-order constraint.
 
 ```python
 from shapix import DtypeSpec
@@ -128,130 +100,83 @@ from shapix import DtypeSpec
 BF16_OR_F32 = DtypeSpec("BF16orF32", frozenset({"bfloat16", "float32"}))
 ```
 
----
+Key features:
+
+- `allowed`: canonical dtype names
+- `byteorder`: `"any"`, `"little"`, `"big"`, or `"native"`
+- `matches(obj)`: runtime predicate used by array aliases
+- `DtypeSpec.structured(dtype)`: exact structured-dtype matcher
 
 ## `make_array_type`
 
-```python
-def make_array_type(array_type: type, dtype_spec: DtypeSpec) -> _ArrayFactory:
-    """Create a subscriptable array type factory for a given base type and dtype.
-
-    Parameters
-    ----------
-    array_type
-        The base array class (e.g. np.ndarray, jax.Array, torch.Tensor,
-        or any class with .dtype and .shape attributes).
-    dtype_spec
-        A DtypeSpec defining the allowed dtypes.
-
-    Returns
-    -------
-    _ArrayFactory
-        Subscripting it with dimensions produces Annotated[array_type, Is[checker]].
-    """
-```
-
-### Example
+`make_array_type(array_type, dtype_spec)` creates a strict array factory for custom array classes.
 
 ```python
-from shapix import make_array_type
+import numpy as np
+from beartype import beartype
+from shapix import N, C, make_array_type
 from shapix._dtypes import FLOAT32
 
-MyF32 = make_array_type(MyArrayClass, FLOAT32)
+MyF32 = make_array_type(np.ndarray, FLOAT32)
 
 @beartype
 def f(x: MyF32[N, C]) -> MyF32[N, C]:
-    ...
+  return x
 ```
 
----
+The `array_type` only needs `.shape` and `.dtype` at runtime.
 
 ## `make_array_like_type`
 
-```python
-def make_array_like_type(
-    dtype_spec: DtypeSpec,
-    *,
-    casting: str = "same_kind",
-    name: str = "ArrayLike",
-) -> _ArrayFactory:
-    """Create a subscriptable array-like type factory with configurable dtype casting.
+`make_array_like_type(dtype_spec, *, casting="same_kind", name="ArrayLike")` creates a broader input-contract factory for values that will be converted before use.
 
-    Parameters
-    ----------
-    dtype_spec
-        A DtypeSpec defining the target dtypes.
-    casting
-        NumPy casting rule: "no", "equiv", "safe", "same_kind", "unsafe".
-    name
-        Display name for error messages.
-    """
+```python
+from shapix import make_array_like_type
+from shapix._dtypes import FLOAT32
+
+F32Input = make_array_like_type(FLOAT32, name="F32Input")
+F32StrictInput = make_array_like_type(FLOAT32, casting="no", name="F32StrictInput")
 ```
 
----
+Use backend modules when you want the built-in NumPy/JAX/Torch/CuPy `Like` aliases. Use the root factory when you want custom dtype combinations or custom conversion hooks.
 
 ## `check`
 
+`@shapix.check` is the explicit memo-management decorator.
+
 ```python
-@overload
-def check(fn: Callable[P, R], /) -> Callable[P, R]: ...
-@overload
-def check(*, conf: object = ...) -> Callable[[Callable[P, R]], Callable[P, R]]: ...
+import shapix
+from beartype import beartype
 
-def check(...):
-    """Decorator that manages the dimension memo around a function call.
-
-    Two usage modes:
-    1. Memo only (pair with @beartype):
-       @shapix.check
-       @beartype
-       def f(x: F32[N, C]) -> F32[N, C]: ...
-
-    2. Memo + beartype combined (pass conf=):
-       @shapix.check(conf=BeartypeConf(...))
-       def f(x: F32[N, C]) -> F32[N, C]: ...
-    """
+@shapix.check
+@beartype
+def f(x: F32[N], y: F32[N]) -> F32[N]:
+  ...
 ```
 
----
+Or combine memo management with `BeartypeConf`:
+
+```python
+from beartype import BeartypeConf
+
+@shapix.check(conf=BeartypeConf())
+def f(x: F32[N]) -> F32[N]:
+  ...
+```
+
+`check` supports sync and async functions. Generator functions are rejected.
 
 ## `check_context`
 
-```python
-class check_context:
-    """Context manager for manual isinstance checks with shared memo.
-
-    Usage:
-        with shapix.check_context():
-            assert is_bearable(x, F32[N, C])  # Binds N=4
-            assert is_bearable(y, F32[N, C])  # Checks N=4
-    """
-
-    def __enter__(self) -> check_context: ...
-    def __exit__(self, *_: object) -> None: ...
-```
-
----
-
-## `Structure`
+`check_context()` shares one memo across manual `is_bearable()` calls.
 
 ```python
-class Structure(str):
-    """Named tree structure symbol for Tree annotations."""
+from beartype.door import is_bearable
+import shapix
+
+with shapix.check_context():
+  assert is_bearable(x, F32[N, C])
+  assert is_bearable(y, F32[N, C])
 ```
 
-### Pre-defined structures
-
-| Symbol | Value |
-|--------|-------|
-| `T` | `Structure("T")` |
-| `S` | `Structure("S")` |
-
-### Custom structures
-
-```python
-from shapix import Structure
-
-Params = Structure("Params")
-State = Structure("State")
-```
+It also supports `async with`.

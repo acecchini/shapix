@@ -1,75 +1,88 @@
 ---
 title: "shapix.jax"
-description: JAX array types, Tree annotations, and Like types.
+description: JAX array aliases, Like aliases, ScalarLike re-exports, and JAX Tree support.
 ---
 
 # `shapix.jax`
 
-JAX array types with dtype and shape checking. Base type: `jax.Array`.
+`shapix.jax` provides JAX-native array aliases based on `jax.Array`.
 
 ```python
-from shapix.jax import F32, BF16, Shaped
-from shapix.jax import Tree, Structure
-from shapix.jax import F32Like, F32Lk
+from shapix.jax import (
+  F32, BF16, Int, Shaped,
+  F32Like, BF16Like,
+  U8ScalarLike, make_scalar_like_type,
+  Tree, Structure,
+)
 ```
 
----
+## What it exports
 
-## Array Types
+Strict array aliases:
 
-Same type names as `shapix.numpy`, plus **`BF16`** (bfloat16).
+- concrete families such as `Bool`, `I32`, `I64`, `F16`, `F32`, `F64`, `BF16`, `C64`, `C128`
+- category families such as `Int`, `UInt`, `Integer`, `Float`, `Real`, `Complex`, `Inexact`, `Num`, `Shaped`
 
-### Concrete dtypes
+`Like` aliases:
 
-| Type | Dtype |
-|------|-------|
-| `Bool` | `bool` |
-| `I8`, `I16`, `I32`, `I64` | `int8` – `int64` |
-| `U8`, `U16`, `U32`, `U64` | `uint8` – `uint64` |
-| `BF16` | `bfloat16` |
-| `F16`, `F32`, `F64` | `float16` – `float64` |
-| `C64`, `C128` | `complex64`, `complex128` |
+- `BF16Like`
+- `BoolLike`, `I8Like` through `I64Like`, `U8Like` through `U64Like`
+- `F16Like`, `F32Like`, `F64Like`
+- `C64Like`, `C128Like`
+- category aliases such as `IntLike`, `FloatLike`, `NumLike`, `ShapedLike`
 
-### Category dtypes
+Other exports:
 
-Same as NumPy: `Int`, `UInt`, `Integer`, `Float`, `Real`, `Complex`, `Inexact`, `Num`, `Shaped`.
+- NumPy-defined `ScalarLike` aliases re-exported for convenience
+- `make_scalar_like_type`
+- `Tree`
+- `Structure`
 
----
+## Backend limits
 
-## Tree
+`shapix.jax` does **not** export NumPy-only aliases such as:
 
-```python
-from shapix.jax import Tree
-```
+- `F128`
+- `C256`
+- `V`
+- `Str`
+- `Bytes`
+- `Obj`
+- `DT64`
+- `TD64`
 
-Tree annotations backed explicitly by `jax.tree_util`. See [Tree Annotations](../features/tree-annotations.md) for full usage.
+It also requires `numpy` alongside `jax` at runtime.
+
+## `Like` behavior
+
+JAX `Like` aliases use `jnp.asarray` on the slow path, so they can accept:
+
+- real JAX arrays
+- NumPy arrays
+- Python scalars and nested sequences
+- objects implementing `__jax_array__`
+
+Static type checkers still see the result as `jax.Array`.
+
+## `ScalarLike` re-exports
+
+`ScalarLike` aliases are re-exported from `shapix.numpy`. They validate Python and NumPy scalar values, not JAX 0-D arrays.
+
+For JAX scalar arrays, prefer a `Like` alias with `Scalar`, for example `F32Like[Scalar]`.
+
+## `Tree`
+
+`shapix.jax.Tree` is the JAX-backed pytree annotation.
 
 ```python
 from beartype import beartype
-from shapix.jax import Tree, F32
 from shapix import N, T
+from shapix.jax import F32, Tree
 
 @beartype
-def process(params: Tree[F32[N], T], grads: Tree[F32[N], T]):
-    ...
+def process(params: Tree[F32[N], T],
+            grads: Tree[F32[N], T]) -> Tree[F32[N]]:  # type: ignore[valid-type]
+  ...
 ```
 
-Also re-exports `Structure` for custom structure symbols.
-
----
-
-## Like Types
-
-All scalar `Like` types are re-exported from `shapix.numpy`.
-
-### Array-Like (Lk) types
-
-Lk types use `jax.Array | np.ndarray` as the array component:
-
-| Type | Scalar | Array |
-|------|--------|-------|
-| `BoolLk` | `BoolLike` | `jax.Array \| np.ndarray` |
-| `I8Lk` – `I64Lk` | `IntNLike` | `jax.Array \| np.ndarray` |
-| `F16Lk` – `F64Lk` | `FloatNLike` | `jax.Array \| np.ndarray` |
-| `BF16Lk` | `FloatLike` | `jax.Array \| np.ndarray` |
-| `IntLk` – `ShapedLk` | Category scalar | `jax.Array \| np.ndarray` |
+Leaf-only annotations such as `Tree[F32[N]]` are checker-friendly. Structure-bearing forms such as `Tree[..., T]` are runtime-only.

@@ -1,6 +1,6 @@
 site_name: Shapix
 site_url: https://acecchini.github.io/shapix/
-site_description: "Elegant runtime shape and dtype checking for NumPy, JAX, and PyTorch arrays — powered by beartype."
+site_description: "Elegant runtime shape and dtype checking for NumPy, JAX, PyTorch, and CuPy arrays — powered by beartype."
 site_author: acecchini
 copyright: "Copyright &copy; 2025 – 2026 Shapix contributors"
 repo_url: https://github.com/acecchini/shapix
@@ -25,6 +25,7 @@ nav:
   - Features:
     - features/index.md
     - features/dimensions.md
+    - features/static-typing.md
     - features/array-types.md
     - features/like-types.md
     - features/tree-annotations.md
@@ -36,6 +37,7 @@ nav:
     - api/numpy.md
     - api/jax.md
     - api/torch.md
+    - api/cupy.md
     - api/optree.md
     - api/claw.md
   - Examples:

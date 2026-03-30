@@ -1,15 +1,21 @@
 ---
 title: Dimensions
-description: The complete dimension system — named, fixed, variadic, broadcastable, anonymous, and symbolic dimensions.
+description: Named, fixed, variadic, broadcastable, anonymous, scalar, symbolic, and runtime value dimensions.
 ---
 
 # Dimensions
 
-Dimensions are the core building blocks of Shapix's shape specifications. They describe what each axis of an array should look like and how axes should relate across arguments.
+Dimensions are the core shape language in shapix. They describe:
+
+- how many axes an array should have
+- which axes must agree across parameters
+- where fixed sizes, symbolic expressions, or runtime values are expected
+
+Every array alias such as `F32[...]`, `I64[...]`, or `BF16Like[...]` is subscripted with these tokens.
 
 ## Named dimensions
 
-Named dimensions **bind** to a size on first occurrence and **enforce** that size on every subsequent use within the same function call.
+Named dimensions bind on first use and are enforced on every later use inside the same call.
 
 ```python
 from beartype import beartype
@@ -18,10 +24,10 @@ from shapix.numpy import F32
 
 @beartype
 def forward(x: F32[N, C, H, W]) -> F32[N, C, H, W]:
-    ...
+  ...
 ```
 
-**Pre-defined symbols:**
+Pre-defined symbols:
 
 | Symbol | Typical use |
 |--------|-------------|
@@ -37,77 +43,90 @@ def forward(x: F32[N, C, H, W]) -> F32[N, C, H, W]:
 
 ## Fixed dimensions
 
-Use plain integers for dimensions that must match an exact size:
+Use plain integers when an axis must have an exact size:
 
 ```python
 @beartype
 def rgb_to_gray(x: F32[N, 3, H, W]) -> F32[N, 1, H, W]:
-    ...
+  ...
 ```
 
-!!! tip "Static type checker note"
-    If type checkers flag integer literals, wrap them in `Dimension()`: `Dimension("3")`. See [static type checkers](#static-type-checkers-pyright-mypy-ty) below.
+Static type checkers generally do **not** understand integer literals in these shape positions. Keep them for runtime correctness and add a targeted `# type: ignore` when needed. See [Static Typing](static-typing.md).
 
 ## Symbolic dimensions
 
-Dimensions support arithmetic. Expressions are evaluated against bound dimension values:
+Dimensions support arithmetic. Expressions are evaluated against already-bound shape names:
 
 ```python
 from shapix import N, C
 
 @beartype
 def pad(x: F32[N]) -> F32[N + 2]:
-    ...
+  ...
 
 @beartype
 def flatten(x: F32[N, C]) -> F32[N * C]:
-    return x.reshape(-1)
+  return x.reshape(-1)
 ```
 
-**Supported operators:** `+`, `-`, `*`, `/`, `//`, `**`, `%`
+Supported operators: `+`, `-`, `*`, `/`, `//`, `**`, `%`
 
-Symbolic dimensions are intentionally limited to arithmetic over dimension names and numeric literals. Attribute access and function calls are rejected.
+These expressions are intentionally narrow:
+
+- allowed: named dimensions and numeric literals
+- rejected: attribute access, indexing, function calls, arbitrary Python code
+
+For static typing, arithmetic dimensions are runtime-only and typically need `# type: ignore`.
 
 ## Runtime value dimensions
 
-Use `Value("expr")` when a shape depends on a runtime parameter or `self` attribute rather than a previously bound dimension:
+Use `Value("expr")` when the shape depends on a runtime parameter or `self` attribute rather than a previously bound shape symbol.
 
 ```python
+import numpy as np
 from beartype import beartype
 from shapix import Value
 from shapix.numpy import F32
-import numpy as np
 
 Size = Value("size")
 WidthPlus3 = Value("self.width + 3")
 
-
 @beartype
-def full(size: int) -> F32[Size]:
+def full(size: int) -> F32[Size]:  # type: ignore[valid-type]
   return np.full((size,), 1.0, dtype=np.float32)
-
 
 class SomeClass:
   width = 5
 
   @beartype
-  def full(self) -> F32[WidthPlus3]:
+  def full(self) -> F32[WidthPlus3]:  # type: ignore[valid-type]
     return np.full((self.width + 3,), 1.0, dtype=np.float32)
 ```
 
-`Value(...)` uses a restricted arithmetic grammar. It allows names, attribute access, numeric literals, and arithmetic operators, but rejects calls, indexing, and other arbitrary Python expressions.
+`Value(...)` supports:
+
+- names from the current call scope
+- attribute access such as `self.width`
+- numeric literals
+- arithmetic operators
+
+It rejects calls, indexing, comprehensions, and arbitrary evaluation.
+
+When `Value(...)` appears in an async function, use `@shapix.check` if you want the scope to be explicitly preserved across the await.
 
 ## Scalar dimension
 
-`Scalar` represents a zero-dimensional array (a scalar array):
+`Scalar` means "zero-dimensional array" or shape `()`.
 
 ```python
-from shapix import Scalar
+import numpy as np
+from beartype import beartype
+from shapix import N, Scalar
 from shapix.numpy import F32
 
 @beartype
 def dot(x: F32[N], y: F32[N]) -> F32[Scalar]:
-  return np.dot(x, y)  # returns shape ()
+  return np.dot(x, y)
 ```
 
 !!! warning
@@ -115,40 +134,44 @@ def dot(x: F32[N], y: F32[N]) -> F32[Scalar]:
 
 ## Variadic dimensions
 
-Apply `~` (tilde) to make a dimension **variadic** — matching zero or more contiguous dimensions:
+Apply `~` to a named dimension to match zero or more contiguous axes.
 
 ```python
+import numpy as np
+from beartype import beartype
 from shapix import B, C
 from shapix.numpy import F32
-import numpy as np
 
 @beartype
 def normalize(x: F32[~B, C]) -> F32[~B, C]:
-    return x / x.sum(axis=-1, keepdims=True)
+  return x / x.sum(axis=-1, keepdims=True)
 
-normalize(np.ones((3,), dtype=np.float32))        # *B=(),     C=3
-normalize(np.ones((4, 3), dtype=np.float32))       # *B=(4,),   C=3
-normalize(np.ones((2, 4, 3), dtype=np.float32))    # *B=(2,4),  C=3
+normalize(np.ones((3,), dtype=np.float32))  # B = (), C = 3
+normalize(np.ones((4, 3), dtype=np.float32))  # B = (4,), C = 3
+normalize(np.ones((2, 4, 3), dtype=np.float32))  # B = (2, 4), C = 3
 ```
 
-Named variadic dimensions enforce cross-argument consistency on the matched shape:
+Named variadic dimensions enforce cross-argument consistency on the matched sub-shape:
 
 ```python
 @beartype
 def add(x: F32[~B, C], y: F32[~B, C]) -> F32[~B, C]:
-    return x + y
+  return x + y
 ```
+
+Static type checkers still treat `~B` as runtime-only syntax.
 
 ### Anonymous variadic
 
-Use `~__` when you don't need consistency across arguments:
+Use `~__` when you do not need cross-argument binding:
 
 ```python
+from beartype import beartype
 from shapix import __, C
 
 @beartype
 def last_dim(x: F32[~__, C]) -> F32[~__, C]:
-    return x
+  return x
 ```
 
 `...` (Ellipsis) is an alias for `~__`:
@@ -156,7 +179,7 @@ def last_dim(x: F32[~__, C]) -> F32[~__, C]:
 ```python
 @beartype
 def last_dim(x: F32[..., C]) -> F32[..., C]:
-    return x
+  return x
 ```
 
 !!! note "One variadic per spec"
@@ -164,40 +187,48 @@ def last_dim(x: F32[..., C]) -> F32[..., C]:
 
 ## Broadcastable dimensions
 
-Apply `+` (unary plus) to make a dimension **broadcastable** — size 1 always matches, regardless of the bound value:
+Apply unary `+` to make a dimension broadcastable. Size `1` always matches the bound value.
 
 ```python
+import numpy as np
+from beartype import beartype
 from shapix import N, C
+from shapix.numpy import F32
 
 @beartype
 def broadcast_add(x: F32[N, C], y: F32[+N, C]) -> F32[N, C]:
-    return x + y
+  return x + y
 
 broadcast_add(np.ones((4, 3), dtype=np.float32),
-              np.ones((1, 3), dtype=np.float32))   # OK — +N allows size 1
+              np.ones((1, 3), dtype=np.float32))  # OK
 ```
 
-Broadcastable also works with variadic dimensions: `~+B` matches zero or more dims where each can be 1 or the bound value.
+Broadcastable also works with variadic dimensions: `~+B` matches zero or more dims where each can be `1` or the bound value.
 
 ## Anonymous dimensions
 
-`__` matches any single dimension without binding — no cross-argument consistency:
+`__` matches any single axis without binding it.
 
 ```python
+from beartype import beartype
 from shapix import __, C
+from shapix.numpy import F32
 
 @beartype
 def f(x: F32[__, C]) -> F32[__, C]:
-    return x
-# __ matches anything, only C is cross-checked
+  return x
 ```
+
+Unlike variadic and broadcastable syntax, `__` is part of the checker-tested static surface and can be used directly with pyright, mypy, and ty.
 
 ## Custom dimensions
 
 Create your own with `Dimension`:
 
 ```python
-from shapix import Dimension
+from beartype import beartype
+from shapix import Dimension, N
+from shapix.numpy import F32, I64
 
 Vocab = Dimension("Vocab")
 Embed = Dimension("Embed")
@@ -205,28 +236,26 @@ Seq = Dimension("Seq")
 
 @beartype
 def embed(tokens: I64[N, Seq], table: F32[Vocab, Embed]) -> F32[N, Seq, Embed]:
-    ...
+  ...
 ```
 
-Unary operators work on custom dimensions too: `~Vocab` (variadic), `+Vocab` (broadcastable).
-
-### TYPE_CHECKING pattern
-
-To silence pyright/Pylance on custom dimensions:
+Custom dimensions work at runtime immediately. For static typing, use the `TYPE_CHECKING` pattern:
 
 ```python
 import typing as tp
 from shapix import Dimension
 
 if tp.TYPE_CHECKING:
-    type Vocab = int
-    type Embed = int
+  type Vocab = int
+  type Embed = int
 else:
-    Vocab = Dimension("Vocab")
-    Embed = Dimension("Embed")
+  Vocab = Dimension("Vocab")
+  Embed = Dimension("Embed")
 ```
 
-## Summary
+Unary operators work on custom dimensions too: `~Vocab`, `+Vocab`, `~+Vocab`.
+
+## Summary table
 
 | Syntax | Meaning | Example | Behavior |
 |--------|---------|---------|----------|
@@ -241,45 +270,10 @@ else:
 | `...` | Ellipsis (alias) | `...` | Same as `~__` |
 | arithmetic | Symbolic | `N + 1` | Expression |
 
-## Static type checkers (pyright, mypy, ty)
+## Static typing notes
 
-Shapix supports **pyright**, **mypy**, and **ty**. Pre-defined dimension symbols resolve to `TypeVar` under `TYPE_CHECKING`, so core annotations like `F32[N, C]` work across all three checkers.
+The checker-supported subset is documented in [Static Typing](static-typing.md). The short version:
 
-Some patterns are fundamentally runtime-only:
-
-| Pattern | Example | Workaround |
-|---------|---------|------------|
-| Integer literals | `F32[N, 3, H, W]` | Wrap in `Dimension("3")` |
-| Unary operators | `F32[~B, C]`, `F32[+N, C]` | `# type: ignore` |
-| Arithmetic | `F32[N + 2]` | `# type: ignore` |
-| Custom dimensions | `F32[Vocab, Embed]` | `# type: ignore` or `TYPE_CHECKING` pattern |
-| `Value(...)` | `F32[Value("size")]` | `# type: ignore` |
-| Tree structure args | `Tree[F32[N], T]` | `# type: ignore` — leaf-only `Tree[F32[N, C]]` works |
-
-### Recommended config
-
-=== "pyright"
-
-    ```toml
-    [tool.pyright]
-    reportInvalidTypeForm = false
-    ```
-
-=== "mypy"
-
-    ```toml
-    [tool.mypy]
-    ignore_missing_imports = true
-    ```
-
-=== "ty"
-
-    No special configuration needed.
-
-For patterns all checkers reject, use blanket `# type: ignore`:
-
-```python
-@beartype
-def pad(x: F32[N]) -> F32[N + 2]:  # type: ignore
-    ...
-```
+- `F32[N, C]`, `F32[Scalar]`, and `F32[__, C]` are part of the tested cross-checker surface
+- custom dimensions need the `TYPE_CHECKING` pattern above
+- arithmetic, `Value(...)`, and unary operator forms such as `~B` and `+N` are still runtime-only syntax for static checkers
