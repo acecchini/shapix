@@ -6,6 +6,8 @@ Tests the full shapix annotation pattern with CuPy backend types.
 Tested with: pyright, mypy, ty
 """
 
+from typing import TYPE_CHECKING
+
 from beartype import beartype
 
 from shapix import B, C, Dimension, H, N, Scalar, W, __, check
@@ -116,16 +118,21 @@ def scalar_fn(x: F32[Scalar]) -> F32[Scalar]:
   return x
 
 
-Vocab = Dimension("Vocab")
+if TYPE_CHECKING:
+  type Vocab = int
+  type PaddedN = int
+else:
+  Vocab = Dimension("Vocab")
+  PaddedN = N + 2
 
 
 @beartype
-def vocab_fn(x: I64[N, Vocab]) -> I64[N, Vocab]:  # type: ignore  # noqa: F821  # custom dim
+def vocab_fn(x: I64[N, Vocab]) -> I64[N, Vocab]:
   return x
 
 
 @beartype
-def pad(x: F32[N]) -> F32[N + 2]:  # type: ignore  # noqa: F821  # arithmetic dim
+def pad(x: F32[N]) -> F32[PaddedN]:
   return x
 
 

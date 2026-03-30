@@ -1,65 +1,56 @@
 # Shapix
 
-Runtime shape and dtype checking for NumPy, JAX, and PyTorch arrays, powered by beartype.
+Runtime shape and dtype checking for NumPy, JAX, PyTorch, and CuPy arrays, powered by beartype.
 
-> Current release posture: **hold release until the blocker, the high-severity runtime issues, and full static type-checker parity are fixed, covered by regression tests, and documented accurately.**
+> Engineering posture: **production hardening**. Prefer closing gaps between documented behavior and verified behavior over widening surface area or adding clever abstractions.
 
 ## Mission
 
-Shapix turns array annotations such as `F32[N, C]` into runtime-validated contracts using `typing.Annotated` + beartype validators.
+Shapix turns array annotations such as `F32[N, C]` into runtime-validated contracts using `typing.Annotated` plus beartype validators.
 
 This repository is correctness-sensitive in two dimensions:
 
-1. **Runtime behavior** must be correct.
+1. **Runtime behavior** must be correct and unsurprising.
 2. **Static typing behavior** must be coherent across supported checkers.
 
 When working in this repo, optimize for:
 
 1. **Runtime correctness**
-2. **Full static type-checker parity across pyright, mypy, and ty**
+2. **Static type-checker parity across pyright, mypy, and ty**
 3. **Public API stability**
 4. **Accurate docs that match the real supported surface**
 5. **Regression-proof tests in the right backend envs**
 6. **Small, explicit fixes over clever rewrites**
 
-## Immediate release blockers and must-fix contracts
+## Production-hardening priorities
 
-These are the current non-negotiable contracts for the codebase:
+The next iterations should focus on making the library behave exactly as users would expect from the public docs and examples.
 
-### 1) `@shapix.check` must be async-safe
-- Decorating `async def` must preserve coroutine behavior.
-- `inspect.iscoroutinefunction()` should still report `True`.
-- Explicit memo lifetime must cover the awaited execution, not just coroutine creation.
-- If async support ever becomes intentionally unsupported, reject it explicitly at decoration time. Do **not** silently wrap async callables incorrectly.
+Treat the following as standing engineering priorities:
 
-### 2) `Scalar` may not silently disappear inside mixed shape specs
-- `Scalar` is valid only as the sole shape token.
-- Mixed forms such as `F32[N, Scalar]`, `F32[Scalar, N]`, `F32[..., Scalar]`, or `F32[Scalar, ...]` must raise clearly at hint construction time.
-- Silent reinterpretation is unacceptable.
+### 1) Announced behavior must be real behavior
+- If README, module docstrings, examples, and tests imply a feature exists, verify that it actually works.
+- If code, tests, and docs disagree, resolve the contract explicitly. Do not leave the mismatch implicit.
+- Prefer narrowing docs over widening the API when optional-dependency boundaries or import costs are involved.
 
-### 3) `DT64` / `TD64` must accept real NumPy datetime/timedelta arrays
-- Unit-qualified dtypes like `datetime64[ns]`, `datetime64[D]`, `timedelta64[ms]`, and `timedelta64[s]` are normal NumPy dtypes and must match the corresponding shapix aliases.
+### 2) Public syntax must stay stable
+- Preserve the flagship annotation syntax users actually write: `F32[N, C]`, `F32[Scalar]`, `F32[N + 2]`, `F32[__, C]`, backend variants, and `Tree[...]`.
+- Do not “solve” compatibility issues by weakening the public syntax or removing strong examples.
+- Invalid or ambiguous syntax must fail clearly at construction time, not be silently reinterpreted.
 
-### 4) Numeric `ScalarLike` semantics must exclude booleans
-- `BoolScalarLike` accepts booleans.
-- Numeric scalar aliases and numeric scalar factory outputs must **not** accept `True` / `False` merely because Python `bool` subclasses `int`.
-- `ShapedScalarLike` may still include booleans if that remains the intended umbrella contract.
+### 3) Runtime semantics must be explicit and unsurprising
+- Decorator behavior, dtype matching, shape parsing, scalar-like behavior, and tree validation are contract boundaries.
+- Optional backend behavior must remain optional at import time.
+- If behavior is intentionally constrained, document the constraint instead of relying on users to infer it.
 
-### 5) Root import must remain lightweight and optional-dependency-safe
-- `import shapix` must not require NumPy.
-- Root `shapix` must **not** start exporting `make_scalar_like_type` if that would violate the import boundary.
-- Prefer fixing docs to match the existing root API rather than widening the root API.
+### 4) Static typing is a product requirement
+- The flagship annotation surface should type-check on **pyright, mypy, and ty**.
+- Keep checker-specific hacks to a minimum and prefer checker-agnostic `TYPE_CHECKING` scaffolding.
+- Do not advertise checker support that the unified type-check suite does not prove.
 
-### 6) Source-tree imports must survive missing installed metadata
-- `__version__` lookup must not make `import shapix` fail in a plain source checkout.
-- Fallback behavior must still provide a non-empty version string.
-
-### 7) Full static type-checker parity is a release requirement
-- The flagship annotation surface must type-check on **pyright, mypy, and ty**.
-- `F32[N, C]`, `F32[Scalar]`, `F32[N + 2]`, `F32[__, C]`, `I64[N, Vocab]`, backend variants, and `Tree[...]` must all be accepted by all three checkers.
-- `@shapix.check` must preserve usable static signatures for all three checkers, including async functions.
-- The typing test harness must not keep a pyright-only bucket for the flagship annotation files.
-- Do **not** “solve” checker parity by deleting the strongest annotation examples, downgrading the public syntax, or moving failures behind checker-specific omissions.
+### 5) Regressions are unacceptable in high-risk areas
+- Any bug fix or feature completion in memo handling, decorator behavior, shape parsing, dtype normalization, or typing stubs needs focused regression coverage.
+- Prefer adding the failing test first, then making the smallest change that restores the contract.
 
 ## Architecture
 
@@ -76,6 +67,7 @@ src/shapix/
 ├── numpy.py           # NumPy public surface + typing stubs
 ├── jax.py             # JAX public surface + Tree + typing stubs
 ├── torch.py           # PyTorch public surface + typing stubs
+├── cupy.py            # CuPy public surface + typing stubs
 ├── optree.py          # optree-backed Tree
 └── claw.py            # beartype.claw convenience wrapper
 ```
@@ -98,7 +90,7 @@ Rules:
 - Preserve function metadata.
 - Preserve signature ergonomics.
 - Preserve explicit memo scope for `Value(...)`.
-- Support both sync and async correctly.
+- Preserve correct behavior for both sync and async callables.
 - Preserve static typing fidelity for decorated sync and async functions.
 
 ### Shape token parsing
@@ -107,38 +99,37 @@ Rules:
 Rules:
 - Reject invalid or ambiguous specs eagerly.
 - Never silently drop or reinterpret user tokens except where explicitly documented.
-- `Scalar` is the key trap here.
+- Keep error messages clear enough that misuse is immediately obvious.
 
 ### Dtype normalization
-`_dtypes.extract_dtype_str()` is the canonical dtype bridge across NumPy, JAX, and Torch.
+`_dtypes.extract_dtype_str()` is the canonical dtype bridge across NumPy, JAX, Torch, and CuPy.
 
 Rules:
 - Normalize platform/runtime differences carefully.
 - Add tests for every new normalization rule.
-- Do not regress structured dtype or endianness behavior while fixing datetime/timedelta.
+- Do not regress structured dtype, endianness, or datetime/timedelta behavior while fixing other cases.
 
 ### Static typing surface
 The `TYPE_CHECKING` branches and typing fixtures are part of the public API.
 
 Rules:
 - Design typing stubs for **all three** supported checkers, not just pyright.
-- Prefer checker-agnostic `TYPE_CHECKING` representations over checker-specific hacks.
-- Preserve the public syntax users actually write: `F32[N, C]`, not a weaker fallback syntax.
+- Prefer checker-agnostic representations over checker-specific omissions.
+- Preserve the public syntax users actually write instead of introducing weaker static-only alternatives.
 - Keep runtime behavior and static-only scaffolding clearly separated.
-- If predefined dimensions or factories need different static representations, update typing fixtures accordingly instead of preserving stale assumptions.
 
 ### Docs as contract
-README, root module docs, backend docs, and examples are part of the public API.
+README, module docstrings, examples, and typing fixtures are part of the public API.
 
 Rules:
 - If code/tests/docs disagree, fix the contract explicitly.
 - Prefer narrowing docs over widening API when optional-dependency boundaries matter.
-- Do not merge docs that overclaim checker support before the unified type-check suite passes.
-- Do not leave pyright-specific wording behind once parity has been achieved.
+- Do not merge docs that overclaim checker support or backend support before the relevant suite passes.
+- Remove stale one-off release language once the underlying work is done.
 
 ## Intentional semantics to preserve
 
-These behaviors are currently intentional or at least test-encoded. Do not “fix” them accidentally:
+These behaviors are intentional or at least test-encoded. Do not “fix” them accidentally:
 
 - Frame-based memo detection remains the default cross-argument mechanism.
 - `check_context()` is for shared manual `is_bearable()` checks.
@@ -153,19 +144,19 @@ These behaviors are currently intentional or at least test-encoded. Do not “fi
 ### Root module (`shapix`)
 Root `shapix` is intentionally small:
 - dimension symbols
-- tree symbols / `Structure`
+- tree symbols and `Structure`
 - `DtypeSpec`
 - `make_array_type`
 - `make_array_like_type`
 - `check`
 - `check_context`
 
-Do **not** add `make_scalar_like_type` to root just to make docs “nicer.”
-That would work against the tested no-NumPy root import boundary.
+Do **not** widen the root API just to make docs or examples look nicer.
+That works against the tested optional-dependency and lightweight-import boundary.
 
 ### Backend modules
 - `shapix.numpy` owns `make_scalar_like_type`.
-- `shapix.jax` and `shapix.torch` may re-export scalar-like types and the scalar factory.
+- `shapix.jax`, `shapix.torch`, and `shapix.cupy` may re-export scalar-like types and the scalar factory.
 - Backend-specific runtime behavior must be tested in backend-specific test files.
 - Backend-specific static typing must also be validated in backend-specific typing fixtures.
 
@@ -188,66 +179,70 @@ Put tests here:
 - generic shape-token parsing tests: `tests/test_dimensions.py` or `tests/test_numpy.py`
 - JAX-specific runtime coverage: `tests/test_jax.py`
 - Torch-specific runtime coverage: `tests/test_torch.py`
+- CuPy-specific runtime coverage: `tests/test_cupy.py` if present, otherwise the closest backend-specific file
 - optree-specific runtime coverage: `tests/test_tree.py`
 - static typing contract: `tests/test_typecheck.py` and `tests/typing/*`
 
 Typing-specific rule:
 - the flagship annotation fixtures must be exercised by **all three** checkers
-- do not keep a `PYRIGHT_ONLY_FILES` split once parity work is complete
+- do not keep a pyright-only bucket for the main supported annotation surface
 
-## Required regression coverage
+## Regression expectations
 
 Every fix in a high-risk area needs a regression test.
 
-Minimum expected additions for the current patch series:
+Expected coverage patterns:
 
-### Runtime
-- async `@shapix.check`
-- async `@shapix.check(conf=...)`
-- async return-shape violation under `@check`
-- async `Value(...)` resolution under `@check`
-- mixed `Scalar` misuse raises
-- datetime64 extraction/matching
-- timedelta64 extraction/matching
-- boolean rejection in numeric scalar aliases
-- boolean rejection in numeric `make_scalar_like_type(...)`
-- root import fallback when package metadata is unavailable
-- JAX `Value(...)` coverage
-- Torch `Value(...)` coverage
-- JAX `Tree` smoke coverage if `Tree` is exported there
+### Decorator and memo changes
+- cover sync and async callables when relevant
+- cover memo lifetime across argument and return validation
+- cover `@check`, `@check(conf=...)`, and signature preservation where relevant
 
-### Static typing
-- `tests/test_typecheck.py` runs the same flagship annotation files under pyright, mypy, and ty
-- `tests/typing/check_annotations.py` passes on all three
-- `tests/typing/check_annotations_jax.py` passes on all three
-- `tests/typing/check_annotations_torch.py` passes on all three
-- typing coverage includes predefined dimensions, `Scalar`, arithmetic dims, anonymous dims, `@check`, and backend imports
-- add an async-`@check` typing fixture if needed to prove the decorated async signature is acceptable to all three
-- remove “pyright-only” assumptions from typing fixture headers/comments
+### Shape parsing changes
+- cover valid public syntax
+- cover invalid or ambiguous forms failing at hint construction time
+- verify that no token is silently dropped or reinterpreted
+
+### Dtype and scalar-like changes
+- test real backend values and arrays, not only mocked dtype strings
+- verify structured dtype, endianness, and datetime/timedelta behavior remain correct
+- make boolean acceptance or rejection explicit in tests for numeric and boolean scalar-like aliases
+
+### Import-boundary and packaging changes
+- verify `import shapix` still works from a source tree without installed metadata
+- verify missing optional backends do not break unrelated imports
+- keep root import lightweight and NumPy-independent
+
+### Static typing changes
+- run the same flagship annotation files under pyright, mypy, and ty
+- include predefined dimensions, `Scalar`, arithmetic dims, anonymous dims, `@check`, backend imports, and `Tree[...]`
+- update typing fixtures and comments together so the fixtures describe the current contract accurately
 
 ## Development workflow
 
 ### 1) Reproduce first
 Before changing code, understand:
-- current behavior,
-- intended behavior,
-- existing tests that encode related semantics,
-- current checker failures on the full flagship typing suite.
+- current behavior
+- intended behavior
+- existing tests that encode related semantics
+- current checker behavior on the affected typing fixtures
 
-### 2) Write or update a failing regression test
+### 2) Add or update the failing regression test
 Especially for:
-- decorator behavior,
-- shape-token parsing,
-- dtype normalization,
-- docs/export drift,
-- checker parity gaps.
+- decorator behavior
+- memo behavior
+- shape-token parsing
+- dtype normalization
+- import-boundary drift
+- docs/export drift
+- checker parity gaps
 
 ### 3) Make the smallest fix that restores the contract
 Avoid broad refactors unless the tests prove they are needed.
 
 ### 4) Update docs in the same change
 If a public behavior changes or becomes clarified, docs must land with the code.
-For typing parity work, update docs only after the unified checker suite passes.
+If checker support changes, update docs only after the unified checker suite passes for that surface.
 
 ### 5) Validate with targeted and full checks
 Suggested commands:
@@ -287,19 +282,17 @@ Use `-n0` for targeted debugging because the default pytest config uses xdist.
 
 When editing docs:
 
-- remove or correct stale root-level factory claims
-- document async support of `@shapix.check`
-- clarify `Scalar` is only valid by itself
-- clarify datetime/timedelta aliases accept unit-qualified NumPy dtypes
-- clarify numeric scalar aliases exclude booleans
-- describe shapix as supporting pyright, mypy, and ty once the unified suite proves it
-- replace pyright-specific or pyright/Pylance-only wording with checker-agnostic language where parity has been achieved
+- make claims that match the real exported surface
+- keep root-vs-backend API boundaries explicit
+- document important behavioral constraints rather than leaving them implicit
+- describe checker support only to the extent the unified suite proves it
+- replace stale, temporary release language with durable contract language
 
-Also check for duplicated text in:
+Also check for duplicated or stale text in:
 - `README.md`
 - root module docstring in `src/shapix/__init__.py`
 - backend module docstrings
-- examples / notebook snippets
+- examples and notebook snippets
 - `tests/typing/*` file headers and comments
 
 ## What not to do
@@ -308,25 +301,22 @@ Also check for duplicated text in:
 - do not silently reinterpret invalid shape syntax
 - do not “fix” endianness semantics unless a test proves the current contract is wrong
 - do not broaden expression evaluation beyond the current constrained model
-- do not preserve a pyright-only bucket for flagship annotations
+- do not preserve a checker-specific bucket for the main supported annotation surface
 - do not weaken strict checker settings or hide failures with broad ignores
 - do not make root import depend on NumPy
 - do not make speculative CI or packaging churn without a concrete incompatibility
-- do not advertise full checker parity before the unified suite actually passes
+- do not advertise support that the actual runtime and type-check suites do not prove
 
-## Done definition for this patch series
+## Done definition for an iteration
 
-A patch set is done only when:
+An iteration is done only when:
 
-1. The async decorator blocker is fixed.
-2. Mixed `Scalar` specs fail fast.
-3. `DT64` / `TD64` accept real NumPy datetime/timedelta arrays.
-4. Numeric scalar semantics reject booleans consistently.
-5. Root import survives missing package metadata.
-6. Docs match actual exports and runtime behavior.
-7. The flagship typing suite passes on pyright, mypy, and ty.
-8. `tests/test_typecheck.py` no longer treats the strongest annotation files as pyright-only.
-9. Docs/examples no longer carry stale pyright-only support wording.
-10. Targeted tests, unified type-check tests, and at least one full dev run pass.
+1. The intended runtime behavior is explicit in tests.
+2. The affected public API or semantics are documented accurately.
+3. Targeted runtime tests pass for the touched area.
+4. Relevant typing fixtures pass on pyright, mypy, and ty.
+5. Optional-dependency boundaries remain intact.
+6. The change does not silently weaken the public syntax or supported surface.
+7. Any remaining limitation is documented explicitly instead of left implicit.
 
-If there is any remaining known limitation, document it explicitly in code comments and docs instead of leaving it implicit.
+If a change touches a high-risk area, assume the burden of proof is higher: add focused regression coverage and validate more than the minimum happy path.

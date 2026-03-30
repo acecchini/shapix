@@ -81,9 +81,6 @@ ignore-words-list = "numbe"
 [tool.pyright]
 typeCheckingMode = "strict"
 include = ["src", "tests/typing"]
-# CuPy requires CUDA — exclude its typing fixture from default analysis.
-# test_typecheck.py runs it conditionally when cupy is installed.
-exclude = ["tests/typing/check_annotations_cupy.py"]
 # Beartype's Is[lambda ...] validators produce unknown types in closures
 reportUnknownLambdaType = false
 reportUnknownMemberType = false

@@ -24,7 +24,6 @@ factories for custom array classes or dtype combinations.
 
 from __future__ import annotations
 
-import functools
 from collections.abc import Callable
 from typing import Annotated
 
@@ -57,9 +56,12 @@ _VALID_CASTINGS = frozenset({"no", "equiv", "safe", "same_kind", "unsafe"})
 # ---------------------------------------------------------------------------
 
 
-@functools.lru_cache(maxsize=256)
-def _is_trusted_array_type(cls: type) -> bool:
+def _is_trusted_array_type(cls: type[object]) -> bool:
   """True if *cls* is a known array class (or subclass of one)."""
+  cached = _TRUSTED_ARRAY_TYPE_CACHE.get(cls)
+  if cached is not None:
+    return cached
+
   import sys
 
   import numpy as np
@@ -84,7 +86,12 @@ def _is_trusted_array_type(cls: type) -> bool:
     if cupy_array is not None:
       trusted = (*trusted, cupy_array)
 
-  return issubclass(cls, trusted)
+  result = issubclass(cls, trusted)
+  _TRUSTED_ARRAY_TYPE_CACHE[cls] = result
+  return result
+
+
+_TRUSTED_ARRAY_TYPE_CACHE: dict[type[object], bool] = {}
 
 
 def _is_trusted_array(obj: object) -> bool:

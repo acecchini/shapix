@@ -488,6 +488,40 @@ finally:
     assert result.stdout.strip() == "0+unknown"
 
 
+class TestOptionalBackendImports:
+  def test_cupy_import_error_is_clear_when_backend_missing(self) -> None:
+    script = """
+import importlib
+import pathlib
+import sys
+
+sys.path.insert(0, str(pathlib.Path('.').resolve() / 'src'))
+real_import_module = importlib.import_module
+
+def fake_import_module(name, package=None):
+    if name == 'cupy' or name.startswith('cupy.'):
+        raise ModuleNotFoundError("No module named 'cupy'")
+    return real_import_module(name, package)
+
+importlib.import_module = fake_import_module
+try:
+    import shapix.cupy
+except ModuleNotFoundError as exc:
+    print(exc)
+finally:
+    importlib.import_module = real_import_module
+"""
+    result = subprocess.run(
+      [sys.executable, "-c", script],
+      capture_output=True,
+      text=True,
+      cwd=Path(__file__).resolve().parents[1],
+      check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "shapix.cupy requires 'cupy' at runtime." in result.stdout
+
+
 class TestNewDimensionSymbols:
   def test_d_and_k_available(self) -> None:
     from shapix import D, K

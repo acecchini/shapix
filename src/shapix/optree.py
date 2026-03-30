@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import typing as tp
 
+from ._imports import require_module
 from ._tree import Structure as Structure
 from ._tree import _TreeFactory
 
@@ -25,9 +26,13 @@ __all__ = ["Tree", "Structure"]
 
 
 def _get_optree() -> tp.Any:
-  import optree
-
-  return optree
+  return require_module(
+    "optree",
+    install_hint=(
+      "shapix.optree requires 'optree' at runtime. "
+      "Install it with `pip install optree`."
+    ),
+  )
 
 
 if tp.TYPE_CHECKING:

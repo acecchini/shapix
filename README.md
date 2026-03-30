@@ -18,7 +18,7 @@ Shapix turns array shape annotations into **Python objects** that beartype valid
 
 - **Zero boilerplate** — works with standard `@beartype` decorators and `beartype.claw` import hooks. No custom decorator required.
 - **Cross-argument consistency** — named dimensions are enforced across all parameters and the return value within a single function call.
-- **Static type checker friendly** — the core annotation surface type-checks on pyright, mypy, and ty; runtime-only patterns use targeted `# type: ignore` comments.
+- **Static type checker friendly** — core annotations type-check on pyright, mypy, and ty, and richer runtime-only patterns use checker-friendly aliases or narrow per-annotation ignores.
 - **Readable annotations** — `F32[N, C, H, W]` reads like documentation.
 - **Full `BeartypeConf` support** — unlike jaxtyping, shapix doesn't replace your beartype configuration.
 - **Thread-safe and async-safe** — `@shapix.check` and `check_context()` use task-local memo state for explicit checks.
@@ -317,7 +317,7 @@ def embed(tokens: I64[N, Seq], table: F32[Vocab, Embed]) -> F32[N, Seq, Embed]: 
 
 Unary operators work on custom dimensions too: `~Vocab` (variadic), `+Vocab` (broadcastable).
 
-To silence type checker errors on custom dimensions, use the `TYPE_CHECKING` pattern:
+To keep checker-facing signatures clean on custom dimensions, use the `TYPE_CHECKING` pattern:
 
 ```python
 import typing as tp
@@ -837,7 +837,7 @@ in `tests/test_typecheck.py`. Under `TYPE_CHECKING`, built-in dimensions such as
 `N`, `C`, `H`, and `W` resolve to checker-friendly placeholders, and array aliases
 resolve to backend-appropriate static types.
 
-These patterns work directly across all three checkers:
+The checker-clean core surface includes:
 
 - `F32[N, C]`, `F32[N, C, H, W]`
 - `F32[Scalar]`
@@ -847,37 +847,64 @@ These patterns work directly across all three checkers:
 - leaf-only tree annotations such as `Tree[F32[N]]` and `Tree[F32[N, C]]`
 - sync and async functions decorated with `@shapix.check`
 
-Some syntax is intentionally runtime-only and still needs targeted `# type: ignore`
-comments:
+Some richer runtime forms are still hostile to static checkers when written inline.
+For widest compatibility, prefer a named alias inside a `TYPE_CHECKING` branch.
+Inline `# type: ignore` remains a fallback when an alias would make the signature
+less readable, but it should not be the default pattern in docs or examples.
 
 | Pattern | Example | Workaround |
 |---------|---------|------------|
-| Integer literals | `F32[N, 3, H, W]` | Add `# type: ignore` on that annotation |
-| Unary operators | `F32[~B, C]`, `F32[+N, C]` | Add `# type: ignore` on that annotation |
-| Arithmetic | `F32[N + 2]` | Add `# type: ignore` on that annotation |
-| `Value(...)` | `F32[Value("size")]` | Add `# type: ignore` on that annotation |
-| Tree structure args | `Tree[F32[N], T]`, `Tree[F32[N], T, ...]` | Add `# type: ignore`; leaf-only `Tree[...]` is checker-friendly |
-| Custom dimensions | `F32[Vocab, Embed]` | Use the `TYPE_CHECKING` pattern below or add `# type: ignore` |
+| Integer literals | `F32[N, 3, H, W]` | named `TYPE_CHECKING` alias |
+| Unary operators | `F32[~B, C]`, `F32[+N, C]` | named `TYPE_CHECKING` alias or `# type: ignore` |
+| Arithmetic | `F32[N + 2]` | named `TYPE_CHECKING` alias |
+| Custom dimensions | `F32[Vocab, Embed]` | named `TYPE_CHECKING` alias |
+| `Value(...)` | `F32[Value("size")]` | named `TYPE_CHECKING` alias |
+| Tree structure args | `Tree[F32[N], T]`, `Tree[F32[N], T, ...]` | named `TYPE_CHECKING` alias |
 
-Avoid disabling diagnostics globally just for shapix. Narrow, per-annotation
-ignores are usually the right tradeoff for syntax that is meaningful at runtime
-but not representable in Python's static type grammar.
+Avoid disabling diagnostics globally just for shapix. Narrow, local fixes are
+the right tradeoff for syntax that is meaningful at runtime but not representable
+in Python's static type grammar.
 
-You can also use a checker-only alias pattern for some of these runtime-only tokens. For example, fixed literal dims can use `tp.Literal[3]` under `TYPE_CHECKING` and `Dimension(3)` at runtime, and variadic or symbolic tokens can use a checker-only placeholder alias in the same way. That is a convenience pattern; the simpler, better-tested baseline remains targeted `# type: ignore`.
+For example, fixed literal dims can use `tp.Literal[3]` under `TYPE_CHECKING`
+and `Dimension(3)` at runtime, and variadic or symbolic tokens can use a
+checker-only placeholder alias in the same way.
 
-### Inline `# type: ignore`
+### `TYPE_CHECKING` aliases for advanced patterns
 
-For runtime-only patterns such as arithmetic, unary operators, literal dims, and
-`Value(...)`, use targeted ignores on the affected annotation:
+For arithmetic dims, `Value(...)`, custom dimensions, and structure-bearing
+tree annotations, prefer a named alias that resolves to a plain type during
+static analysis and to the richer runtime object otherwise:
 
 ```python
+import typing as tp
+from beartype import beartype
+from shapix import Dimension, N, T, Value
+from shapix.numpy import F32
+from shapix.optree import Tree
+
+if tp.TYPE_CHECKING:
+  type PaddedN = int
+  type FromSize = int
+  type Vocab = int
+  type ParamsTree = Tree[F32[N]]
+else:
+  PaddedN = N + 2
+  FromSize = Value("size")
+  Vocab = Dimension("Vocab")
+  ParamsTree = Tree[F32[N], T]
+
 @beartype
-def pad(x: F32[N]) -> F32[N + 2]:  # type: ignore
+def pad(x: F32[N]) -> F32[PaddedN]:
   ...
 
 
 @beartype
-def f(x: F32[~B, C]) -> F32[~B, C]:  # type: ignore
+def from_size(size: int) -> F32[FromSize]:
+  ...
+
+
+@beartype
+def update(params: ParamsTree) -> ParamsTree:
   ...
 
 
@@ -885,6 +912,8 @@ def f(x: F32[~B, C]) -> F32[~B, C]:  # type: ignore
 def rgb_to_gray(x: F32[N, 3, H, W]) -> F32[N, 1, H, W]:  # type: ignore
   ...
 ```
+
+Use inline `# type: ignore` only when an alias would make the signature less readable than the local suppression.
 
 ### Custom dimensions under TYPE_CHECKING
 

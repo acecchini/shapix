@@ -1,4 +1,5 @@
 # pyright: reportMissingImports=false
+# ruff: noqa: E402
 """CuPy array type annotations with runtime shape and dtype checking.
 
 Usage::
@@ -18,16 +19,93 @@ from __future__ import annotations
 
 import typing as tp
 
-from cupy import ndarray as CuPyArray
+from ._imports import require_attr, require_module
+
+_CUPY_INSTALL_HINT = (
+  "shapix.cupy requires 'cupy' at runtime. "
+  "Install it alongside shapix (e.g. `pip install shapix numpy cupy`)."
+)
+_NUMPY_INSTALL_HINT = (
+  "shapix.cupy requires 'numpy' at runtime. "
+  "Install it alongside shapix (e.g. `pip install shapix numpy cupy`)."
+)
+
+if tp.TYPE_CHECKING:
+
+  class CuPyArray(tp.Protocol):
+    """Minimal structural fallback used when CuPy is unavailable to the checker."""
+
+    shape: tuple[int, ...]
+    dtype: object
+
+    def __add__(self, other: object, /) -> tp.Self: ...
+
+else:
+  CuPyArray = tp.cast(
+    type[object], require_attr("cupy", "ndarray", install_hint=_CUPY_INSTALL_HINT)
+  )
 
 try:
   import numpy as _np  # noqa: F401  # pyright: ignore[reportUnusedImport]
 except ModuleNotFoundError as exc:
-  msg = (
-    "shapix.cupy requires 'numpy' at runtime. "
-    "Install it alongside shapix (e.g. `pip install shapix numpy cupy`)."
-  )
-  raise ModuleNotFoundError(msg) from exc
+  raise ModuleNotFoundError(_NUMPY_INSTALL_HINT) from exc
+
+from ._array_types import make_array_like_type as _make_array_like_type
+from ._array_types import make_array_type
+from ._dtypes import (
+  BOOL,
+  COMPLEX,
+  COMPLEX64,
+  COMPLEX128,
+  FLOAT,
+  FLOAT16,
+  FLOAT32,
+  FLOAT64,
+  INT,
+  INT8,
+  INT16,
+  INT32,
+  INT64,
+  INTEGER,
+  INEXACT,
+  NUM,
+  REAL,
+  SHAPED,
+  UINT,
+  UINT8,
+  UINT16,
+  UINT32,
+  UINT64,
+)
+
+# ScalarLike types + factory (re-exported from numpy — no shape, just value)
+from .numpy import BoolScalarLike as BoolScalarLike
+from .numpy import C64ScalarLike as C64ScalarLike
+from .numpy import C128ScalarLike as C128ScalarLike
+from .numpy import C256ScalarLike as C256ScalarLike
+from .numpy import ComplexScalarLike as ComplexScalarLike
+from .numpy import F16ScalarLike as F16ScalarLike
+from .numpy import F32ScalarLike as F32ScalarLike
+from .numpy import F64ScalarLike as F64ScalarLike
+from .numpy import F128ScalarLike as F128ScalarLike
+from .numpy import FloatScalarLike as FloatScalarLike
+from .numpy import I8ScalarLike as I8ScalarLike
+from .numpy import I16ScalarLike as I16ScalarLike
+from .numpy import I32ScalarLike as I32ScalarLike
+from .numpy import I64ScalarLike as I64ScalarLike
+from .numpy import InexactScalarLike as InexactScalarLike
+from .numpy import IntegerScalarLike as IntegerScalarLike
+from .numpy import IntScalarLike as IntScalarLike
+from .numpy import NumScalarLike as NumScalarLike
+from .numpy import RealScalarLike as RealScalarLike
+from .numpy import ShapedScalarLike as ShapedScalarLike
+from .numpy import StringLike as StringLike
+from .numpy import U8ScalarLike as U8ScalarLike
+from .numpy import U16ScalarLike as U16ScalarLike
+from .numpy import U32ScalarLike as U32ScalarLike
+from .numpy import U64ScalarLike as U64ScalarLike
+from .numpy import UIntScalarLike as UIntScalarLike
+from .numpy import make_scalar_like_type as make_scalar_like_type
 
 # CuPy does not support float128, complex256, void, string, bytes, object,
 # datetime64, or timedelta64 dtypes.  Those types are NumPy-only (see numpy.py).
@@ -112,71 +190,13 @@ __all__ = [
   "make_scalar_like_type",
 ]
 
-from ._array_types import make_array_like_type as _make_array_like_type
-from ._array_types import make_array_type
-from ._dtypes import (
-  BOOL,
-  COMPLEX,
-  COMPLEX64,
-  COMPLEX128,
-  FLOAT,
-  FLOAT16,
-  FLOAT32,
-  FLOAT64,
-  INT,
-  INT8,
-  INT16,
-  INT32,
-  INT64,
-  INTEGER,
-  INEXACT,
-  NUM,
-  REAL,
-  SHAPED,
-  UINT,
-  UINT8,
-  UINT16,
-  UINT32,
-  UINT64,
-)
-
-# ScalarLike types + factory (re-exported from numpy — no shape, just value)
-from .numpy import BoolScalarLike as BoolScalarLike
-from .numpy import C64ScalarLike as C64ScalarLike
-from .numpy import C128ScalarLike as C128ScalarLike
-from .numpy import C256ScalarLike as C256ScalarLike
-from .numpy import ComplexScalarLike as ComplexScalarLike
-from .numpy import F16ScalarLike as F16ScalarLike
-from .numpy import F32ScalarLike as F32ScalarLike
-from .numpy import F64ScalarLike as F64ScalarLike
-from .numpy import F128ScalarLike as F128ScalarLike
-from .numpy import FloatScalarLike as FloatScalarLike
-from .numpy import I8ScalarLike as I8ScalarLike
-from .numpy import I16ScalarLike as I16ScalarLike
-from .numpy import I32ScalarLike as I32ScalarLike
-from .numpy import I64ScalarLike as I64ScalarLike
-from .numpy import InexactScalarLike as InexactScalarLike
-from .numpy import IntegerScalarLike as IntegerScalarLike
-from .numpy import IntScalarLike as IntScalarLike
-from .numpy import NumScalarLike as NumScalarLike
-from .numpy import RealScalarLike as RealScalarLike
-from .numpy import ShapedScalarLike as ShapedScalarLike
-from .numpy import StringLike as StringLike
-from .numpy import U8ScalarLike as U8ScalarLike
-from .numpy import U16ScalarLike as U16ScalarLike
-from .numpy import U32ScalarLike as U32ScalarLike
-from .numpy import U64ScalarLike as U64ScalarLike
-from .numpy import UIntScalarLike as UIntScalarLike
-from .numpy import make_scalar_like_type as make_scalar_like_type
-
 # ---------------------------------------------------------------------------
 # Backend-specific conversion (CuPy arrays, ndarray, scalars, sequences)
 # ---------------------------------------------------------------------------
 
 
 def _cupy_asarray(obj: object) -> tp.Any:
-  import cupy as cp
-
+  cp = require_module("cupy", install_hint=_CUPY_INSTALL_HINT)
   return cp.asarray(obj)
 
 

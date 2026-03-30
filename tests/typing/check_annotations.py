@@ -3,8 +3,9 @@
 Tests the full shapix annotation pattern including dimension-subscripted
 array types with pyright, mypy, and ty.
 
-Patterns that are fundamentally runtime-only (arithmetic dims, Value(),
-unary operators) use targeted type: ignore comments.
+Advanced runtime-only constructs are exercised through named aliases in
+``TYPE_CHECKING`` branches where possible, so the checker-facing surface stays
+clean without weakening runtime semantics.
 
 Tested with: pyright, mypy, ty
 """
@@ -194,26 +195,33 @@ def scalar_fn(x: F32[Scalar]) -> F32[Scalar]:
 
 
 # ---------------------------------------------------------------------------
-# Dimension arithmetic in subscripts (runtime-only — not representable as types)
+# Advanced runtime-only dims via TYPE_CHECKING aliases
 # ---------------------------------------------------------------------------
+
+if TYPE_CHECKING:
+  type PaddedN = int
+  type DoubleChannels = int
+  type FromSize = int
+  type FromSelf = int
+else:
+  PaddedN = N + 2
+  DoubleChannels = C * 2
+  FromSize = Value("size")
+  FromSelf = Value("self.offset + size")
 
 
 @beartype
-def pad(x: F32[N]) -> F32[N + 2]:  # type: ignore  # noqa: F821  # arithmetic dim
+def pad(x: F32[N]) -> F32[PaddedN]:
   return np.pad(x, 1).astype(np.float32)
 
 
 @beartype
-def double_channels(x: F32[N, C]) -> F32[N, C * 2]:  # type: ignore  # noqa: F821  # arithmetic dim
+def double_channels(x: F32[N, C]) -> F32[N, DoubleChannels]:
   return np.concatenate([x, x], axis=1).astype(np.float32)
 
 
-FromSize = Value("size")
-FromSelf = Value("self.offset + size")
-
-
 @beartype
-def from_value(size: int) -> F32[FromSize]:  # type: ignore  # noqa: F821  # Value() dim
+def from_value(size: int) -> F32[FromSize]:
   return np.ones(size, dtype=np.float32)
 
 
@@ -221,7 +229,7 @@ class SomeClass:
   offset = 3
 
   @beartype
-  def from_self(self, size: int) -> F32[FromSelf]:  # type: ignore  # noqa: F821  # Value() dim
+  def from_self(self, size: int) -> F32[FromSelf]:
     return np.ones(self.offset + size, dtype=np.float32)
 
 
