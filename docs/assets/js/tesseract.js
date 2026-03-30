@@ -728,16 +728,24 @@
   else
     requestAnimationFrame(init)
 
-  // SPA navigation: watch for #shapix-visual appearing without a canvas child
-  // This works regardless of when MkDocs Material's JS loads
+  // SPA navigation: keep either the home visual or the non-home star canvas alive
+  // after Material swaps page content.
   var _observed = false
-  new MutationObserver(function () {
+  function syncBackgroundMode() {
     var el = document.getElementById('shapix-visual')
-    if (el && !el.querySelector('canvas')) {
-      if (!_observed) { _observed = true; return } // skip initial (handled above)
-      init()
-    } else if (!el) {
-      _observed = true // navigated away from home
+    if (el) {
+      if (!el.querySelector('canvas')) init()
+      return
     }
+    cleanup()
+    initStars()
+  }
+
+  new MutationObserver(function () {
+    if (!_observed) {
+      _observed = true
+      return
+    }
+    syncBackgroundMode()
   }).observe(document.body, { childList: true, subtree: true })
 })()

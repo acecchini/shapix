@@ -77,6 +77,8 @@ This is a convenience wrapper over `DtypeSpec.structured(...)`.
 
 At runtime they accept scalars, nested sequences, arrays, and convertible values. Static type checkers see a narrower model.
 
+Built-in `Like` aliases use the default `make_array_like_type(..., casting="same_kind")` behavior. That is why `F32Like[...]` accepts integer inputs but rejects complex inputs by default.
+
 ## `ScalarLike` aliases
 
 `ScalarLike` aliases validate individual scalar values:
@@ -103,6 +105,15 @@ F32ScalarStrict = make_scalar_like_type(np.float32, casting="no")
 F32ScalarSafe = make_scalar_like_type(np.float32, casting="safe")
 ```
 
+Common interpretations:
+
+- `"no"`: exact target dtype only
+- `"safe"`: no information loss
+- `"same_kind"`: same numeric family, and the default
+- `"unsafe"`: most permissive
+
+Numeric factories still reject booleans. For example, `make_scalar_like_type(np.float32)` rejects `True`, while `make_scalar_like_type(np.bool_)` accepts it.
+
 `make_scalar_like_type` is deliberately documented here rather than on the root module, because the root import stays NumPy-optional.
 
 ## `ArrayLike`
@@ -113,7 +124,7 @@ F32ScalarSafe = make_scalar_like_type(np.float32, casting="safe")
 import numpy as np
 from shapix.numpy import ArrayLike
 
-type MyInput = ArrayLike[float, np.ndarray]
+type MyInput = ArrayLike[float, np.float32]
 ```
 
 It is useful when you want a checker-friendly custom alias that still follows the shapix "scalar or nested sequence or array" model.

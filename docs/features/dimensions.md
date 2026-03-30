@@ -51,7 +51,10 @@ def rgb_to_gray(x: F32[N, 3, H, W]) -> F32[N, 1, H, W]:
   ...
 ```
 
-Static type checkers generally do **not** understand integer literals in these shape positions. Keep them for runtime correctness and add a targeted `# type: ignore` when needed. See [Static Typing](static-typing.md).
+Static type checkers generally do **not** understand integer literals in these shape positions. Keep them for runtime correctness and either:
+
+- add a targeted `# type: ignore`, or
+- use the notebook-style checker-only alias pattern from [Static Typing](static-typing.md), for example `Three = tp.Literal[3]` under `TYPE_CHECKING` and `Three = Dimension(3)` at runtime
 
 ## Symbolic dimensions
 
@@ -76,7 +79,7 @@ These expressions are intentionally narrow:
 - allowed: named dimensions and numeric literals
 - rejected: attribute access, indexing, function calls, arbitrary Python code
 
-For static typing, arithmetic dimensions are runtime-only and typically need `# type: ignore`.
+For static typing, arithmetic dimensions are runtime-only and typically need `# type: ignore`. If you use them heavily, you can also bind a checker-only alias such as `PaddedN` under `TYPE_CHECKING` and assign `PaddedN = N + 2` at runtime.
 
 ## Runtime value dimensions
 
@@ -159,7 +162,7 @@ def add(x: F32[~B, C], y: F32[~B, C]) -> F32[~B, C]:
   return x + y
 ```
 
-Static type checkers still treat `~B` as runtime-only syntax.
+Static type checkers still treat `~B` as runtime-only syntax. The same notebook-style alias trick works here too: bind a placeholder such as `VariadicBatch` under `TYPE_CHECKING`, and assign `VariadicBatch = ~B` at runtime.
 
 ### Anonymous variadic
 
@@ -276,4 +279,5 @@ The checker-supported subset is documented in [Static Typing](static-typing.md).
 
 - `F32[N, C]`, `F32[Scalar]`, and `F32[__, C]` are part of the tested cross-checker surface
 - custom dimensions need the `TYPE_CHECKING` pattern above
-- arithmetic, `Value(...)`, and unary operator forms such as `~B` and `+N` are still runtime-only syntax for static checkers
+- arithmetic, fixed integer literals, and unary operator forms such as `~B` and `+N` are still runtime-only syntax for static checkers
+- for those runtime-only forms, either use targeted ignores or the notebook-style checker-only alias pattern

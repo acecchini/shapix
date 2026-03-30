@@ -78,7 +78,7 @@ f(np.ones((100,), dtype=np.float32))  # N = 100, no conflict with the prior call
 
 ## 5. Add `@shapix.check` only when you need explicit memo scope
 
-Most code should stop at `@beartype`. Add `@shapix.check` when you want explicit memo management:
+Most code should stop at `@beartype`. Add `@shapix.check` when you want the shared shape memo to be pushed explicitly instead of discovered through the beartype wrapper stack:
 
 ```python
 import shapix
@@ -97,6 +97,8 @@ That helper matters most when:
 - extra decorators or framework wrappers make call-stack detection brittle
 - you want `Value(...)` scope to be explicit across an `await`
 - you want to pair memo management with `BeartypeConf`
+
+If none of those apply, stay with plain `@beartype`.
 
 ## What's next
 

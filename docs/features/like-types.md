@@ -39,7 +39,7 @@ def process(x: F32Like[N, C]) -> F32[N, C]:
 
 Use `[...]` to mean "any rank" or a full dimension spec when the input shape itself matters.
 
-By default, dtype compatibility follows NumPy's `"same_kind"` casting rules. For example, `int32` can flow into `F32Like[...]`, but `complex128` cannot.
+All built-in `Like` aliases are created with `make_array_like_type(..., casting="same_kind")`, so dtype compatibility follows NumPy's `"same_kind"` casting rules by default. For example, `int32` can flow into `F32Like[...]`, but `complex128` cannot.
 
 ## Built-in Like aliases
 
@@ -49,6 +49,12 @@ NumPy exports the broadest set:
 - category aliases such as `IntLike`, `FloatLike`, `NumLike`, `ShapedLike`
 
 JAX, PyTorch, and CuPy export parallel `Like` families with backend-specific conversion behavior.
+
+That default matters in practice:
+
+- `F32Like[...]` accepts integer inputs that can be cast to `float32` under `"same_kind"`
+- `F32Like[...]` rejects complex inputs, because complex-to-float is not `"same_kind"`
+- `IntLike[...]` accepts integer-like inputs but not floating-point values under the same rule
 
 ## ScalarLike types (range-validated scalars)
 
@@ -101,14 +107,35 @@ Static type checkers only see the backend array type, not the broader runtime ac
 
 ## Custom `ScalarLike` types
 
-Use `make_scalar_like_type` for custom casting rules:
+Use `make_scalar_like_type` when the built-in scalar families are close but not quite right for your API:
 
 ```python
 import numpy as np
 from shapix.numpy import make_scalar_like_type
 
+F32ScalarDefault = make_scalar_like_type(np.float32)  # same_kind
 F32ScalarStrict = make_scalar_like_type(np.float32, casting="no")
 F32ScalarSafe = make_scalar_like_type(np.float32, casting="safe")
+F32ScalarUnsafe = make_scalar_like_type(np.float32, casting="unsafe")
+```
+
+Useful interpretations:
+
+- `casting="no"` means "exact target dtype only"
+- `casting="safe"` means "no information loss"
+- `casting="same_kind"` means "same numeric family" and is the default
+- `casting="unsafe"` is the most permissive option and should be used deliberately
+
+`target_dtype` may be passed as a NumPy scalar type, a dtype object, or a canonical dtype string such as `"float32"`.
+
+Numeric `ScalarLike` factories still reject booleans by design:
+
+```python
+U8Scalar = make_scalar_like_type(np.uint8)
+BoolScalar = make_scalar_like_type(np.bool_)
+
+# U8Scalar rejects True / False
+# BoolScalar accepts True / False
 ```
 
 `make_scalar_like_type` is intentionally documented on backend modules such as `shapix.numpy`; it is not part of the lightweight root `shapix` import surface.
@@ -125,6 +152,26 @@ Both `make_array_like_type` and `make_scalar_like_type` use NumPy casting semant
 | `"same_kind"` | Same-kind conversion | `int32` yes, `complex64` no |
 | `"unsafe"` | Any cast NumPy allows | very permissive |
 
+## Default used by built-in `Like` aliases
+
+The built-in aliases such as `F32Like`, `I64Like`, `IntLike`, `FloatLike`, and `NumLike` all use:
+
+```python
+casting="same_kind"
+```
+
+That is the library default for `make_array_like_type(...)`, and it is the behavior you get unless you build a custom alias yourself.
+
+If you need stricter or looser input acceptance, make a custom alias instead of relying on the built-ins:
+
+```python
+from shapix import make_array_like_type
+from shapix._dtypes import FLOAT32
+
+F32Exact = make_array_like_type(FLOAT32, casting="no", name="F32Exact")
+F32Unsafe = make_array_like_type(FLOAT32, casting="unsafe", name="F32Unsafe")
+```
+
 ## `ArrayLike` template
 
 `shapix.numpy.ArrayLike` is a public recursive type alias for custom static typing combinations:
@@ -133,7 +180,7 @@ Both `make_array_like_type` and `make_scalar_like_type` use NumPy casting semant
 import numpy as np
 from shapix.numpy import ArrayLike
 
-type MyInputType = ArrayLike[float, np.ndarray]
+type MyInputType = ArrayLike[float, np.float32]
 ```
 
 That template is most useful when you want your own checker-friendly alias but still follow shapix's "scalar or nested sequence or array" model.

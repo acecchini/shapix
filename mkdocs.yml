@@ -11,10 +11,10 @@ docs_dir: docs
 site_dir: site
 
 extra_css:
-  - stylesheets/extra.css?v=16
+  - stylesheets/extra.css?v=17
 
 extra_javascript:
-  - assets/js/tesseract.js?v=10
+  - assets/js/tesseract.js?v=11
 
 nav:
   - Home: index.md
@@ -42,7 +42,6 @@ nav:
     - api/claw.md
   - Examples:
     - examples/index.md
-  - GitHub: https://github.com/acecchini/shapix
 
 theme:
   name: material

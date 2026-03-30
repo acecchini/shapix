@@ -1,6 +1,6 @@
 ---
 title: Shapix
-description: Elegant runtime shape and dtype checking for NumPy, JAX, and PyTorch arrays — powered by beartype.
+description: Elegant runtime shape and dtype checking for NumPy, JAX, PyTorch, and CuPy arrays — powered by beartype.
 hide:
   - navigation
   - toc
@@ -369,7 +369,7 @@ a.backend-logo:hover {
 <div class="hero__title" id="shapix-title">Shapix</div>
 </div>
 
-<div class="hero__tagline">Runtime shape checking for the array age</div>
+<div class="hero__tagline">Runtime shape checking for array code</div>
 
 <p class="hero__subtitle">
 Elegant shape and dtype validation for NumPy, JAX, PyTorch, and CuPy arrays
@@ -381,8 +381,8 @@ Powered by <a href="https://github.com/beartype/beartype" class="beartype-link">
 
 <div class="hero__actions">
 <a href="getting-started/" class="md-button md-button--primary">Get Started</a>
+<a href="features/" class="md-button">Features</a>
 <a href="api/" class="md-button">API Reference</a>
-<a href="https://github.com/acecchini/shapix" class="md-button">GitHub</a>
 </div>
 
 </div>
@@ -412,7 +412,7 @@ Named dimensions are enforced across all parameters and the return value within 
 
 ### :material-check-decagram: Static Type Checker Friendly
 
-Under `TYPE_CHECKING`, array types resolve to proper `NDArray` / `Array` / `Tensor` aliases. Works with pyright, mypy, and ty.
+Core annotations type-check on pyright, mypy, and ty, with documented tricks for runtime-only syntax such as fixed literal dims and symbolic shapes.
 
 </div>
 

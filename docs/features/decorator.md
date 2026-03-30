@@ -25,6 +25,29 @@ def f(x: F32[N, C], y: F32[N, C]) -> F32[N, C]:
 
 Plain `@beartype` is the normal entry point. Most users never need more than that.
 
+## Which decorator should you choose?
+
+Use plain `@beartype` by default.
+
+Add `@shapix.check` only when you need explicit memo scope rather than frame discovery.
+
+| Choice | What it does | When it is the right fit |
+|--------|---------------|--------------------------|
+| `@beartype` | lets shapix find the shared memo by walking the beartype call stack | normal application code with no unusual wrapper layers |
+| `@shapix.check` + `@beartype` | pushes one memo explicitly before the call and pops it after | middleware-heavy stacks, wrapper decorators, async `Value(...)`, or defensive correctness |
+| `@shapix.check(conf=...)` | same explicit memo handling, and applies beartype for you | when you also want to pass `BeartypeConf` without stacking both decorators manually |
+
+What `@shapix.check` changes:
+
+- how the shared memo is found
+- how long that memo lives around the call
+
+What it does **not** change:
+
+- the array, dtype, or shape semantics themselves
+- whether return values are checked
+- whether plain `@beartype` remains the simplest choice for ordinary code
+
 ## `@shapix.check`
 
 `@shapix.check` provides explicit memo management. Instead of discovering the correct beartype frame dynamically, it pushes a memo before the call and pops it afterwards.
@@ -58,7 +81,7 @@ def f(x: F32[N, C], y: F32[N, C]) -> F32[N, C]:
 
 ### When do you need it?
 
-Use it when you want correctness to stop depending on call-stack shape.
+Use it when you want memo scope to stop depending on call-stack shape.
 
 Typical reasons:
 
@@ -66,6 +89,13 @@ Typical reasons:
 - `Value(...)` needs an explicit scope across async execution
 - you want `BeartypeConf` and memo handling from one decorator
 - you want a defensive guarantee that exotic stack layouts will not matter
+
+Concrete examples:
+
+- web frameworks or middleware that wrap handlers before beartype sees them
+- utility decorators around model code that add their own frames
+- async code where a `Value("size")` expression should keep using the original bound scope until the coroutine finishes
+- tests or runtime environments where you do not want frame-layout assumptions to be part of correctness
 
 ## Async support
 

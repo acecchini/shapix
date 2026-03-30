@@ -13,51 +13,103 @@ Array aliases such as `F32[N, C]` or `DT64[...]` are the core "strict array" sid
 
 At runtime these aliases become `Annotated[ArrayType, Is[validator]]`, so standard `@beartype` does the checking.
 
-## NumPy
+## Built-in backends
 
-```python
-from shapix.numpy import F32, I64, Shaped  # and many more
-```
+=== "NumPy"
 
-### Concrete dtypes
+    ```python
+    from shapix.numpy import F32, I64, Shaped
+    ```
 
-| Type | Dtype |
-|------|-------|
-| `Bool` | `bool` |
-| `I8`, `I16`, `I32`, `I64` | `int8` – `int64` |
-| `U8`, `U16`, `U32`, `U64` | `uint8` – `uint64` |
-| `F16`, `F32`, `F64`, `F128` | `float16` – `float128` / `longdouble` |
-| `C64`, `C128`, `C256` | `complex64` – `complex256` / `clongdouble` |
+    Concrete dtypes:
 
-### Additional dtypes
+    | Type | Dtype |
+    |------|-------|
+    | `Bool` | `bool` |
+    | `I8`, `I16`, `I32`, `I64` | `int8` – `int64` |
+    | `U8`, `U16`, `U32`, `U64` | `uint8` – `uint64` |
+    | `F16`, `F32`, `F64`, `F128` | `float16` – `float128` / `longdouble` |
+    | `C64`, `C128`, `C256` | `complex64` – `complex256` / `clongdouble` |
 
-| Type | Dtype |
-|------|-------|
-| `V` | `void` |
-| `Str` | `string` |
-| `Bytes` | `bytes` |
-| `Obj` | `object` |
-| `DT64` | `datetime64` |
-| `TD64` | `timedelta64` |
+    Additional dtypes:
 
-### Category dtypes
+    | Type | Dtype |
+    |------|-------|
+    | `V` | `void` |
+    | `Str` | `string` |
+    | `Bytes` | `bytes` |
+    | `Obj` | `object` |
+    | `DT64` | `datetime64` |
+    | `TD64` | `timedelta64` |
 
-| Type | Meaning |
-|------|---------|
-| `Int` | Any signed integer dtype |
-| `UInt` | Any unsigned integer dtype |
-| `Integer` | Any integer dtype |
-| `Float` | Any floating dtype |
-| `Real` | Any integer or floating dtype |
-| `Complex` | Any complex dtype |
-| `Inexact` | Any float or complex dtype |
-| `Num` | Any numeric dtype |
-| `Shaped` | Any dtype at runtime, shape-only checking |
+    Category dtypes:
 
-Notes:
+    | Type | Meaning |
+    |------|---------|
+    | `Int` | Any signed integer dtype |
+    | `UInt` | Any unsigned integer dtype |
+    | `Integer` | Any integer dtype |
+    | `Float` | Any floating dtype |
+    | `Real` | Any integer or floating dtype |
+    | `Complex` | Any complex dtype |
+    | `Inexact` | Any float or complex dtype |
+    | `Num` | Any numeric dtype |
+    | `Shaped` | Any dtype at runtime, shape-only checking |
 
-- `DT64` and `TD64` accept unit-qualified NumPy dtypes such as `datetime64[ns]`, `datetime64[D]`, `timedelta64[ms]`, and `timedelta64[s]`.
-- `Shaped` checks shape only at runtime. Its static alias is necessarily an approximation, not a true "any dtype ndarray" model.
+    Notes:
+
+    - `DT64` and `TD64` accept unit-qualified NumPy dtypes such as `datetime64[ns]`, `datetime64[D]`, `timedelta64[ms]`, and `timedelta64[s]`.
+    - `Shaped` checks shape only at runtime. Its static alias is necessarily an approximation, not a true "any dtype ndarray" model.
+
+=== "JAX"
+
+    ```python
+    from shapix.jax import F32, BF16
+    ```
+
+    `shapix.jax` uses `jax.Array` as the base array class.
+
+    It exports:
+
+    - most NumPy numeric aliases
+    - `BF16` for JAX bfloat16 arrays
+    - JAX `Like` aliases
+    - `Tree` and `Structure`
+
+    It does **not** expose NumPy-only aliases such as `F128`, `C256`, `V`, `Str`, `Bytes`, `Obj`, `DT64`, or `TD64`.
+
+=== "PyTorch"
+
+    ```python
+    from shapix.torch import F32, BF16
+    ```
+
+    `shapix.torch` uses `torch.Tensor` as the base array class.
+
+    It exports:
+
+    - most NumPy numeric aliases
+    - `BF16`
+    - Torch `Like` aliases
+    - NumPy-defined `ScalarLike` re-exports
+
+    It does **not** expose NumPy-only aliases such as `F128`, `C256`, `V`, `Str`, `Bytes`, `Obj`, `DT64`, or `TD64`.
+
+=== "CuPy"
+
+    ```python
+    from shapix.cupy import F32, I64
+    ```
+
+    `shapix.cupy` uses `cupy.ndarray` as the base array class.
+
+    It exports:
+
+    - most NumPy numeric aliases
+    - CuPy `Like` aliases
+    - NumPy-defined `ScalarLike` re-exports
+
+    It does **not** expose `BF16`, `F128`, `C256`, or the NumPy-only non-numeric aliases `V`, `Str`, `Bytes`, `Obj`, `DT64`, and `TD64`.
 
 ### Structured dtypes
 
@@ -103,58 +155,6 @@ process_le(np.ones((4, 3), dtype=">f4"))  # Raises
 ```
 
 Available suffixes: `_LE` (little-endian), `_BE` (big-endian), `_N` (native).
-
-## Backend differences
-
-### JAX
-
-```python
-from shapix.jax import F32, BF16
-```
-
-`shapix.jax` uses `jax.Array` as the base array class.
-
-It exports:
-
-- most NumPy numeric aliases
-- `BF16` for JAX bfloat16 arrays
-- JAX `Like` aliases
-- `Tree` and `Structure`
-
-It does **not** expose NumPy-only aliases such as `F128`, `C256`, `V`, `Str`, `Bytes`, `Obj`, `DT64`, or `TD64`.
-
-### PyTorch
-
-```python
-from shapix.torch import F32, BF16
-```
-
-`shapix.torch` uses `torch.Tensor` as the base array class.
-
-It exports:
-
-- most NumPy numeric aliases
-- `BF16`
-- Torch `Like` aliases
-- NumPy-defined `ScalarLike` re-exports
-
-It does **not** expose NumPy-only aliases such as `F128`, `C256`, `V`, `Str`, `Bytes`, `Obj`, `DT64`, or `TD64`.
-
-### CuPy
-
-```python
-from shapix.cupy import F32, I64
-```
-
-`shapix.cupy` uses `cupy.ndarray` as the base array class.
-
-It exports:
-
-- most NumPy numeric aliases
-- CuPy `Like` aliases
-- NumPy-defined `ScalarLike` re-exports
-
-It does **not** expose `BF16`, `F128`, `C256`, or the NumPy-only non-numeric aliases `V`, `Str`, `Bytes`, `Obj`, `DT64`, and `TD64`.
 
 ## Custom array types
 

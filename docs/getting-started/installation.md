@@ -42,7 +42,7 @@ Shapix intentionally does **not** use extras such as `shapix[numpy]`. Install `s
     pip install shapix numpy cupy
     ```
 
-=== "NumPy + Trees"
+=== "NumPy + OpTree"
 
     ```bash
     pip install shapix numpy optree  # or install jax and use shapix.jax.Tree
@@ -65,7 +65,7 @@ uv add shapix
 | `torch` | PyTorch tensor aliases and Torch `Like` types |
 | `jax` | JAX array aliases, JAX `Like` types, and JAX `Tree` |
 | `cupy` | CuPy array aliases and CuPy `Like` types |
-| `optree` | Explicit pytree backend via `shapix.optree.Tree` |
+| `optree` | Explicit OpTree backend via `shapix.optree.Tree` |
 
 ## Import boundaries
 

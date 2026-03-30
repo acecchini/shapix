@@ -72,5 +72,5 @@ For Torch scalar tensors, prefer a `Like` alias with `Scalar`, for example `F32L
 
 If you want tree annotations in a Torch project, import:
 
-- `Tree` from `shapix.optree` for an explicit optree backend
+- `Tree` from `shapix.optree` for an explicit OpTree backend
 - or `Tree` from `shapix.jax` if your project already depends on JAX's tree utilities

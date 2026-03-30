@@ -181,8 +181,18 @@
 
 /* ── Make content backgrounds transparent so star canvas shows through ── */
 
-body {
-  background: var(--md-default-bg-color) !important;
+[data-md-color-scheme="default"] body {
+  background:
+    radial-gradient(circle at 14% 8%, rgba(124, 77, 255, 0.08), transparent 26%),
+    radial-gradient(circle at 82% 10%, rgba(179, 136, 255, 0.07), transparent 24%),
+    var(--md-default-bg-color) !important;
+}
+
+[data-md-color-scheme="slate"] body {
+  background:
+    radial-gradient(circle at 16% 7%, rgba(124, 77, 255, 0.14), transparent 24%),
+    radial-gradient(circle at 84% 12%, rgba(179, 136, 255, 0.1), transparent 22%),
+    var(--md-default-bg-color) !important;
 }
 
 .md-main,

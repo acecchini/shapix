@@ -9,7 +9,7 @@ Tree annotations validate nested container structures such as dicts, lists, tupl
 
 Import `Tree` from an explicit backend module:
 
-=== "optree"
+=== "OpTree"
 
     ```python
     from shapix.optree import Tree

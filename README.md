@@ -41,7 +41,7 @@ pip install shapix numpy          # NumPy
 pip install shapix numpy torch    # PyTorch
 pip install shapix numpy jax      # JAX
 pip install shapix numpy cupy     # CuPy
-pip install shapix numpy optree   # NumPy + tree support (optree or jax)
+pip install shapix numpy optree   # NumPy + tree support (OpTree or JAX)
 ```
 
 For backend modules, install `numpy` alongside the backend:
@@ -151,7 +151,9 @@ def rgb_to_gray(x: F32[N, 3, H, W]) -> F32[N, 1, H, W]: ...
 
 At runtime this is fully supported. Static type checkers still treat integer
 literal dimensions as runtime-only syntax, so use a targeted `# type: ignore`
-on the annotation when you need checker-clean files.
+on the annotation when you need checker-clean files. If you prefer cleaner
+signatures, the tour notebook also shows a checker-only alias pattern using
+`tp.Literal[3]` under `TYPE_CHECKING` and `Dimension(3)` at runtime.
 
 ### Symbolic dimensions
 
@@ -463,7 +465,7 @@ def process(x: F32Like[N, C]) -> F32[N, C]:
   return np.asarray(x, dtype=np.float32)
 ```
 
-Dtype compatibility uses NumPy's `same_kind` casting rules by default: `int32` can be passed where `float32` is expected (safe upcast), but `complex128` cannot.
+All built-in `Like` aliases are created with the default `casting="same_kind"` behavior from `make_array_like_type(...)`. That means `int32` can be passed where `float32` is expected, but `complex128` cannot.
 
 **Available:** `BoolLike`, `I8Like`, `I16Like`, `I32Like`, `I64Like`, `U8Like`–`U64Like`, `F16Like`, `F32Like`, `F64Like`, `F128Like`, `C64Like`, `C128Like`, `C256Like`, plus category aliases `IntLike`, `FloatLike`, `NumLike`, `ShapedLike`, etc.
 
@@ -529,6 +531,8 @@ F32ScalarSafe = make_scalar_like_type(
 )  # float16 OK, complex rejected
 ```
 
+`make_scalar_like_type(np.float32)` uses `casting="same_kind"` by default, just like the built-in `Like` aliases. Numeric scalar factories still reject booleans by design, so `make_scalar_like_type(np.float32)` rejects `True`, while `make_scalar_like_type(np.bool_)` accepts it.
+
 The `ArrayLike` template is also public for custom static type combinations:
 
 ```python
@@ -548,6 +552,8 @@ The `casting` parameter on `make_array_like_type` and `make_scalar_like_type` co
 | `"safe"` | No data loss | `int16` OK, `float64` rejected |
 | `"same_kind"` | Same kind allowed | `int32` OK, `complex64` rejected |
 | `"unsafe"` | Any cast | `complex128` OK, strings rejected |
+
+The built-in `Like` aliases such as `F32Like`, `IntLike`, `NumLike`, and `ShapedLike` all use `casting="same_kind"`.
 
 ```python
 from shapix import make_array_like_type
@@ -591,7 +597,7 @@ The `casting` parameter controls dtype strictness using NumPy casting rules: `"n
 Tree annotations validate all leaves in a nested structure (dicts, lists, tuples, namedtuples). Import `Tree` from an explicit backend module:
 
 ```python
-from shapix.optree import Tree  # backed by optree
+from shapix.optree import Tree  # backed by OpTree
 from shapix.jax import Tree  # backed by jax.tree_util
 ```
 
@@ -753,6 +759,12 @@ from beartype import BeartypeConf
 def f(x: F32[N, C], y: F32[N, C]) -> F32[N, C]: ...
 ```
 
+Decision rule:
+
+- use plain `@beartype` by default
+- add `@shapix.check` when you want explicit memo scope instead of frame discovery
+- use `@shapix.check(conf=...)` when you also want to supply `BeartypeConf`
+
 Both approaches produce identical results in normal usage. You only need `@shapix.check` in specific situations:
 
 #### 1. Extra decorators between beartype and the call site
@@ -781,6 +793,8 @@ def f(x: F32[N, C], y: F32[N, C]) -> F32[N, C]: ...
 #### 2. Defensive coding
 
 If you want a guarantee that cross-argument checking works regardless of how your code is called (by test runners, async frameworks, deep middleware stacks), `@shapix.check` removes all dependence on call-stack structure.
+
+It is also the clearer choice when `Value(...)` should keep using one explicit bound scope across the full lifetime of an async call.
 
 `@shapix.check` supports both sync and async functions. For async functions, the memo scope covers the full awaited execution, and `inspect.iscoroutinefunction()` is preserved on the decorated function.
 
@@ -849,6 +863,8 @@ Avoid disabling diagnostics globally just for shapix. Narrow, per-annotation
 ignores are usually the right tradeoff for syntax that is meaningful at runtime
 but not representable in Python's static type grammar.
 
+The tour notebook also shows an advanced alias pattern for some of these runtime-only tokens. For example, fixed literal dims can use `tp.Literal[3]` under `TYPE_CHECKING` and `Dimension(3)` at runtime, and variadic or symbolic tokens can use a checker-only placeholder alias in the same way. That is a convenience pattern; the simpler, better-tested baseline remains targeted `# type: ignore`.
+
 ### Inline `# type: ignore`
 
 For runtime-only patterns such as arithmetic, unary operators, literal dims, and
@@ -895,7 +911,7 @@ else:
 | BeartypeConf | Not supported (decorator conflict) | Fully supported |
 | Type checker | Metaclass magic (harder on static checkers) | `Annotated` aliases exercised with pyright, mypy, and ty |
 | Backends | NumPy, JAX | NumPy, JAX, PyTorch, CuPy |
-| Tree | Built-in with structure binding | Built-in with structure binding (via optree or `jax.tree_util`) |
+| Tree | Built-in with structure binding | Built-in with structure binding (via OpTree or `jax.tree_util`) |
 | Dependencies | jaxtyping + beartype | beartype only |
 | Custom decorator | Required | Not required |
 | Endianness | Not supported | Programmatic LE/BE/N variants |

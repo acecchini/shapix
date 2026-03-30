@@ -11,7 +11,7 @@ At a high level:
 
 - under `TYPE_CHECKING`, backend array aliases resolve to real static array types such as `numpy.typing.NDArray`, `jax.Array`, `torch.Tensor`, or `cupy.ndarray`
 - pre-defined dimensions such as `N`, `C`, and `Scalar` are represented in a checker-friendly way
-- some syntax is still inherently runtime-only and needs targeted workarounds
+- some syntax is still inherently runtime-only and needs either targeted ignores or checker-only aliases
 
 ## Works directly
 
@@ -52,11 +52,11 @@ The following syntax is valid at runtime but is still beyond what the static che
 
 | Pattern | Example | Typical workaround |
 |---------|---------|--------------------|
-| Fixed integer literal dims | `F32[N, 3, H, W]` | targeted `# type: ignore` |
-| Arithmetic dims | `F32[N + 2]` | targeted `# type: ignore` |
+| Fixed integer literal dims | `F32[N, 3, H, W]` | targeted `# type: ignore` or checker-only alias |
+| Arithmetic dims | `F32[N + 2]` | targeted `# type: ignore` or checker-only alias |
 | `Value(...)` dims | `F32[Value("size")]` | targeted `# type: ignore` |
-| Variadic dims | `F32[~B, C]` | targeted `# type: ignore` |
-| Broadcastable dims | `F32[+N, C]` | targeted `# type: ignore` |
+| Variadic dims | `F32[~B, C]` | targeted `# type: ignore` or checker-only alias |
+| Broadcastable dims | `F32[+N, C]` | targeted `# type: ignore` or checker-only alias |
 | Tree structure args | `Tree[F32[N], T]` | targeted `# type: ignore` |
 
 Example:
@@ -76,6 +76,66 @@ def sized(size: int) -> F32[Value("size")]:  # type: ignore[valid-type]
 ```
 
 Prefer narrow, annotation-local ignores like these instead of weakening global checker strictness for an entire project.
+
+That is also the main repo-tested baseline in `tests/typing/`.
+
+## Notebook-style checker-only aliases
+
+The tour notebook shows a second pattern that can keep signatures cleaner when you use runtime-only tokens frequently: define a checker-only placeholder under `TYPE_CHECKING`, and bind it to the real runtime token in the `else` branch.
+
+### Fixed integer literals
+
+```python
+import typing as tp
+from beartype import beartype
+from shapix import Dimension, H, N, W
+from shapix.numpy import F32
+
+if tp.TYPE_CHECKING:
+  Three = tp.Literal[3]
+else:
+  Three = Dimension(3)
+
+@beartype
+def process_rgb(x: F32[N, Three, H, W]) -> F32[N, Three, H, W]:
+  return x
+```
+
+### Variadic, broadcastable, and symbolic aliases
+
+```python
+import typing as tp
+from beartype import beartype
+from shapix import B, C, N
+from shapix.numpy import F32
+
+if tp.TYPE_CHECKING:
+  VariadicBatch = tp.Literal["VariadicBatch"]
+  BroadcastN = tp.Literal["BroadcastN"]
+  PaddedN = tp.Literal["PaddedN"]
+else:
+  VariadicBatch = ~B
+  BroadcastN = +N
+  PaddedN = N + 2
+
+@beartype
+def softmax(x: F32[VariadicBatch, C]) -> F32[VariadicBatch, C]:
+  return x
+
+@beartype
+def broadcast_add(x: F32[N, C], y: F32[BroadcastN, C]) -> F32[N, C]:
+  return x
+
+@beartype
+def pad(x: F32[N]) -> F32[PaddedN]:
+  return x
+```
+
+Notes:
+
+- the checker-side placeholder name is arbitrary; it just needs to be a stable alias object
+- this is an advanced convenience pattern, not the only supported approach
+- if you only need the syntax occasionally, a targeted `# type: ignore` is simpler and more explicit
 
 ## Custom dimensions
 
@@ -99,7 +159,7 @@ def embed(tokens: I64[N], table: F32[Vocab, Embed]) -> F32[N, Embed]:
   return table[tokens]
 ```
 
-This is the main "static typing trick" shapix users should keep in their toolbox.
+This is the simplest checker-only alias pattern and the one most users should keep in their toolbox first.
 
 ## Tree annotations
 

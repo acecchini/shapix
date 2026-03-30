@@ -14,6 +14,7 @@ The tour notebook is still the broadest runnable walkthrough in the repository:
 - return checking
 - fixed, variadic, broadcastable, anonymous, and symbolic dimensions
 - `Value(...)`
+- checker-only alias tricks for fixed literal dims and other runtime-only shape tokens
 - custom array types
 - explicit memo helpers
 - tree annotations
@@ -36,7 +37,7 @@ normalize(np.ones((4, 3), dtype=np.float32))  # OK
 normalize(np.ones((4,), dtype=np.float32))  # Raises
 ```
 
-## Example 2: `@shapix.check` for explicit runtime scope
+## Example 2: `@shapix.check` when plain `@beartype` is not enough
 
 ```python
 import shapix
@@ -49,6 +50,12 @@ from shapix.numpy import F32
 async def make_batch(size: int) -> F32[Value("size")]:  # type: ignore[valid-type]
   ...
 ```
+
+Use this pattern when:
+
+- extra decorators or framework wrappers make frame detection brittle
+- `Value(...)` needs an explicit memo scope across `await`
+- you want one decorator that applies both memo handling and `BeartypeConf`
 
 ## Example 3: Custom dimensions that stay checker-friendly
 
