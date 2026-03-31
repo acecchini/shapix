@@ -7,6 +7,12 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+### Added
+
+- A GitHub Actions workflow for trusted publishing to PyPI, with automatic
+  release-based publishing and manual `workflow_dispatch` support for a chosen
+  ref.
+
 ## [0.0.1] - 2026-03-31
 
 ### Added
