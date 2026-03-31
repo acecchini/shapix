@@ -96,8 +96,6 @@ extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/acecchini/shapix
-    - icon: fontawesome/brands/python
-      link: https://pypi.org/project/shapix/
 
 markdown_extensions:
   - abbr

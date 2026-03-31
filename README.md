@@ -1,5 +1,9 @@
 # Shapix
 
+![Python 3.10-3.14](https://img.shields.io/badge/python-3.10--3.14-3776AB?style=flat-square&logo=python&logoColor=white)
+[![Coverage](https://img.shields.io/codecov/c/github/acecchini/shapix?branch=main&style=flat-square&logo=codecov&logoColor=white)](https://app.codecov.io/gh/acecchini/shapix)
+[![Docs](https://img.shields.io/badge/docs-live-526CFE?style=flat-square&logo=materialformkdocs&logoColor=white)](https://acecchini.github.io/shapix/)
+
 Elegant runtime shape and dtype checking for NumPy, JAX, PyTorch, and CuPy arrays — powered by [beartype](https://github.com/beartype/beartype).
 
 ```python
