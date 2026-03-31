@@ -1,6 +1,6 @@
 [project]
 name = "shapix"
-version = "0.1.0"
+version = "0.0.1"
 description = "Elegant runtime shape and dtype checking for NumPy, JAX, PyTorch, and CuPy arrays — powered by beartype."
 readme = "README.md"
 license = "MIT"
