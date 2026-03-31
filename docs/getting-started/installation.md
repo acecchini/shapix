@@ -1,6 +1,6 @@
 ---
 title: Installation
-description: Install shapix with your preferred array backend.
+description: Install shapix-rt with your preferred array backend.
 ---
 
 # Installation
@@ -8,44 +8,50 @@ description: Install shapix with your preferred array backend.
 ## Requirements
 
 - **Python** >= 3.10
-- **beartype** >= 0.20, installed automatically with `shapix`
+- **beartype** >= 0.20, installed automatically with `shapix-rt`
 
 ## Install with pip
 
 ```bash
-pip install shapix
+pip install shapix-rt
 ```
 
-Shapix intentionally does **not** use extras such as `shapix[numpy]`. Install `shapix` and your backend packages explicitly.
+The distribution name is `shapix-rt`, where `rt` means `runtime`. The import path stays:
+
+```python
+import shapix
+```
+
+Shapix intentionally does **not** use extras such as `shapix-rt[numpy]`. Install `shapix-rt` and your backend packages explicitly.
 
 === "NumPy"
 
     ```bash
-    pip install shapix numpy
+    pip install shapix-rt numpy
     ```
 
 === "PyTorch"
 
     ```bash
-    pip install shapix numpy torch
+    pip install shapix-rt numpy torch
     ```
 
 === "JAX"
 
     ```bash
-    pip install shapix numpy jax
+    pip install shapix-rt numpy jax
     ```
 
 === "CuPy"
 
     ```bash
-    pip install shapix numpy cupy
+    pip install shapix-rt numpy cupy
     ```
 
 === "NumPy + OpTree"
 
     ```bash
-    pip install shapix numpy optree  # or install jax and use shapix.jax.Tree
+    pip install shapix-rt numpy optree  # or install jax and use shapix.jax.Tree
     ```
 
 !!! note
@@ -54,7 +60,7 @@ Shapix intentionally does **not** use extras such as `shapix[numpy]`. Install `s
 ## Install with uv
 
 ```bash
-uv add shapix
+uv add shapix-rt
 ```
 
 ## Optional dependencies

@@ -1,6 +1,6 @@
 [project]
-name = "shapix"
-version = "0.0.1"
+name = "shapix-rt"
+version = "0.0.2"
 description = "Elegant runtime shape and dtype checking for NumPy, JAX, PyTorch, and CuPy arrays — powered by beartype."
 readme = "README.md"
 license = "MIT"
@@ -104,6 +104,9 @@ warn_unreachable = true
 [build-system]
 requires = ["uv_build>=0.10.4,<0.11.0"]
 build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "shapix"
 
 [tool.coverage.run]
 branch = true

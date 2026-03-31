@@ -31,29 +31,35 @@ Shapix turns array shape annotations into **Python objects** that beartype valid
 ## Installation
 
 ```bash
-pip install shapix
+pip install shapix-rt
+```
+
+The PyPI package name is `shapix-rt`, where `rt` stands for `runtime`. The import path stays `shapix`:
+
+```python
+import shapix
 ```
 
 Shapix has one dependency: [beartype](https://github.com/beartype/beartype) (>= 0.20, tested with 0.20–0.22). The frame-based memo system depends on beartype's internal call-stack layout; if you encounter issues with a newer beartype version, please file a bug. Install your preferred array framework separately:
 
-Install optional dependencies alongside `shapix` with plain package names.
-Avoid extras-style installs such as `shapix[numpy]` or `shapix[torch]` (shapix intentionally does not provide extras).
+Install optional dependencies alongside `shapix-rt` with plain package names.
+Avoid extras-style installs such as `shapix-rt[numpy]` or `shapix-rt[torch]` (`shapix-rt` intentionally does not provide extras).
 
 ```bash
-pip install shapix                # lightweight root import only
-pip install shapix numpy          # NumPy
-pip install shapix numpy torch    # PyTorch
-pip install shapix numpy jax      # JAX
-pip install shapix numpy cupy     # CuPy
-pip install shapix numpy optree   # NumPy + tree support (OpTree or JAX)
+pip install shapix-rt                # lightweight root import only
+pip install shapix-rt numpy          # NumPy
+pip install shapix-rt numpy torch    # PyTorch
+pip install shapix-rt numpy jax      # JAX
+pip install shapix-rt numpy cupy     # CuPy
+pip install shapix-rt numpy optree   # NumPy + tree support (OpTree or JAX)
 ```
 
 For backend modules, install `numpy` alongside the backend:
 
 ```bash
-pip install shapix numpy jax
-pip install shapix numpy torch
-pip install shapix numpy cupy
+pip install shapix-rt numpy jax
+pip install shapix-rt numpy torch
+pip install shapix-rt numpy cupy
 ```
 
 `import shapix` stays lightweight and does not require NumPy. Backend modules do:
