@@ -335,8 +335,8 @@ a.backend-logo:hover {
 }
 
 .backend-logo .cupy-logo-img {
-  width: 34px;
-  height: 34px;
+  width: 35px;
+  height: 35px;
   display: block;
 }
 
