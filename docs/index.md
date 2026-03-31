@@ -317,11 +317,20 @@ a.backend-logo {
   cursor: pointer;
 }
 
+a.backend-logo--cupy {
+  filter: none;
+  opacity: 0.72;
+}
+
 a.backend-logo:hover {
   filter: grayscale(0%) brightness(1);
   opacity: 1;
   transform: translateY(-2px);
   text-decoration: none !important;
+}
+
+a.backend-logo--cupy:hover {
+  filter: none;
 }
 
 .backend-logo svg {
@@ -337,6 +346,7 @@ a.backend-logo:hover {
 .backend-logo .cupy-logo-img {
   width: 34px;
   height: 34px;
+  display: block;
 }
 
 .backend-logo--optree svg {

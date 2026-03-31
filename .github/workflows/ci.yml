@@ -60,21 +60,10 @@ jobs:
   test:
     needs: [ruff, codespell, typecheck]
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v7
       - run: uv run tox run -e dev
-      - uses: codecov/codecov-action@v5
-        with:
-          files: ./coverage.xml
-          flags: tests
-          name: tests-${{ github.run_id }}
-          fail_ci_if_error: true
-          use_oidc: true
-          verbose: true
 
   # -----------------------------------------------------------------------
   # PR: fast compat matrix

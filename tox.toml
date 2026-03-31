@@ -113,7 +113,6 @@ commands = [
     "--cov=shapix",
     "--cov-branch",
     "--cov-report=term-missing:skip-covered",
-    "--cov-report=xml:coverage.xml",
     "--cov-fail-under=90",
     { replace = "posargs", default = [], extend = true },
   ],
