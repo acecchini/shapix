@@ -1,6 +1,6 @@
 # Shapix
 
-[![Python 3.10-3.14](docs/assets/images/python_versions_badge.png)](https://www.python.org/)
+[![Python 3.10-3.14](docs/assets/images/python_versions_badge.svg)](https://www.python.org/)
 ![Coverage 91%](https://img.shields.io/badge/coverage-91%25-34D058?style=flat-square&logo=codecov&logoColor=F01F7A&labelColor=1F2937)
 [![Docs](https://img.shields.io/badge/docs-live-526CFE?style=flat-square&logo=materialformkdocs&logoColor=white&labelColor=1F2937)](https://acecchini.github.io/shapix/)
 
