@@ -7,21 +7,6 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
-## [0.0.2] - 2026-03-31
-
-### Changed
-
-- Rename the planned PyPI distribution from `shapix` to `shapix-rt` to avoid
-  a name collision on PyPI, while keeping the import path as `shapix`.
-- Update installation docs and README to state explicitly that `rt` means
-  `runtime`, `pip install shapix-rt` is the distribution command, and
-  `import shapix` remains the import path.
-
-### Notes
-
-- This release is the first one intended to line up with the eventual PyPI
-  distribution name `shapix-rt`.
-
 ## [0.0.1] - 2026-03-31
 
 ### Added
@@ -40,6 +25,8 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ### Notes
 
+- The PyPI distribution for this release is `shapix-rt`, where `rt` means
+  `runtime`; the import path remains `shapix`.
 - The root `shapix` module intentionally stays lightweight and
   optional-dependency-safe; backend-specific aliases and factories live in
   `shapix.numpy`, `shapix.jax`, `shapix.torch`, and `shapix.cupy`.
