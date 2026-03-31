@@ -335,8 +335,8 @@ a.backend-logo:hover {
 }
 
 .backend-logo .cupy-logo-img {
-  height: 30px;
-  width: auto;
+  width: 34px;
+  height: 34px;
 }
 
 .backend-logo--optree svg {
