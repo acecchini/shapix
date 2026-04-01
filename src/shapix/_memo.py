@@ -24,6 +24,7 @@ import contextvars
 import inspect
 import sys
 import threading
+import typing as tp
 import types
 from dataclasses import dataclass, field
 
@@ -149,6 +150,42 @@ def has_untagged_memo() -> bool:
 _local = threading.local()
 
 
+def _frame_at_or_none(_depth: int) -> types.FrameType | None:
+  try:
+    return sys._getframe(_depth)
+  except ValueError:
+    return None
+
+
+def _iter_frames(_depth: int) -> tp.Iterator[types.FrameType]:
+  frame = _frame_at_or_none(_depth)
+  while frame is not None:
+    yield frame
+    frame = frame.f_back
+
+
+def _is_beartype_wrapper_frame(frame: types.FrameType) -> bool:
+  locals_map = frame.f_locals
+  fn = locals_map.get("__beartype_func")
+  args = locals_map.get("args")
+  kwargs = locals_map.get("kwargs")
+  return callable(fn) and isinstance(args, tuple) and isinstance(kwargs, dict)
+
+
+def _find_beartype_wrapper_frame(*, _depth: int) -> types.FrameType | None:
+  for frame in _iter_frames(_depth):
+    if _is_beartype_wrapper_frame(frame):
+      return frame
+  return None
+
+
+def _nearest_runtime_frame(_depth: int) -> types.FrameType | None:
+  frame = _find_beartype_wrapper_frame(_depth=_depth)
+  if frame is not None:
+    return frame
+  return _frame_at_or_none(_depth)
+
+
 def get_memo(_depth: int = 2) -> ShapeMemo:
   """Return the memo for the current checking context.
 
@@ -175,18 +212,16 @@ def get_memo(_depth: int = 2) -> ShapeMemo:
       # Untagged entry (check_context / TreeChecker) — always visible
       return explicit[-1]
     # Tagged entry — only visible if the caller's frame matches
-    try:
-      frame = sys._getframe(_depth)
-      if frame.f_code is owner_code:
-        return explicit[-1]
-    except ValueError:
-      pass
+    frame = _nearest_runtime_frame(_depth)
+    if frame is not None and frame.f_code is owner_code:
+      return explicit[-1]
     # Fall through to frame-based detection
 
   # 2. Frame-based detection
-  try:
-    frame = sys._getframe(_depth)
-  except ValueError:
+  frame = _find_beartype_wrapper_frame(_depth=_depth)
+  if frame is None:
+    frame = _frame_at_or_none(_depth)
+  if frame is None:
     return ShapeMemo()
 
   frame_id = id(frame)
@@ -249,17 +284,15 @@ def get_scope(_depth: int = 2) -> dict[str, object]:
       # Untagged entry — always visible
       return explicit[-1]
     # Tagged entry — only visible if the caller's frame matches
-    try:
-      frame = sys._getframe(_depth)
-      if frame.f_code is owner_code:
-        return explicit[-1]
-    except ValueError:
-      pass
+    frame = _nearest_runtime_frame(_depth)
+    if frame is not None and frame.f_code is owner_code:
+      return explicit[-1]
     # Fall through to frame-based detection
 
-  try:
-    frame = sys._getframe(_depth)
-  except ValueError:
+  frame = _find_beartype_wrapper_frame(_depth=_depth)
+  if frame is None:
+    frame = _frame_at_or_none(_depth)
+  if frame is None:
     return {}
 
   locals_map = dict(frame.f_locals)
