@@ -5,6 +5,8 @@ A tree (pytree) is a nested container structure (dicts, lists, tuples,
 namedtuples, etc.) whose leaves are typed arrays. This module provides a
 ``Tree`` annotation that validates leaves and optionally enforces structure
 consistency across arguments, following the same patterns as jaxtyping.
+At runtime ``Tree[...]`` produces a shapix runtime hint, so beartype can report
+readable leaf and structure failures without changing the public syntax.
 
 Requires ``optree`` or ``jax`` for tree traversal. Install with
 ``pip install optree`` or ``pip install jax``.
@@ -56,6 +58,7 @@ from collections.abc import Callable
 
 from ._memo import ShapeMemo, has_untagged_memo
 from ._runtime_hints import (
+  ReplayFailureState,
   ValidationFailure,
   get_runtime_validator,
   hint_label,
@@ -97,15 +100,7 @@ class Structure(str):
 class _TreeChecker:
   """Beartype validator for tree leaf types and structure consistency."""
 
-  __slots__ = (
-    "_leaf_type",
-    "_structure_spec",
-    "_get_ops",
-    "_repr",
-    "_fail_obj",
-    "_fail_memo",
-    "_fail_detail",
-  )
+  __slots__ = ("_leaf_type", "_structure_spec", "_get_ops", "_repr", "_fail_state")
 
   def __init__(
     self,
@@ -117,9 +112,7 @@ class _TreeChecker:
     self._leaf_type = leaf_type
     self._structure_spec = structure_spec
     self._get_ops = get_ops
-    self._fail_obj: object | None = None
-    self._fail_memo: object | None = None
-    self._fail_detail: ValidationFailure | None = None
+    self._fail_state = ReplayFailureState()
     spec_str = f", {structure_spec}" if structure_spec else ""
     self._repr = f"Tree[{hint_label(leaf_type)}{spec_str}]"
 
@@ -127,7 +120,7 @@ class _TreeChecker:
     return self.instancecheck(obj)
 
   def instancecheck(self, obj: object) -> bool:
-    if self._should_replay_failure(obj):
+    if self._fail_state.should_replay(obj):
       return False
 
     tree_ops = self._get_ops()
@@ -146,18 +139,18 @@ class _TreeChecker:
       pop_memo()
 
     if failure is None:
-      self._clear_fail_state()
+      self._fail_state.clear()
       return True
 
     memo.restore(snap)
     if has_prior and not has_untagged_memo():
-      self._record_failure(obj, memo, failure)
+      self._fail_state.record(obj, memo, failure)
     else:
-      self._clear_fail_state()
+      self._fail_state.clear()
     return False
 
   def instancecheck_str(self, obj: object) -> str:
-    detail = self._fail_detail if self._fail_obj is obj else None
+    detail = self._fail_state.detail_for(obj)
     if detail is None:
       tree_ops = self._get_ops()
       from ._memo import get_memo, get_scope, pop_memo, push_memo
@@ -175,7 +168,7 @@ class _TreeChecker:
         detail = ValidationFailure(f"unexpectedly accepted {obj!r} for {self!r}")
       else:
         detail = failure
-    self._clear_fail_state()
+    self._fail_state.clear()
     return detail.message
 
   def _validate(
@@ -335,36 +328,6 @@ class _TreeChecker:
 
   def __repr__(self) -> str:
     return self._repr
-
-  def _should_replay_failure(self, obj: object) -> bool:
-    if self._fail_obj is None or self._fail_obj is not obj:
-      return False
-    if has_untagged_memo():
-      self._clear_fail_state()
-      return False
-
-    from ._memo import get_memo
-
-    current_memo = get_memo()
-    if current_memo is self._fail_memo:
-      self._clear_fail_state()
-      return False
-    if current_memo.single or current_memo.variadic or current_memo.structures:
-      self._clear_fail_state()
-      return False
-    return True
-
-  def _record_failure(
-    self, obj: object, memo: ShapeMemo, failure: ValidationFailure
-  ) -> None:
-    self._fail_obj = obj
-    self._fail_memo = memo
-    self._fail_detail = failure
-
-  def _clear_fail_state(self) -> None:
-    self._fail_obj = None
-    self._fail_memo = None
-    self._fail_detail = None
 
 
 # ---------------------------------------------------------------------------

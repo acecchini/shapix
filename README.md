@@ -22,6 +22,7 @@ Shapix turns array shape annotations into **Python objects** that beartype valid
 
 - **Zero boilerplate** — works with standard `@beartype` decorators and `beartype.claw` import hooks. No custom decorator required.
 - **Cross-argument consistency** — named dimensions are enforced across all parameters and the return value within a single function call.
+- **Readable diagnostics** — dtype, shape, `Value(...)`, and tree mismatches surface the actual failure reason instead of opaque validator booleans.
 - **Static type checker friendly** — core annotations type-check on pyright, mypy, and ty, and richer runtime-only patterns use checker-friendly aliases or narrow per-annotation ignores.
 - **Readable annotations** — `F32[N, C, H, W]` reads like documentation.
 - **Full `BeartypeConf` support** — unlike jaxtyping, shapix doesn't replace your beartype configuration.
@@ -40,7 +41,7 @@ The PyPI package name is `shapix-rt`, where `rt` stands for `runtime`. The impor
 import shapix
 ```
 
-Shapix has one dependency: [beartype](https://github.com/beartype/beartype) (>= 0.20, tested with 0.20–0.22). The frame-based memo system depends on beartype's internal call-stack layout; if you encounter issues with a newer beartype version, please file a bug. Install your preferred array framework separately:
+Shapix has one dependency: [beartype](https://github.com/beartype/beartype) (>= 0.20, tested with 0.20–0.22). Plain `@beartype` support depends on shapix being able to find the nearest active beartype wrapper frame at runtime; if you encounter issues with a newer beartype version, please file a bug. Install your preferred array framework separately:
 
 Install optional dependencies alongside `shapix-rt` with plain package names.
 Avoid extras-style installs such as `shapix-rt[numpy]` or `shapix-rt[torch]` (`shapix-rt` intentionally does not provide extras).
@@ -736,15 +737,15 @@ Every function in your package that uses shapix type annotations will be checked
 
 A **dimension memo** maps dimension names to sizes (e.g., `N->4`, `C->3`). Each function call gets a fresh memo. All parameter checks within that call share the same memo — that's how shapix knows `N=4` in `x` must match `N=4` in `y`.
 
-This happens **automatically** with `@beartype`. Shapix detects the beartype wrapper frame via `sys._getframe()` and associates a memo with it. No extra decorator needed.
+This happens **automatically** with `@beartype`. Shapix walks upward with `sys._getframe()` to find the nearest active beartype wrapper frame and associates a memo with it. No extra decorator needed.
 
 ### `@shapix.check` — explicit memo management
 
 To understand `@shapix.check`, you need to understand the problem it solves.
 
-**The problem: sharing state across parameter checks.** When beartype validates `f(x, y)`, it checks `x` and `y` independently — it calls the `Is[...]` validator once per parameter. But shapix needs all those validators to share the same dimension memo, so that `N=4` bound by `x` is enforced on `y`. Something has to connect them.
+**The problem: sharing state across parameter checks.** When beartype validates `f(x, y)`, it checks `x` and `y` independently. But shapix needs those checks to share the same dimension memo, so that `N=4` bound by `x` is enforced on `y`. Something has to connect them.
 
-**The automatic approach** (no extra decorator needed) is frame-based detection. Shapix walks up the call stack with `sys._getframe()` to find the beartype wrapper frame. Since all parameter checks within one `f(x, y)` call share the same wrapper frame, shapix can key a memo to it. This just works:
+**The automatic approach** (no extra decorator needed) is frame-based detection. Shapix walks up the call stack with `sys._getframe()` to find the nearest beartype wrapper frame. Since all parameter and return checks within one `f(x, y)` call share that wrapper scope, shapix can key a memo to it. This just works:
 
 ```python
 @beartype  # Shapix auto-detects this frame — nothing else needed
@@ -777,32 +778,25 @@ Decision rule:
 
 Both approaches produce identical results in normal usage. You only need `@shapix.check` in specific situations:
 
-#### 1. Extra decorators between beartype and the call site
+#### 1. You want explicit memo scope instead of wrapper discovery
 
-Frame-based detection counts a fixed number of frames up from the validator. If something adds extra frames between beartype's wrapper and the actual function call, the detection can land on the wrong frame:
+The automatic path is already hardened to search for the nearest beartype wrapper, so ordinary wrapper layers usually work fine. Use `@shapix.check` when you want memo lifetime to be explicit rather than discovered:
 
 ```python
-# This works — beartype is the outermost wrapper, frame detection is stable
 @beartype
 def f(x: F32[N, C], y: F32[N, C]) -> F32[N, C]: ...
 
 
-# This might not — a middleware decorator adds extra frames
-@some_middleware  # Adds frames between beartype's wrapper and the caller
-@beartype
-def f(x: F32[N, C], y: F32[N, C]) -> F32[N, C]: ...
-
-
-# Fix: @shapix.check bypasses frame detection entirely
-@some_middleware
 @shapix.check
 @beartype
 def f(x: F32[N, C], y: F32[N, C]) -> F32[N, C]: ...
 ```
 
-#### 2. Defensive coding
+#### 2. An integration obscures beartype's wrapper locals
 
-If you want a guarantee that cross-argument checking works regardless of how your code is called (by test runners, async frameworks, deep middleware stacks), `@shapix.check` removes all dependence on call-stack structure.
+If some decorator, framework, or instrumentation layer still prevents shapix from finding the correct beartype wrapper scope, `@shapix.check` removes that dependence entirely by pushing the memo explicitly.
+
+#### 3. You want a single explicit scope across the whole call
 
 It is also the clearer choice when `Value(...)` should keep using one explicit bound scope across the full lifetime of an async call.
 
@@ -834,9 +828,9 @@ with shapix.check_context():
 
 Shapix uses three key mechanisms:
 
-1. **`Annotated[T, Is[validator]]`** — Each array type annotation (e.g., `F32[N, C]`) produces a `typing.Annotated` type with a beartype `Is[...]` validator. This lets beartype handle all the dispatch natively.
+1. **Custom runtime hints for arrays and trees** — Each array or tree annotation (for example `F32[N, C]` or `Tree[F32[N], T]`) produces a small runtime hint class with shapix's validator attached. Beartype calls that validator through `__instancecheck__()` and uses `__instancecheck_str__()` to report readable dtype, shape, `Value(...)`, and tree-structure failures.
 
-2. **Frame-based memo** — beartype's `Is[validator]` call stack is deterministic: `validator -> _is_valid_bool -> beartype_wrapper`. All parameter checks for one function call share the same wrapper frame. Shapix identifies this frame via `sys._getframe()` and associates a dimension memo (name -> size bindings) with it. This is how cross-argument consistency works with zero boilerplate.
+2. **Nearest-wrapper memo discovery** — Plain `@beartype` checks still share a cross-argument memo automatically. Shapix walks upward with `sys._getframe()` to find the nearest active beartype wrapper frame and keys a memo to that scope. This keeps the public annotation syntax unchanged while avoiding fixed-depth frame assumptions.
 
 3. **Thread and async safety** — Frame-based auto-detection uses `threading.local()` for thread isolation. The explicit memo stack (`@shapix.check`, `check_context()`) uses `contextvars.ContextVar`, making it both thread-safe and async-task-safe. Note that child tasks inheriting an active parent context share the same live memo by reference; for full task isolation, each task should enter its own `check_context()`.
 
@@ -948,7 +942,7 @@ else:
 | Decorator | Custom `@jaxtyped` replaces `@beartype` | Standard `@beartype` |
 | Shape syntax | String-based: `"batch channels"` | Python objects: `N, C` |
 | BeartypeConf | Not supported (decorator conflict) | Fully supported |
-| Type checker | Metaclass magic (harder on static checkers) | `Annotated` aliases exercised with pyright, mypy, and ty |
+| Type checker | Metaclass magic (harder on static checkers) | Checker-friendly aliases exercised with pyright, mypy, and ty |
 | Backends | NumPy, JAX | NumPy, JAX, PyTorch, CuPy |
 | Tree | Built-in with structure binding | Built-in with structure binding (via OpTree or `jax.tree_util`) |
 | Dependencies | jaxtyping + beartype | beartype only |

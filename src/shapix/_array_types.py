@@ -6,9 +6,9 @@ and can surface readable diagnostics on failure.
 
 The main components are:
 
-- :class:`_ArrayChecker` — a callable validator invoked by beartype's ``Is[]``
-  mechanism for strict array types.  Checks dtype then validates shape against
-  the spec while maintaining cross-argument dimension consistency via the memo.
+- :class:`_ArrayChecker` — validator attached to a shapix runtime hint for
+  strict array types. Checks dtype, then validates shape against the spec while
+  maintaining cross-argument dimension consistency via the memo.
 
 - :class:`_ArrayLikeChecker` — similar validator for array-like inputs
   (scalars, sequences, arrays).  Converts inputs via ``np.asarray`` and checks
@@ -32,7 +32,7 @@ from ._dtypes import DtypeSpec
 from ._dtypes import extract_dtype_str as extract_dtype_str
 from ._memo import ShapeMemo as ShapeMemo
 from ._memo import get_memo, get_scope, has_untagged_memo
-from ._runtime_hints import ValidationFailure, make_runtime_hint
+from ._runtime_hints import ReplayFailureState, ValidationFailure, make_runtime_hint
 from ._shape import (
   ANONYMOUS,
   ANONYMOUS_VARIADIC,
@@ -148,7 +148,7 @@ def _dtype_mismatch(
 
 
 # ---------------------------------------------------------------------------
-# Validator callable (used inside beartype's Is[...])
+# Runtime validators used by shapix's beartype hint classes
 # ---------------------------------------------------------------------------
 
 
@@ -159,15 +159,7 @@ class _ArrayChecker:
   ``Float32Array[N, C]``) and reused across all functions that share it.
   """
 
-  __slots__ = (
-    "_array_type",
-    "_dtype_spec",
-    "_shape_spec",
-    "_repr",
-    "_fail_obj",
-    "_fail_memo",
-    "_fail_detail",
-  )
+  __slots__ = ("_array_type", "_dtype_spec", "_shape_spec", "_repr", "_fail_state")
 
   def __init__(
     self,
@@ -183,9 +175,7 @@ class _ArrayChecker:
       self._array_type = tp.cast(type[object], array_type)
       self._dtype_spec = tp.cast(DtypeSpec, dtype_spec)
       self._shape_spec = shape_spec
-    self._fail_obj: object | None = None
-    self._fail_memo: object | None = None
-    self._fail_detail: ValidationFailure | None = None
+    self._fail_state = ReplayFailureState()
 
     # Pre-compute repr for beartype error messages
     dims = ", ".join(repr(d) for d in self._shape_spec)
@@ -195,7 +185,7 @@ class _ArrayChecker:
     return self.instancecheck(obj)
 
   def instancecheck(self, obj: object) -> bool:
-    if self._should_replay_failure(obj):
+    if self._fail_state.should_replay(obj):
       return False
 
     memo = get_memo()
@@ -204,18 +194,18 @@ class _ArrayChecker:
     has_prior = any(snap)
     failure = self._validate(obj, memo, scope)
     if failure is None:
-      self._clear_fail_state()
+      self._fail_state.clear()
       return True
 
     memo.restore(snap)
     if has_prior and not has_untagged_memo():
-      self._record_failure(obj, memo, failure)
+      self._fail_state.record(obj, memo, failure)
     else:
-      self._clear_fail_state()
+      self._fail_state.clear()
     return False
 
   def instancecheck_str(self, obj: object) -> str:
-    detail = self._fail_detail if self._fail_obj is obj else None
+    detail = self._fail_state.detail_for(obj)
     if detail is None:
       memo = get_memo()
       scope = get_scope()
@@ -226,7 +216,7 @@ class _ArrayChecker:
         detail = ValidationFailure(f"unexpectedly accepted {obj!r} for {self!r}")
       else:
         detail = failure
-    self._clear_fail_state()
+    self._fail_state.clear()
     return detail.message
 
   def _validate(
@@ -251,34 +241,6 @@ class _ArrayChecker:
     if err:
       return ValidationFailure(err)
     return None
-
-  def _should_replay_failure(self, obj: object) -> bool:
-    if self._fail_obj is None or self._fail_obj is not obj:
-      return False
-    if has_untagged_memo():
-      self._clear_fail_state()
-      return False
-
-    current_memo = get_memo()
-    if current_memo is self._fail_memo:
-      self._clear_fail_state()
-      return False
-    if current_memo.single or current_memo.variadic or current_memo.structures:
-      self._clear_fail_state()
-      return False
-    return True
-
-  def _record_failure(
-    self, obj: object, memo: ShapeMemo, failure: ValidationFailure
-  ) -> None:
-    self._fail_obj = obj
-    self._fail_memo = memo
-    self._fail_detail = failure
-
-  def _clear_fail_state(self) -> None:
-    self._fail_obj = None
-    self._fail_memo = None
-    self._fail_detail = None
 
   def __repr__(self) -> str:
     return self._repr
@@ -381,9 +343,7 @@ class _ArrayLikeChecker:
     "_asarray",
     "_trusted_types",
     "_repr",
-    "_fail_obj",
-    "_fail_memo",
-    "_fail_detail",
+    "_fail_state",
   )
 
   def __init__(
@@ -402,9 +362,7 @@ class _ArrayLikeChecker:
     self._is_structured: bool = dtype_spec._structured is not None  # noqa: SLF001
     self._asarray = asarray
     self._trusted_types = trusted_types
-    self._fail_obj: object | None = None
-    self._fail_memo: object | None = None
-    self._fail_detail: ValidationFailure | None = None
+    self._fail_state = ReplayFailureState()
 
     dims = ", ".join(repr(d) for d in shape_spec)
     self._repr = f"{name}[{dims}]"
@@ -413,7 +371,7 @@ class _ArrayLikeChecker:
     return self.instancecheck(obj)
 
   def instancecheck(self, obj: object) -> bool:
-    if self._should_replay_failure(obj):
+    if self._fail_state.should_replay(obj):
       return False
 
     memo = get_memo()
@@ -422,18 +380,18 @@ class _ArrayLikeChecker:
     has_prior = any(snap)
     failure = self._validate(obj, memo, scope)
     if failure is None:
-      self._clear_fail_state()
+      self._fail_state.clear()
       return True
 
     memo.restore(snap)
     if has_prior and not has_untagged_memo():
-      self._record_failure(obj, memo, failure)
+      self._fail_state.record(obj, memo, failure)
     else:
-      self._clear_fail_state()
+      self._fail_state.clear()
     return False
 
   def instancecheck_str(self, obj: object) -> str:
-    detail = self._fail_detail if self._fail_obj is obj else None
+    detail = self._fail_state.detail_for(obj)
     if detail is None:
       memo = get_memo()
       scope = get_scope()
@@ -444,7 +402,7 @@ class _ArrayLikeChecker:
         detail = ValidationFailure(f"unexpectedly accepted {obj!r} for {self!r}")
       else:
         detail = failure
-    self._clear_fail_state()
+    self._fail_state.clear()
     return detail.message
 
   def _validate(
@@ -554,34 +512,6 @@ class _ArrayLikeChecker:
         continue
 
     return _dtype_mismatch(self._dtype_spec, obj, casting=self._casting)
-
-  def _should_replay_failure(self, obj: object) -> bool:
-    if self._fail_obj is None or self._fail_obj is not obj:
-      return False
-    if has_untagged_memo():
-      self._clear_fail_state()
-      return False
-
-    current_memo = get_memo()
-    if current_memo is self._fail_memo:
-      self._clear_fail_state()
-      return False
-    if current_memo.single or current_memo.variadic or current_memo.structures:
-      self._clear_fail_state()
-      return False
-    return True
-
-  def _record_failure(
-    self, obj: object, memo: ShapeMemo, failure: ValidationFailure
-  ) -> None:
-    self._fail_obj = obj
-    self._fail_memo = memo
-    self._fail_detail = failure
-
-  def _clear_fail_state(self) -> None:
-    self._fail_obj = None
-    self._fail_memo = None
-    self._fail_detail = None
 
   def __repr__(self) -> str:
     return self._repr

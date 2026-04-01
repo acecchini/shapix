@@ -231,7 +231,7 @@ def make_array_like_type(
 
 
 # ---------------------------------------------------------------------------
-# Array types (shape-checked via beartype Is[])
+# Array types (shape-checked via shapix runtime hints)
 # ---------------------------------------------------------------------------
 
 if tp.TYPE_CHECKING:

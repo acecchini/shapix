@@ -356,7 +356,7 @@ def Structured(  # noqa: N802
 
 
 # ---------------------------------------------------------------------------
-# Array types (shape-checked via beartype Is[])
+# Array types (shape-checked via shapix runtime hints)
 # ---------------------------------------------------------------------------
 
 if tp.TYPE_CHECKING:

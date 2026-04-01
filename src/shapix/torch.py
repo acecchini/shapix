@@ -226,7 +226,7 @@ def make_array_like_type(
 
 
 # ---------------------------------------------------------------------------
-# Tensor types (shape-checked via beartype Is[])
+# Tensor types (shape-checked via shapix runtime hints)
 # ---------------------------------------------------------------------------
 
 if tp.TYPE_CHECKING:
