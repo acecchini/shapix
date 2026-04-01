@@ -9,7 +9,7 @@ import pytest
 from beartype import beartype
 from beartype.roar import BeartypeCallHintParamViolation
 
-from shapix import N, C
+from shapix import N, C, Value
 from shapix._memo import ShapeMemo, get_memo, pop_memo, push_memo
 from shapix.numpy import F32
 
@@ -87,6 +87,32 @@ class TestFrameBasedMemo:
 
     with pytest.raises(BeartypeCallHintParamViolation):
       f(np.ones((3,), dtype=np.float32), np.ones((5,), dtype=np.float32))
+
+  def test_nested_plain_value_return_uses_nearest_wrapper_scope(self) -> None:
+    """Nested plain @beartype calls must resolve Value(...) from the right frame."""
+
+    @beartype
+    def inner(size: int) -> F32[Value("size")]:  # type: ignore[valid-type]
+      return np.ones(size, dtype=np.float32)
+
+    @beartype
+    def outer(size: int) -> F32[Value("size")]:  # type: ignore[valid-type]
+      inner(size + 2)
+      return np.ones(size, dtype=np.float32)
+
+    result = outer(4)
+    assert result.shape == (4,)
+
+  def test_async_plain_value_return_uses_wrapper_scope(self) -> None:
+    """Async plain @beartype must keep Value(...) bound to the wrapper scope."""
+    import asyncio
+
+    @beartype
+    async def f(size: int) -> F32[Value("size")]:  # type: ignore[valid-type]
+      return np.ones(size, dtype=np.float32)
+
+    result = asyncio.run(f(4))
+    assert result.shape == (4,)
 
 
 class TestThreadSafety:

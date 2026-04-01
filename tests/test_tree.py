@@ -21,7 +21,7 @@ from beartype.roar import (
 )
 
 import shapix
-from shapix import C, H, N, S, T, W, __
+from shapix import C, H, N, S, T, Value, W, __
 from shapix.optree import Tree
 from shapix._tree import Structure, _TreeFactory
 from shapix.numpy import F32, F64, I64, Shaped
@@ -86,6 +86,17 @@ class TestBasicTree:
     arr = np.ones(5, dtype=np.float32)
     result = f(arr)
     assert result.shape == (5,)
+
+  def test_leaf_value_dim_uses_caller_scope(self) -> None:
+    """Tree leaf checks must resolve Value(...) from the enclosing wrapper scope."""
+
+    @beartype
+    def f(size: int, x: Tree[F32[Value("size")]]) -> Tree[F32[Value("size")]]:  # type: ignore[valid-type]
+      return x
+
+    tree = {"a": np.ones(3, dtype=np.float32)}
+    result = f(3, tree)
+    assert result is tree
 
 
 # =====================================================================
@@ -1224,6 +1235,40 @@ class TestReturnTypeFailures:
 
     with pytest.raises(BeartypeCallHintReturnViolation):
       f({"a": np.ones(3, dtype=np.float32)})
+
+
+# =====================================================================
+# Diagnostic messages
+# =====================================================================
+
+
+class TestDiagnosticMessages:
+  def test_tree_structure_mismatch_reports_structure_detail(self) -> None:
+    @shapix.check
+    @beartype
+    def f(x: Tree[F32[N], T], y: Tree[F32[N], T]) -> Tree[F32[N]]:
+      return x
+
+    with pytest.raises(BeartypeCallHintParamViolation) as exc_info:
+      f({"a": np.ones(3, dtype=np.float32)}, [np.ones(3, dtype=np.float32)])
+
+    text = str(exc_info.value)
+    assert "structure 'T'" in text
+    assert "does not match" in text
+    assert "False == beartype.vale.Is" not in text
+
+  def test_tree_leaf_shape_failure_reports_leaf_detail(self) -> None:
+    @beartype
+    def f(x: Tree[F32[N, C]]) -> Tree[F32[N, C]]:
+      return x
+
+    with pytest.raises(BeartypeCallHintParamViolation) as exc_info:
+      f({"a": np.ones(3, dtype=np.float32)})
+
+    text = str(exc_info.value)
+    assert "tree leaf" in text
+    assert "expected 2 dimensions but got 1" in text
+    assert "False == beartype.vale.Is" not in text
 
 
 # =====================================================================

@@ -584,6 +584,70 @@ class TestValueExpressions:
       f(10, np.ones(5, dtype=np.float32))
 
 
+class TestDiagnosticMessages:
+  def test_named_dim_mismatch_reports_dimension_detail(self) -> None:
+    @beartype
+    def f(x: F32[N], y: F32[N]) -> None:
+      pass
+
+    with pytest.raises(BeartypeCallHintParamViolation) as exc_info:
+      f(np.ones(3, dtype=np.float32), np.ones(5, dtype=np.float32))
+
+    text = str(exc_info.value)
+    assert "dimension 'N' expected 3 but got 5" in text
+    assert "False == beartype.vale.Is" not in text
+
+  def test_rank_mismatch_reports_shape_detail(self) -> None:
+    @beartype
+    def f(x: F32[N, C]) -> None:
+      pass
+
+    with pytest.raises(BeartypeCallHintParamViolation) as exc_info:
+      f(np.ones(3, dtype=np.float32))
+
+    text = str(exc_info.value)
+    assert "expected 2 dimensions but got 1" in text
+    assert "False == beartype.vale.Is" not in text
+
+  def test_value_mismatch_reports_evaluated_detail(self) -> None:
+    @beartype
+    def f(size: int) -> F32[Value("size")]:  # type: ignore[valid-type]
+      return np.ones(999, dtype=np.float32)
+
+    with pytest.raises(BeartypeCallHintReturnViolation) as exc_info:
+      f(4)
+
+    text = str(exc_info.value)
+    assert """dimension 'Value("size")' evaluated to 4 but got 999""" in text
+    assert "False == beartype.vale.Is" not in text
+
+  def test_symbolic_eval_failure_reports_expression(self) -> None:
+    @beartype
+    def f(x: F32[N]) -> F32[N // 0]:
+      return x
+
+    with pytest.raises(BeartypeCallHintReturnViolation) as exc_info:
+      f(np.ones(3, dtype=np.float32))
+
+    text = str(exc_info.value)
+    assert "cannot evaluate" in text
+    assert "division or modulo by zero" in text
+    assert "False == beartype.vale.Is" not in text
+
+  def test_arraylike_conversion_failure_reports_conversion_detail(self) -> None:
+    @beartype
+    def f(x: F32Like[N]) -> None:
+      pass
+
+    with pytest.raises(BeartypeCallHintParamViolation) as exc_info:
+      f([1.0, [2.0, 3.0]])
+
+    text = str(exc_info.value)
+    assert "could not convert" in text
+    assert "setting an array element with a sequence" in text
+    assert "False == beartype.vale.Is" not in text
+
+
 # =====================================================================
 # Variadic dimensions
 # =====================================================================
