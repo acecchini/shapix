@@ -38,26 +38,26 @@ Homepage = "https://github.com/acecchini/shapix"
 Repository = "https://github.com/acecchini/shapix"
 Issues = "https://github.com/acecchini/shapix/issues"
 
+[build-system]
+requires = ["uv_build>=0.11.1,<0.12.0"]
+build-backend = "uv_build"
+
 [dependency-groups]
 # Backends are CPU-only for dev/CI. Shapix is device-agnostic — it checks
 # .shape and .dtype only. Users install their own numpy/jax/torch/cupy/optree.
 # CuPy requires CUDA and is not included here; install separately for GPU envs.
 optional = ["numpy>=2.2.0", "torch>=2.6.0", "jax[cpu]>=0.5.0", "optree>=0.14.0"]
-static = ["pyright>=1.1.408", "mypy>=1.19.1", "ty>=0.0.20"]
-dev = [
-  "ruff>=0.15.4",
+static = ["ruff>=0.15.4", "pyright>=1.1.408", "mypy>=1.19.1", "ty>=0.0.20"]
+docs = ["zensical>=0.0.24", "mkdocs-material>=9.7.6"]
+test = [
   "pytest>=9.0.2",
   "pytest-cov>=6.0.0",
   "pytest-xdist>=3.5.0",
-  "pre-commit>=4.5.1",
   "tox>=4.47.1",
   "tox-uv>=1.33.1",
-  "codespell>=2.4.1",
-  "ipykernel>=7.2.0",
-  "matplotlib>=3.10.8",
-  "zensical>=0.0.24",
 ]
-docs = ["mkdocs-material>=9.7.6"]
+notebook = ["ipykernel>=7.2.0"]
+dev = ["pre-commit>=4.5.1", "codespell>=2.4.1"]
 
 [tool.uv.sources]
 torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
@@ -68,9 +68,12 @@ url = "https://download.pytorch.org/whl/cpu"
 explicit = true
 
 [tool.uv]
-default-groups = ["dev", "optional", "static"]
+default-groups = ["dev", "optional", "static", "docs", "test", "notebook"]
 required-version = ">=0.10.4,<0.11.0"
 python-preference = "only-managed"
+
+[tool.uv.build-backend]
+module-name = "shapix"
 
 [tool.codespell]
 skip = "uv.lock,*.ipynb,.venv,.tox"
@@ -98,13 +101,6 @@ venv = ".venv"
 strict = true
 ignore_missing_imports = true
 warn_unreachable = true
-
-[build-system]
-requires = ["uv_build>=0.11.1,<0.12.0"]
-build-backend = "uv_build"
-
-[tool.uv.build-backend]
-module-name = "shapix"
 
 [tool.coverage.run]
 branch = true
