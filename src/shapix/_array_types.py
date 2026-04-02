@@ -105,10 +105,14 @@ def _infer_array_hint_module(array_type: type[object]) -> str:
 def _infer_arraylike_hint_module(
   asarray: Callable[[object], object] | None, trusted_types: tuple[type, ...] | None
 ) -> str:
-  if trusted_types:
-    return getattr(trusted_types[0], "__module__", __name__)
+  # Backend Like factories pass a backend-scoped converter wrapper (for example
+  # ``shapix.jax._jax_asarray``) but often keep ``np.ndarray`` first in
+  # ``trusted_types``. Prefer the explicit converter module so diagnostics
+  # identify the owning shapix backend rather than falling back to NumPy.
   if asarray is not None:
     return getattr(asarray, "__module__", __name__)
+  if trusted_types:
+    return getattr(trusted_types[0], "__module__", __name__)
   return __name__
 
 
@@ -446,7 +450,7 @@ class _ArrayLikeChecker:
       import numpy as np
 
       return np.asarray(obj), None
-    except (TypeError, ValueError) as e:
+    except Exception as e:  # noqa: BLE001
       if str(e):
         errors.append(str(e))
 

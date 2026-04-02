@@ -56,6 +56,8 @@ from __future__ import annotations
 import typing as tp
 from collections.abc import Callable
 
+from beartype.door import TypeHint
+
 from ._memo import ShapeMemo, has_untagged_memo
 from ._runtime_hints import (
   ReplayFailureState,
@@ -359,6 +361,7 @@ class _TreeFactory:
 
   def __getitem__(self, item: object) -> type:
     if not isinstance(item, tuple):
+      self._validate_leaf_type(item, owner_name=self._name)
       return self._make(item, None)
 
     if len(item) < 1:
@@ -366,16 +369,45 @@ class _TreeFactory:
       raise TypeError(msg)
 
     leaf_type = item[0]
+    self._validate_leaf_type(leaf_type, owner_name=self._name)
     spec_args = item[1:]
 
     if not spec_args:
       return self._make(leaf_type, None)
 
-    structure_spec = self._parse_spec_args(spec_args)
+    structure_spec = self._parse_spec_args(spec_args, owner_name=self._name)
     return self._make(leaf_type, structure_spec)
 
   @staticmethod
-  def _parse_spec_args(args: tuple[object, ...]) -> str:
+  def _validate_leaf_type(leaf_type: object, *, owner_name: str = "Tree") -> None:
+    try:
+      TypeHint(tp.cast(tp.Any, leaf_type))
+    except Exception as exc:  # noqa: BLE001
+      msg = (
+        f"{owner_name} leaf type must be a beartype-valid type hint, got {leaf_type!r}"
+      )
+      raise TypeError(msg) from exc
+
+  @staticmethod
+  def _normalize_structure_arg(arg: object, *, owner_name: str = "Tree") -> str:
+    if not isinstance(arg, Structure):
+      msg = (
+        f"{owner_name} structure arguments must be Structure names or Ellipsis, "
+        f"got {arg!r}"
+      )
+      raise TypeError(msg)
+
+    name = str(arg)
+    if not name or name == "..." or any(ch.isspace() for ch in name):
+      msg = (
+        f"{owner_name} structure names must be non-empty single names and "
+        f"cannot be '...'; got {name!r}"
+      )
+      raise TypeError(msg)
+    return name
+
+  @staticmethod
+  def _parse_spec_args(args: tuple[object, ...], *, owner_name: str = "Tree") -> str:
     """Parse structure spec arguments into internal string form."""
     has_leading = args[0] is Ellipsis
     has_trailing = args[-1] is Ellipsis
@@ -384,7 +416,11 @@ class _TreeFactory:
       msg = "Cannot have ... at both start and end of structure spec"
       raise TypeError(msg)
 
-    names = [str(a) for a in args if a is not Ellipsis]
+    names = [
+      _TreeFactory._normalize_structure_arg(arg, owner_name=owner_name)
+      for arg in args
+      if arg is not Ellipsis
+    ]
     if not names:
       msg = "At least one structure name required"
       raise TypeError(msg)

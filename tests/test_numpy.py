@@ -647,6 +647,23 @@ class TestDiagnosticMessages:
     assert "setting an array element with a sequence" in text
     assert "False == beartype.vale.Is" not in text
 
+  def test_arraylike_runtimeerror_reports_conversion_detail(self) -> None:
+    class Boom:
+      def __array__(self, *_a: object, **_kw: object) -> None:  # noqa: PLW3201
+        raise RuntimeError("boom")
+
+    @beartype
+    def f(x: F32Like[N]) -> None:
+      pass
+
+    with pytest.raises(BeartypeCallHintParamViolation) as exc_info:
+      f(Boom())
+
+    text = str(exc_info.value)
+    assert "could not convert" in text
+    assert "boom" in text
+    assert "False == beartype.vale.Is" not in text
+
 
 # =====================================================================
 # Variadic dimensions
@@ -1245,6 +1262,13 @@ class TestArrayLikeRejection:
         raise TypeError("not convertible")
 
     assert not is_bearable(SpoofedArray(), F32Like[...])
+
+  def test_runtimeerror_from_array_protocol_is_rejected(self) -> None:
+    class Boom:
+      def __array__(self, *_a: object, **_kw: object) -> None:  # noqa: PLW3201
+        raise RuntimeError("boom")
+
+    assert not is_bearable(Boom(), F32Like[...])
 
 
 class TestArrayLikeVariousTypes:

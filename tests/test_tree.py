@@ -1327,6 +1327,33 @@ class TestReprAndFactory:
   def test_tree_factory_repr(self) -> None:
     assert repr(Tree) == "Tree"
 
+  def test_tree_accepts_beartype_valid_leaf_types(self) -> None:
+    assert Tree[int, T].__module__ == "shapix.optree"
+    assert Tree[list[int], T].__module__ == "shapix.optree"
+
+  def test_tree_rejects_invalid_leaf_type_eagerly(self) -> None:
+    with pytest.raises(TypeError, match="beartype-valid"):
+      Tree[123]
+
+  def test_tree_rejects_raw_non_structure_arg_eagerly(self) -> None:
+    with pytest.raises(TypeError, match="Structure names or Ellipsis"):
+      Tree[F32[N], 123]
+
+    with pytest.raises(TypeError, match="Structure names or Ellipsis"):
+      Tree[F32[N], None]
+
+  def test_tree_rejects_whitespace_structure_name_eagerly(self) -> None:
+    with pytest.raises(TypeError, match="single names"):
+      Tree[F32[N], Structure("A B")]
+
+  def test_tree_rejects_empty_structure_name_eagerly(self) -> None:
+    with pytest.raises(TypeError, match="single names"):
+      Tree[F32[N], Structure("")]
+
+  def test_tree_rejects_literal_ellipsis_structure_name_eagerly(self) -> None:
+    with pytest.raises(TypeError, match="cannot be '\\.\\.\\.'"):
+      Tree[F32[N], Structure("...")]
+
   def test_parse_spec_args_both_ellipsis_error(self) -> None:
     with pytest.raises(TypeError, match="Cannot have"):
       Tree[F32[N], ..., ...]
