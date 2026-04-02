@@ -202,12 +202,12 @@ _NUMPY_TRUSTED: tuple[type, ...] = (np.ndarray,)
 
 
 def make_array_like_type(
-  dtype_spec: object,
+  dtype_spec: DtypeSpec,
   *,
   casting: str = "same_kind",
   name: str = "ArrayLike",
-  asarray: object | None = None,
-  trusted_types: object | None = _NUMPY_TRUSTED,
+  asarray: tp.Callable[[object], object] | None = None,
+  trusted_types: tuple[type[object], ...] | None = _NUMPY_TRUSTED,
 ) -> tp.Any:
   """NumPy-aware version of :func:`shapix.make_array_like_type`.
 
@@ -216,11 +216,7 @@ def make_array_like_type(
   where ``np.asarray()`` verifies actual convertibility.
   """
   return _make_array_like_type(
-    dtype_spec,  # type: ignore[arg-type]
-    casting=casting,
-    name=name,
-    asarray=asarray,  # type: ignore[arg-type]
-    trusted_types=trusted_types,  # type: ignore[arg-type]
+    dtype_spec, casting=casting, name=name, asarray=asarray, trusted_types=trusted_types
   )
 
 

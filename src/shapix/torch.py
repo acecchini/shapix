@@ -50,6 +50,7 @@ from ._dtypes import (
   COMPLEX,
   COMPLEX64,
   COMPLEX128,
+  DtypeSpec,
   FLOAT,
   FLOAT16,
   FLOAT32,
@@ -202,12 +203,12 @@ _TORCH_TRUSTED: tuple[type, ...] = (_np.ndarray, Tensor)
 
 
 def make_array_like_type(
-  dtype_spec: object,
+  dtype_spec: DtypeSpec,
   *,
   casting: str = "same_kind",
   name: str = "ArrayLike",
-  asarray: object | None = _torch_asarray,
-  trusted_types: object | None = _TORCH_TRUSTED,
+  asarray: tp.Callable[[object], object] | None = _torch_asarray,
+  trusted_types: tuple[type[object], ...] | None = _TORCH_TRUSTED,
 ) -> tp.Any:
   """Torch-aware version of :func:`shapix.make_array_like_type`.
 
@@ -217,11 +218,7 @@ def make_array_like_type(
   backend arrays (e.g. ``jax.Array``) go through the slow path.
   """
   return _make_array_like_type(
-    dtype_spec,  # type: ignore[arg-type]
-    casting=casting,
-    name=name,
-    asarray=asarray,  # type: ignore[arg-type]
-    trusted_types=trusted_types,  # type: ignore[arg-type]
+    dtype_spec, casting=casting, name=name, asarray=asarray, trusted_types=trusted_types
   )
 
 
