@@ -584,6 +584,87 @@ class TestValueExpressions:
       f(10, np.ones(5, dtype=np.float32))
 
 
+class TestDiagnosticMessages:
+  def test_named_dim_mismatch_reports_dimension_detail(self) -> None:
+    @beartype
+    def f(x: F32[N], y: F32[N]) -> None:
+      pass
+
+    with pytest.raises(BeartypeCallHintParamViolation) as exc_info:
+      f(np.ones(3, dtype=np.float32), np.ones(5, dtype=np.float32))
+
+    text = str(exc_info.value)
+    assert "dimension 'N' expected 3 but got 5" in text
+    assert "False == beartype.vale.Is" not in text
+
+  def test_rank_mismatch_reports_shape_detail(self) -> None:
+    @beartype
+    def f(x: F32[N, C]) -> None:
+      pass
+
+    with pytest.raises(BeartypeCallHintParamViolation) as exc_info:
+      f(np.ones(3, dtype=np.float32))
+
+    text = str(exc_info.value)
+    assert "expected 2 dimensions but got 1" in text
+    assert "False == beartype.vale.Is" not in text
+
+  def test_value_mismatch_reports_evaluated_detail(self) -> None:
+    @beartype
+    def f(size: int) -> F32[Value("size")]:  # type: ignore[valid-type]
+      return np.ones(999, dtype=np.float32)
+
+    with pytest.raises(BeartypeCallHintReturnViolation) as exc_info:
+      f(4)
+
+    text = str(exc_info.value)
+    assert """dimension 'Value("size")' evaluated to 4 but got 999""" in text
+    assert "False == beartype.vale.Is" not in text
+
+  def test_symbolic_eval_failure_reports_expression(self) -> None:
+    @beartype
+    def f(x: F32[N]) -> F32[N // 0]:
+      return x
+
+    with pytest.raises(BeartypeCallHintReturnViolation) as exc_info:
+      f(np.ones(3, dtype=np.float32))
+
+    text = str(exc_info.value)
+    assert "cannot evaluate" in text
+    assert "division or modulo by zero" in text or "division by zero" in text
+    assert "False == beartype.vale.Is" not in text
+
+  def test_arraylike_conversion_failure_reports_conversion_detail(self) -> None:
+    @beartype
+    def f(x: F32Like[N]) -> None:
+      pass
+
+    with pytest.raises(BeartypeCallHintParamViolation) as exc_info:
+      f([1.0, [2.0, 3.0]])
+
+    text = str(exc_info.value)
+    assert "could not convert" in text
+    assert "setting an array element with a sequence" in text
+    assert "False == beartype.vale.Is" not in text
+
+  def test_arraylike_runtimeerror_reports_conversion_detail(self) -> None:
+    class Boom:
+      def __array__(self, *_a: object, **_kw: object) -> None:  # noqa: PLW3201
+        raise RuntimeError("boom")
+
+    @beartype
+    def f(x: F32Like[N]) -> None:
+      pass
+
+    with pytest.raises(BeartypeCallHintParamViolation) as exc_info:
+      f(Boom())
+
+    text = str(exc_info.value)
+    assert "could not convert" in text
+    assert "boom" in text
+    assert "False == beartype.vale.Is" not in text
+
+
 # =====================================================================
 # Variadic dimensions
 # =====================================================================
@@ -1181,6 +1262,13 @@ class TestArrayLikeRejection:
         raise TypeError("not convertible")
 
     assert not is_bearable(SpoofedArray(), F32Like[...])
+
+  def test_runtimeerror_from_array_protocol_is_rejected(self) -> None:
+    class Boom:
+      def __array__(self, *_a: object, **_kw: object) -> None:  # noqa: PLW3201
+        raise RuntimeError("boom")
+
+    assert not is_bearable(Boom(), F32Like[...])
 
 
 class TestArrayLikeVariousTypes:
@@ -1798,7 +1886,7 @@ class TestNumpyLikeForeignArrayRejection:
 
   def test_torch_meta_tensor_rejected_by_numpy_like(self) -> None:
     """torch.Tensor on meta device has shape/dtype but can't be np.asarray'd."""
-    import torch
+    torch = pytest.importorskip("torch")
 
     from shapix.numpy import F32Like
 
@@ -1807,7 +1895,7 @@ class TestNumpyLikeForeignArrayRejection:
 
   def test_torch_cpu_tensor_accepted_by_numpy_like(self) -> None:
     """torch.Tensor on CPU is convertible via np.asarray — should pass."""
-    import torch
+    torch = pytest.importorskip("torch")
 
     from shapix.numpy import F32Like
 
@@ -1816,7 +1904,7 @@ class TestNumpyLikeForeignArrayRejection:
 
   def test_jax_array_accepted_by_numpy_like(self) -> None:
     """jax.Array is convertible via np.asarray — should pass."""
-    import jax.numpy as jnp
+    jnp = pytest.importorskip("jax.numpy")
 
     from shapix.numpy import F32Like
 

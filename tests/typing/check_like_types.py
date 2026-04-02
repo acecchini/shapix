@@ -109,27 +109,28 @@ _c256: C256ScalarLike = 1 + 0j
 # ArrayLike types — verify import
 # ---------------------------------------------------------------------------
 
-_blk: type = BoolLike  # type: ignore[assignment]
-_ilk: type = IntLike  # type: ignore[assignment]
-_ulk: type = UIntLike  # type: ignore[assignment]
-_iglk: type = IntegerLike  # type: ignore[assignment]
-_flk: type = FloatLike  # type: ignore[assignment]
-_rlk: type = RealLike  # type: ignore[assignment]
-_clk: type = ComplexLike  # type: ignore[assignment]
-_inlk: type = InexactLike  # type: ignore[assignment]
-_nlk: type = NumLike  # type: ignore[assignment]
-_slk: type = ShapedLike  # type: ignore[assignment]
-
-_i8lk: type = I8Like  # type: ignore[assignment]
-_i16lk: type = I16Like  # type: ignore[assignment]
-_i32lk: type = I32Like  # type: ignore[assignment]
-_i64lk: type = I64Like  # type: ignore[assignment]
-_u8lk: type = U8Like  # type: ignore[assignment]
-_u16lk: type = U16Like  # type: ignore[assignment]
-_u32lk: type = U32Like  # type: ignore[assignment]
-_u64lk: type = U64Like  # type: ignore[assignment]
-_f16lk: type = F16Like  # type: ignore[assignment]
-_f32lk: type = F32Like  # type: ignore[assignment]
-_f64lk: type = F64Like  # type: ignore[assignment]
-_c64lk: type = C64Like  # type: ignore[assignment]
-_c128lk: type = C128Like  # type: ignore[assignment]
+array_like_aliases = [
+  BoolLike,
+  IntLike,
+  UIntLike,
+  IntegerLike,
+  FloatLike,
+  RealLike,
+  ComplexLike,
+  InexactLike,
+  NumLike,
+  ShapedLike,
+  I8Like,
+  I16Like,
+  I32Like,
+  I64Like,
+  U8Like,
+  U16Like,
+  U32Like,
+  U64Like,
+  F16Like,
+  F32Like,
+  F64Like,
+  C64Like,
+  C128Like,
+]

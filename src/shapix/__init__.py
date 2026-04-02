@@ -1,7 +1,10 @@
 """Shapix — elegant runtime shape and dtype checking for array annotations.
 
 Works with standard ``@beartype`` decorators and ``beartype.claw`` import hooks.
-No custom decorator required for basic usage.
+No custom decorator required for basic usage. Plain ``@beartype`` checks share
+dimension bindings by discovering the nearest active beartype wrapper frame, and
+array or tree violations surface readable dtype, shape, ``Value(...)``, and
+structure diagnostics.
 
 Quick start::
 
@@ -15,7 +18,9 @@ Quick start::
 
 Dimension symbols (``N``, ``C``, ``H``, ``W``, …) are bound on first use
 within a function call and enforced on subsequent occurrences. This gives
-automatic cross-argument shape consistency with no extra boilerplate.
+automatic cross-argument shape consistency with no extra boilerplate. Use
+``@shapix.check`` or ``check_context()`` when you want that memo scope to be
+explicit instead of frame-discovered.
 
 Exports
 -------

@@ -71,6 +71,15 @@ __all__ = [
 # Arithmetic helper
 # ---------------------------------------------------------------------------
 
+if tp.TYPE_CHECKING:
+
+  def _make_value_dim(expr: str) -> Dimension: ...
+
+else:
+
+  def _make_value_dim(expr: str) -> Dimension:
+    return tp.cast(Dimension, Value(expr))
+
 
 def _binop(left: object, op: str, right: object) -> Dimension:
   """Build a binary expression.  Returns ``Value`` if either operand is one."""
@@ -81,7 +90,7 @@ def _binop(left: object, op: str, right: object) -> Dimension:
     msg = "Cannot use Scalar in arithmetic expressions"
     raise TypeError(msg)
   if isinstance(left, Value) or isinstance(right, Value):
-    return Value(f"({left}{op}{right})")  # type: ignore[return-value]
+    return _make_value_dim(f"({left}{op}{right})")
   return Dimension(f"({left}{op}{right})")
 
 

@@ -293,6 +293,23 @@ class TestCuPyLikeTypes:
     assert not is_bearable(SpoofedArray(), F32Like[...])
 
 
+class TestCuPyLikeDiagnostics:
+  def test_f32like_runtime_hint_module_is_backend_correct(self) -> None:
+    assert F32Like[N].__module__ == "shapix.cupy"
+
+  def test_f32like_violation_uses_cupy_backend_label(self) -> None:
+    @beartype
+    def f(x: F32Like[N]) -> None:  # type: ignore[valid-type]
+      pass
+
+    with pytest.raises(BeartypeCallHintParamViolation) as exc_info:
+      f(cp.ones((2, 2), dtype=cp.float32))
+
+    text = str(exc_info.value)
+    assert "<class 'shapix.cupy.F32Like[N]'>" in text
+    assert "numpy.F32Like[N]" not in text
+
+
 class TestCuPyLikeEdgeCases:
   def test_deep_nesting(self) -> None:
     assert is_bearable([[[[[[1.0]]]]]], F32Like[...])

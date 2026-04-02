@@ -1,14 +1,14 @@
 """Core array type factories — the heart of shapix.
 
-Transforms ``F32[N, C, H, W]`` into ``Annotated[np.ndarray, Is[checker]]``
-at runtime so that standard ``@beartype`` performs both dtype and shape
-validation automatically.
+Transforms ``F32[N, C, H, W]`` into custom runtime hint classes so that
+standard ``@beartype`` performs both dtype and shape validation automatically
+and can surface readable diagnostics on failure.
 
 The main components are:
 
-- :class:`_ArrayChecker` — a callable validator invoked by beartype's ``Is[]``
-  mechanism for strict array types.  Checks dtype then validates shape against
-  the spec while maintaining cross-argument dimension consistency via the memo.
+- :class:`_ArrayChecker` — validator attached to a shapix runtime hint for
+  strict array types. Checks dtype, then validates shape against the spec while
+  maintaining cross-argument dimension consistency via the memo.
 
 - :class:`_ArrayLikeChecker` — similar validator for array-like inputs
   (scalars, sequences, arrays).  Converts inputs via ``np.asarray`` and checks
@@ -16,7 +16,7 @@ The main components are:
 
 - :class:`_ArrayFactory` / :class:`_ArrayLikeFactory` — subscriptable objects
   that convert ``F32[N, C]`` or ``F32Like[N, C]`` into the appropriate
-  ``Annotated`` type hint.
+  runtime hint class.
 
 Use :func:`make_array_type` and :func:`make_array_like_type` to create new
 factories for custom array classes or dtype combinations.
@@ -24,16 +24,15 @@ factories for custom array classes or dtype combinations.
 
 from __future__ import annotations
 
+import typing as tp
 from collections.abc import Callable
-from typing import Annotated
-
-from beartype.vale import Is
 
 from ._dimensions import Dimension, _ValueExpr
 from ._dtypes import DtypeSpec
 from ._dtypes import extract_dtype_str as extract_dtype_str
 from ._memo import ShapeMemo as ShapeMemo
 from ._memo import get_memo, get_scope, has_untagged_memo
+from ._runtime_hints import ReplayFailureState, ValidationFailure, make_runtime_hint
 from ._shape import (
   ANONYMOUS,
   ANONYMOUS_VARIADIC,
@@ -49,7 +48,24 @@ from ._shape import (
 
 __all__ = ["make_array_type", "make_array_like_type"]
 
-_VALID_CASTINGS = frozenset({"no", "equiv", "safe", "same_kind", "unsafe"})
+CastingMode = tp.Literal["no", "equiv", "safe", "same_kind", "unsafe"]
+
+_VALID_CASTINGS: frozenset[CastingMode] = frozenset({
+  "no",
+  "equiv",
+  "safe",
+  "same_kind",
+  "unsafe",
+})
+
+
+class _HasShape(tp.Protocol):
+  shape: tp.Any
+
+
+def _is_valid_casting(casting: str) -> tp.TypeGuard[CastingMode]:
+  return casting in _VALID_CASTINGS
+
 
 # ---------------------------------------------------------------------------
 # Trusted array type cache (for ArrayLike fast-path gating)
@@ -99,8 +115,61 @@ def _is_trusted_array(obj: object) -> bool:
   return _is_trusted_array_type(type(obj))
 
 
+def _infer_array_hint_module(array_type: type[object]) -> str:
+  return getattr(array_type, "__module__", __name__)
+
+
+def _infer_arraylike_hint_module(
+  asarray: Callable[[object], object] | None, trusted_types: tuple[type, ...] | None
+) -> str:
+  # Backend Like factories pass a backend-scoped converter wrapper (for example
+  # ``shapix.jax._jax_asarray``) but often keep ``np.ndarray`` first in
+  # ``trusted_types``. Prefer the explicit converter module so diagnostics
+  # identify the owning shapix backend rather than falling back to NumPy.
+  if asarray is not None:
+    return getattr(asarray, "__module__", __name__)
+  if trusted_types:
+    return getattr(trusted_types[0], "__module__", __name__)
+  return __name__
+
+
+def _describe_actual_dtype(obj: object) -> str:
+  source = extract_dtype_str(obj)
+  dtype = getattr(obj, "dtype", None)
+  if dtype is None:
+    return f"{type(obj).__name__} has no dtype"
+  if source:
+    dt_str = getattr(dtype, "str", "")
+    if isinstance(dt_str, str) and dt_str:
+      return f"{source} ({dt_str})"
+    return source
+  return repr(dtype)
+
+
+def _byteorder_detail(dtype_spec: DtypeSpec) -> str:
+  byteorder = dtype_spec.byteorder
+  if byteorder == "native":
+    return "native byte order"
+  return f"{byteorder}-endian byte order"
+
+
+def _dtype_mismatch(
+  dtype_spec: DtypeSpec, obj: object, *, casting: str | None = None
+) -> ValidationFailure:
+  actual = _describe_actual_dtype(obj)
+  if dtype_spec.byteorder != "any" and dtype_spec._check_byteorder(obj) is False:
+    return ValidationFailure(
+      f"expected dtype {dtype_spec.name} with {_byteorder_detail(dtype_spec)} but got {actual}"
+    )
+  if casting is not None and casting != "no":
+    return ValidationFailure(
+      f"expected dtype compatible with {dtype_spec.name} under casting='{casting}' but got {actual}"
+    )
+  return ValidationFailure(f"expected dtype {dtype_spec.name} but got {actual}")
+
+
 # ---------------------------------------------------------------------------
-# Validator callable (used inside beartype's Is[...])
+# Runtime validators used by shapix's beartype hint classes
 # ---------------------------------------------------------------------------
 
 
@@ -111,99 +180,88 @@ class _ArrayChecker:
   ``Float32Array[N, C]``) and reused across all functions that share it.
   """
 
-  __slots__ = (
-    "_dtype_spec",
-    "_shape_spec",
-    "_repr",
-    "_fail_obj",
-    "_fail_memo",
-    "_fail_replays",
-  )
+  __slots__ = ("_array_type", "_dtype_spec", "_shape_spec", "_repr", "_fail_state")
 
-  def __init__(self, dtype_spec: DtypeSpec, shape_spec: tuple[DimSpec, ...]) -> None:
-    self._dtype_spec = dtype_spec
-    self._shape_spec = shape_spec
-    self._fail_obj: object | None = None
-    self._fail_memo: object | None = None
-    self._fail_replays: int = 0
+  def __init__(
+    self,
+    array_type: type[object] | DtypeSpec,
+    dtype_spec: DtypeSpec | tuple[DimSpec, ...],
+    shape_spec: tuple[DimSpec, ...] | None = None,
+  ) -> None:
+    if shape_spec is None:
+      self._array_type = None
+      self._dtype_spec = tp.cast(DtypeSpec, array_type)
+      self._shape_spec = tp.cast(tuple[DimSpec, ...], dtype_spec)
+    else:
+      self._array_type = tp.cast(type[object], array_type)
+      self._dtype_spec = tp.cast(DtypeSpec, dtype_spec)
+      self._shape_spec = shape_spec
+    self._fail_state = ReplayFailureState()
 
     # Pre-compute repr for beartype error messages
-    dims = ", ".join(repr(d) for d in shape_spec)
-    self._repr = f"{dtype_spec.name}[{dims}]"
+    dims = ", ".join(repr(d) for d in self._shape_spec)
+    self._repr = f"{self._dtype_spec.name}[{dims}]"
 
   def __call__(self, obj: object) -> bool:
-    # Replay guard for beartype error-generation re-invocations.
-    #
-    # When beartype generates an error message, it re-invokes validators
-    # from a different frame, creating a fresh memo that lacks bindings
-    # from prior parameters.  Without a guard, a cross-argument failure
-    # (e.g. N=3 vs shape (5,)) would incorrectly pass during error-gen.
-    #
-    # The guard is only armed when the failure occurred with a non-empty
-    # memo (prior bindings from other params).  Single-parameter failures
-    # (wrong dtype, wrong rank, wrong FixedDim) are intrinsic and will
-    # fail again under any memo, so no guard is needed.
-    #
-    # When the guard fires, we compare the current memo with the stored
-    # _fail_memo to distinguish error-gen from fresh @beartype calls:
-    #   - Same memo → same call context → clear guard and re-validate.
-    #   - Different memo WITH prior bindings → fresh @beartype call where
-    #     earlier params already bound dims → clear guard and re-validate.
-    #   - Different memo, empty → beartype error-gen → replay failure.
-    #     Beartype re-invokes twice per failing param (is_valid + get_diagnosis).
-    #     A countdown (_fail_replays) clears the guard after those 2 replays so
-    #     later standalone is_bearable() with the same object can re-validate.
-    #   - Untagged explicit memo (check_context) → always re-validate.
-    if self._fail_obj is not None and self._fail_obj is obj:
-      if has_untagged_memo():
-        self._fail_obj = None
-        self._fail_memo = None
-      else:
-        current_memo = get_memo(_depth=3)
-        if current_memo is self._fail_memo:
-          # Same memo = same call context — re-validate.
-          self._fail_obj = None
-          self._fail_memo = None
-        elif current_memo.single or current_memo.variadic or current_memo.structures:
-          # Different memo WITH prior bindings = fresh @beartype call where
-          # earlier params already bound dims — re-validate.
-          self._fail_obj = None
-          self._fail_memo = None
-        else:
-          # Different memo, empty = beartype error-gen.  Replay failure.
-          self._fail_replays -= 1
-          if self._fail_replays <= 0:
-            self._fail_obj = None
-            self._fail_memo = None
-          return False
+    return self.instancecheck(obj)
 
-    # Dtype check
-    if not self._dtype_spec.matches(obj):
+  def instancecheck(self, obj: object) -> bool:
+    if self._fail_state.should_replay(obj):
       return False
 
-    # Shape check with memo (auto-detects call context)
+    memo = get_memo()
+    scope = get_scope()
+    snap = memo.snapshot()
+    has_prior = any(snap)
+    failure = self._validate(obj, memo, scope)
+    if failure is None:
+      self._fail_state.clear()
+      return True
+
+    memo.restore(snap)
+    if has_prior and not has_untagged_memo():
+      self._fail_state.record(obj, memo, failure)
+    else:
+      self._fail_state.clear()
+    return False
+
+  def instancecheck_str(self, obj: object) -> str:
+    detail = self._fail_state.detail_for(obj)
+    if detail is None:
+      memo = get_memo()
+      scope = get_scope()
+      snap = memo.snapshot()
+      failure = self._validate(obj, memo, scope)
+      memo.restore(snap)
+      if failure is None:
+        detail = ValidationFailure(f"unexpectedly accepted {obj!r} for {self!r}")
+      else:
+        detail = failure
+    self._fail_state.clear()
+    return detail.message
+
+  def _validate(
+    self, obj: object, memo: ShapeMemo, scope: dict[str, object]
+  ) -> ValidationFailure | None:
+    array_type = self._array_type
+    if array_type is not None and not isinstance(obj, array_type):
+      expected = f"{array_type.__module__}.{array_type.__name__}"
+      actual = f"{type(obj).__module__}.{type(obj).__name__}"
+      return ValidationFailure(f"expected {expected} but got {actual}")
+
+    if not self._dtype_spec.matches(obj):
+      return _dtype_mismatch(self._dtype_spec, obj)
+
     shape = getattr(obj, "shape", None)
     if shape is None:
-      return False
+      return ValidationFailure(
+        f"expected object with shape for {self._repr} but got {type(obj).__name__}"
+      )
 
-    memo = get_memo(_depth=3)
-    scope = get_scope(_depth=3)
-    snap = memo.snapshot()
-
-    result = check_shape(tuple(shape), self._shape_spec, memo, scope) == ""
-
-    if not result:
-      memo.restore(snap)
-      # Only arm the replay guard in tagged contexts (@shapix.check).
-      # In untagged contexts (check_context), is_bearable() just returns
-      # False — no beartype error-gen re-invocations will consume the budget,
-      # so arming would poison later standalone validation.
-      if any(snap) and not has_untagged_memo():  # prior bindings from other params
-        self._fail_obj = obj
-        self._fail_memo = memo
-        self._fail_replays = 2
-
-    return result
+    err = check_shape(tuple(shape), self._shape_spec, memo, scope)
+    if err:
+      return ValidationFailure(err)
+    return None
 
   def __repr__(self) -> str:
     return self._repr
@@ -215,25 +273,35 @@ class _ArrayChecker:
 
 
 class _ArrayFactory:
-  """Subscriptable factory: ``Float32Array[N, C]`` → ``Annotated[ndarray, Is[...]]``.
+  """Subscriptable factory: ``Float32Array[N, C]`` → runtime hint class.
 
   Created via :func:`make_array_type` and not instantiated directly.
   """
 
-  __slots__ = ("_array_type", "_dtype_spec", "__name__")
+  __slots__ = ("_array_type", "_dtype_spec", "__name__", "_cache", "_module")
 
   def __init__(self, array_type: type, dtype_spec: DtypeSpec) -> None:
     self._array_type = array_type
     self._dtype_spec = dtype_spec
     self.__name__ = f"{dtype_spec.name}Array"
+    self._cache: dict[tuple[DimSpec, ...], type] = {}
+    self._module = _infer_array_hint_module(array_type)
 
   def __getitem__(self, dims: object) -> type:
     if not isinstance(dims, tuple):
       dims = (dims,)
 
     shape_spec = _to_shape_spec(dims)
-    checker = _ArrayChecker(self._dtype_spec, shape_spec)
-    return Annotated[self._array_type, Is[checker]]  # type: ignore[return-value]
+    cached = self._cache.get(shape_spec)
+    if cached is not None:
+      return cached
+
+    checker = _ArrayChecker(self._array_type, self._dtype_spec, shape_spec)
+    hint = make_runtime_hint(
+      repr(checker), checker, module=self._module, origin=self._array_type
+    )
+    self._cache[shape_spec] = hint
+    return hint
 
   def __repr__(self) -> str:
     return self.__name__
@@ -253,8 +321,8 @@ def make_array_type(array_type: type, dtype_spec: DtypeSpec) -> _ArrayFactory:
   Returns
   -------
   _ArrayFactory
-      A subscriptable factory. ``factory[N, C]`` produces
-      ``Annotated[array_type, Is[checker]]``.
+      A subscriptable factory. ``factory[N, C]`` produces a runtime hint
+      class validated by beartype.
 
   Example::
 
@@ -262,7 +330,7 @@ def make_array_type(array_type: type, dtype_spec: DtypeSpec) -> _ArrayFactory:
       from shapix._dtypes import FLOAT32
 
       Float32Array = make_array_type(np.ndarray, FLOAT32)
-      Float32Array[N, C, H, W]  # → Annotated[ndarray, Is[...]]
+      Float32Array[N, C, H, W]  # → runtime hint class
   """
   return _ArrayFactory(array_type, dtype_spec)
 
@@ -288,6 +356,8 @@ class _ArrayLikeChecker:
   accepted.
   """
 
+  _casting: CastingMode
+
   __slots__ = (
     "_dtype_spec",
     "_shape_spec",
@@ -296,9 +366,7 @@ class _ArrayLikeChecker:
     "_asarray",
     "_trusted_types",
     "_repr",
-    "_fail_obj",
-    "_fail_memo",
-    "_fail_replays",
+    "_fail_state",
   )
 
   def __init__(
@@ -306,7 +374,7 @@ class _ArrayLikeChecker:
     dtype_spec: DtypeSpec,
     shape_spec: tuple[DimSpec, ...],
     *,
-    casting: str,
+    casting: CastingMode,
     name: str,
     asarray: Callable[[object], object] | None = None,
     trusted_types: tuple[type, ...] | None = None,
@@ -317,39 +385,52 @@ class _ArrayLikeChecker:
     self._is_structured: bool = dtype_spec._structured is not None  # noqa: SLF001
     self._asarray = asarray
     self._trusted_types = trusted_types
-    self._fail_obj: object | None = None
-    self._fail_memo: object | None = None
-    self._fail_replays: int = 0
+    self._fail_state = ReplayFailureState()
 
     dims = ", ".join(repr(d) for d in shape_spec)
     self._repr = f"{name}[{dims}]"
 
   def __call__(self, obj: object) -> bool:
-    # Replay guard (same mechanism as _ArrayChecker — see comment there).
-    if self._fail_obj is not None and self._fail_obj is obj:
-      if has_untagged_memo():
-        self._fail_obj = None
-        self._fail_memo = None
+    return self.instancecheck(obj)
+
+  def instancecheck(self, obj: object) -> bool:
+    if self._fail_state.should_replay(obj):
+      return False
+
+    memo = get_memo()
+    scope = get_scope()
+    snap = memo.snapshot()
+    has_prior = any(snap)
+    failure = self._validate(obj, memo, scope)
+    if failure is None:
+      self._fail_state.clear()
+      return True
+
+    memo.restore(snap)
+    if has_prior and not has_untagged_memo():
+      self._fail_state.record(obj, memo, failure)
+    else:
+      self._fail_state.clear()
+    return False
+
+  def instancecheck_str(self, obj: object) -> str:
+    detail = self._fail_state.detail_for(obj)
+    if detail is None:
+      memo = get_memo()
+      scope = get_scope()
+      snap = memo.snapshot()
+      failure = self._validate(obj, memo, scope)
+      memo.restore(snap)
+      if failure is None:
+        detail = ValidationFailure(f"unexpectedly accepted {obj!r} for {self!r}")
       else:
-        current_memo = get_memo(_depth=3)
-        if current_memo is self._fail_memo:
-          self._fail_obj = None
-          self._fail_memo = None
-        elif current_memo.single or current_memo.variadic or current_memo.structures:
-          self._fail_obj = None
-          self._fail_memo = None
-        else:
-          # Error-gen replay (see _ArrayChecker comment).
-          self._fail_replays -= 1
-          if self._fail_replays <= 0:
-            self._fail_obj = None
-            self._fail_memo = None
-          return False
+        detail = failure
+    self._fail_state.clear()
+    return detail.message
 
-    memo = get_memo(_depth=3)
-    scope = get_scope(_depth=3)
-    has_prior = bool(memo.single or memo.variadic or memo.structures)
-
+  def _validate(
+    self, obj: object, memo: ShapeMemo, scope: dict[str, object]
+  ) -> ValidationFailure | None:
     # Fast path: known array types with shape + dtype skip conversion.
     # Spoofed objects with .shape/.dtype fall through to the slow path
     # where _convert() verifies actual convertibility.
@@ -362,89 +443,99 @@ class _ArrayLikeChecker:
       if (trusted is not None and isinstance(obj, trusted)) or (
         trusted is None and _is_trusted_array(obj)
       ):
-        result = self._check(obj, tuple(shape), memo, scope)
-        if not result and has_prior and not has_untagged_memo():
-          self._fail_obj = obj
-          self._fail_memo = memo
-          self._fail_replays = 2
-        return result
+        return self._check(obj, tuple(shape), memo, scope)
 
     # Slow path: convert scalar / sequence / protocol object to array.
     # Try the backend-specific converter first (jnp.asarray, torch.as_tensor),
     # then fall back to np.asarray for scalars and nested sequences.
-    arr = self._convert(obj)
+    arr, failure = self._convert(obj)
     if arr is None:
-      # Conversion failure is intrinsic — error-gen will reproduce it.
-      return False
+      return failure
 
-    result = self._check(arr, tuple(arr.shape), memo, scope)  # type: ignore[attr-defined]
-    if not result and has_prior and not has_untagged_memo():
-      self._fail_obj = obj
-      self._fail_memo = memo
-      self._fail_replays = 2
-    return result
+    converted = tp.cast(_HasShape, arr)
+    return self._check(arr, tuple(converted.shape), memo, scope)
 
-  def _convert(self, obj: object) -> object | None:
-    """Convert *obj* to an array with ``.shape`` and ``.dtype``, or None."""
+  def _convert(self, obj: object) -> tuple[object | None, ValidationFailure | None]:
+    """Convert *obj* to an array with ``.shape`` and ``.dtype``."""
+    errors: list[str] = []
+
     if self._asarray is not None:
       try:
-        return self._asarray(obj)
-      except Exception:  # noqa: BLE001
-        pass  # fall through to numpy
+        return self._asarray(obj), None
+      except Exception as e:  # noqa: BLE001
+        if str(e):
+          errors.append(str(e))
 
     try:
       import numpy as np
 
-      return np.asarray(obj)
-    except (TypeError, ValueError):
-      return None
+      return np.asarray(obj), None
+    except Exception as e:  # noqa: BLE001
+      if str(e):
+        errors.append(str(e))
+
+    detail = "; ".join(dict.fromkeys(errors))
+    if detail:
+      return None, ValidationFailure(f"could not convert value to array: {detail}")
+    return None, ValidationFailure("could not convert value to array")
 
   def _check(
     self, obj: object, shape: tuple[int, ...], memo: ShapeMemo, scope: dict[str, object]
-  ) -> bool:
+  ) -> ValidationFailure | None:
     """Validate dtype (with casting rules) then shape (with memo)."""
-    if not self._check_dtype(obj):
-      return False
+    failure = self._check_dtype(obj)
+    if failure is not None:
+      return failure
 
-    snap = memo.snapshot()
-    result = check_shape(shape, self._shape_spec, memo, scope) == ""
-    if not result:
-      memo.restore(snap)
-    return result
+    err = check_shape(shape, self._shape_spec, memo, scope)
+    if err:
+      return ValidationFailure(err)
+    return None
 
-  def _check_dtype(self, obj: object) -> bool:
+  def _check_dtype(self, obj: object) -> ValidationFailure | None:
     """Check dtype using numpy casting rules."""
     # Strictest level: exact dtype match only
     if self._casting == "no":
-      return self._dtype_spec.matches(obj)
+      if self._dtype_spec.matches(obj):
+        return None
+      return _dtype_mismatch(self._dtype_spec, obj)
 
     # Structured dtypes require exact field layout comparison regardless of
     # casting mode — np.can_cast("void", "void") would accept any void dtype.
     if self._is_structured:
-      return self._dtype_spec.matches(obj)
+      if self._dtype_spec.matches(obj):
+        return None
+      return _dtype_mismatch(self._dtype_spec, obj)
 
     source = extract_dtype_str(obj)
     if not source:
-      return False
+      return _dtype_mismatch(self._dtype_spec, obj, casting=self._casting)
 
     # Wildcard ("*") accepts any dtype (used by SHAPED)
     if "*" in self._dtype_spec.allowed:
-      return self._dtype_spec._check_byteorder(obj)
+      if self._dtype_spec._check_byteorder(obj):
+        return None
+      return _dtype_mismatch(self._dtype_spec, obj, casting=self._casting)
 
     # Exact string match always passes (handles non-numpy dtypes like bfloat16
     # where np.can_cast would raise TypeError for an unknown dtype string).
     if source in self._dtype_spec.allowed:
-      return self._dtype_spec._check_byteorder(obj)
+      if self._dtype_spec._check_byteorder(obj):
+        return None
+      return _dtype_mismatch(self._dtype_spec, obj, casting=self._casting)
 
     import numpy as np
 
     for target in self._dtype_spec.allowed:
       try:
-        if np.can_cast(source, target, casting=self._casting):  # type: ignore[arg-type]  # pyright: ignore[reportArgumentType]
-          return self._dtype_spec._check_byteorder(obj)
+        if np.can_cast(source, target, casting=self._casting):
+          if self._dtype_spec._check_byteorder(obj):
+            return None
+          return _dtype_mismatch(self._dtype_spec, obj, casting=self._casting)
       except TypeError:
         continue
-    return False
+
+    return _dtype_mismatch(self._dtype_spec, obj, casting=self._casting)
 
   def __repr__(self) -> str:
     return self._repr
@@ -456,20 +547,30 @@ class _ArrayLikeChecker:
 
 
 class _ArrayLikeFactory:
-  """Subscriptable factory: ``F32Like[N, C]`` → ``Annotated[object, Is[...]]``.
+  """Subscriptable factory: ``F32Like[N, C]`` → runtime hint class.
 
   Created via :func:`make_array_like_type` and not instantiated directly.
   Mirrors :class:`_ArrayFactory` but validates array-like inputs (scalars,
   sequences, arrays) with dtype casting awareness.
   """
 
-  __slots__ = ("_dtype_spec", "_casting", "_asarray", "_trusted_types", "__name__")
+  _casting: CastingMode
+
+  __slots__ = (
+    "_dtype_spec",
+    "_casting",
+    "_asarray",
+    "_trusted_types",
+    "__name__",
+    "_cache",
+    "_module",
+  )
 
   def __init__(
     self,
     dtype_spec: DtypeSpec,
     *,
-    casting: str,
+    casting: CastingMode,
     name: str,
     asarray: Callable[[object], object] | None = None,
     trusted_types: tuple[type, ...] | None = None,
@@ -479,12 +580,18 @@ class _ArrayLikeFactory:
     self._asarray = asarray
     self._trusted_types = trusted_types
     self.__name__ = name
+    self._cache: dict[tuple[DimSpec, ...], type] = {}
+    self._module = _infer_arraylike_hint_module(asarray, trusted_types)
 
   def __getitem__(self, dims: object) -> type:
     if not isinstance(dims, tuple):
       dims = (dims,)
 
     shape_spec = _to_shape_spec(dims)
+    cached = self._cache.get(shape_spec)
+    if cached is not None:
+      return cached
+
     checker = _ArrayLikeChecker(
       self._dtype_spec,
       shape_spec,
@@ -493,7 +600,9 @@ class _ArrayLikeFactory:
       asarray=self._asarray,
       trusted_types=self._trusted_types,
     )
-    return Annotated[object, Is[checker]]  # type: ignore[return-value]
+    hint = make_runtime_hint(repr(checker), checker, module=self._module, origin=object)
+    self._cache[shape_spec] = hint
+    return hint
 
   def __repr__(self) -> str:
     return self.__name__
@@ -534,17 +643,17 @@ def make_array_like_type(
   Returns
   -------
   _ArrayLikeFactory
-      A subscriptable factory.  ``factory[N, C]`` produces
-      ``Annotated[object, Is[checker]]``.
+      A subscriptable factory.  ``factory[N, C]`` produces a runtime hint
+      class validated by beartype.
 
   Example::
 
       from shapix._dtypes import FLOAT32
 
       F32Like = make_array_like_type(FLOAT32, name="F32Like")
-      F32Like[N, C, H, W]  # → Annotated[object, Is[...]]
+      F32Like[N, C, H, W]  # → runtime hint class
   """
-  if casting not in _VALID_CASTINGS:
+  if not _is_valid_casting(casting):
     msg = f"Invalid casting {casting!r}, must be one of {sorted(_VALID_CASTINGS)}"
     raise ValueError(msg)
   return _ArrayLikeFactory(

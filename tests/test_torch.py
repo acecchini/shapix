@@ -356,6 +356,23 @@ class TestTorchLikeTypes:
     assert not is_bearable(SpoofedArray(), F32Like[...])
 
 
+class TestTorchLikeDiagnostics:
+  def test_f32like_runtime_hint_module_is_backend_correct(self) -> None:
+    assert F32Like[N].__module__ == "shapix.torch"
+
+  def test_f32like_violation_uses_torch_backend_label(self) -> None:
+    @beartype
+    def f(x: F32Like[N]) -> None:  # type: ignore[valid-type]
+      pass
+
+    with pytest.raises(BeartypeCallHintParamViolation) as exc_info:
+      f(torch.ones((2, 2), dtype=torch.float32))
+
+    text = str(exc_info.value)
+    assert "<class 'shapix.torch.F32Like[N]'>" in text
+    assert "numpy.F32Like[N]" not in text
+
+
 class TestTorchAsarrayFallback:
   def test_torch_like_uses_torch_as_tensor(self) -> None:
     """Verify the slow path uses torch.as_tensor (not just np.asarray)."""
