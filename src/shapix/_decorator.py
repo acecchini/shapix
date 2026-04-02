@@ -36,8 +36,8 @@ def check(
 
 
 def check(
-  fn: Callable[P, R] | None = None, /, *, conf: BeartypeConf | None = None
-) -> Callable[P, R] | Callable[[Callable[P, R]], Callable[P, R]]:
+  fn: Callable[P, tp.Any] | None = None, /, *, conf: BeartypeConf | None = None
+) -> tp.Any:
   """Decorator that manages the dimension memo around a function call.
 
   Usage::
@@ -57,7 +57,7 @@ def check(
      Decorate regular functions or coroutine functions only.
   """
 
-  def decorator(fn: Callable[P, R]) -> Callable[P, R]:
+  def decorator(fn: Callable[P, tp.Any]) -> Callable[P, tp.Any]:
     if inspect.isasyncgenfunction(fn):
       msg = "@shapix.check does not support async generator functions"
       raise TypeError(msg)
@@ -65,32 +65,33 @@ def check(
       msg = "@shapix.check does not support generator functions"
       raise TypeError(msg)
 
-    inner = fn
+    inner: Callable[P, tp.Any] = fn
     signature = inspect.signature(fn)
     if conf is not None:
       from beartype import beartype
 
-      inner = beartype(fn, conf=conf)  # type: ignore[call-overload]
+      inner = beartype(conf=conf)(fn)
 
     if inspect.iscoroutinefunction(fn):
       inner_code = getattr(inner, "__code__", None)
+      inner_async = tp.cast(Callable[P, tp.Awaitable[tp.Any]], inner)
 
       @functools.wraps(fn)
-      async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+      async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> tp.Any:
         bound = signature.bind_partial(*args, **kwargs)
         bound.apply_defaults()
         push_memo(scope=dict(bound.arguments), owner_code=inner_code)
         try:
-          return await inner(*args, **kwargs)  # type: ignore[misc,no-any-return]
+          return await inner_async(*args, **kwargs)
         finally:
           pop_memo()
 
-      return async_wrapper  # type: ignore[return-value]
+      return async_wrapper
 
     inner_code = getattr(inner, "__code__", None)
 
     @functools.wraps(fn)
-    def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> tp.Any:
       bound = signature.bind_partial(*args, **kwargs)
       bound.apply_defaults()
       push_memo(scope=dict(bound.arguments), owner_code=inner_code)

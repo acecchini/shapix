@@ -106,7 +106,7 @@ class _TreeChecker:
 
   def __init__(
     self,
-    leaf_type: type,
+    leaf_type: object,
     structure_spec: str | None = None,
     *,
     get_ops: Callable[[], tp.Any],
@@ -204,7 +204,7 @@ class _TreeChecker:
       return self._bind_or_check(names[0], tree_ops.tree_structure(obj), memo)
     return self._check_top_down(names, obj, tree_ops, memo, wildcard=False)
 
-  def _check_leaf(self, leaf: object, leaf_type: type) -> ValidationFailure | None:
+  def _check_leaf(self, leaf: object, leaf_type: object) -> ValidationFailure | None:
     validator = get_runtime_validator(leaf_type)
     if validator is not None:
       if validator.instancecheck(leaf):
@@ -438,7 +438,7 @@ class _TreeFactory:
     if cached is not None:
       return cached
 
-    checker = _TreeChecker(leaf_type, structure_spec, get_ops=self._get_ops)  # type: ignore[arg-type]
+    checker = _TreeChecker(leaf_type, structure_spec, get_ops=self._get_ops)
     hint = make_runtime_hint(repr(checker), checker, module=self._module, origin=object)
     self._cache[key] = hint
     return hint

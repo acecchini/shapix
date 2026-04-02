@@ -155,7 +155,10 @@ __all__ = [
   "ShapedLike",
 ]
 
-from ._array_types import make_array_like_type as _make_array_like_type
+from ._array_types import (
+  _is_valid_casting,
+  make_array_like_type as _make_array_like_type,
+)
 from ._array_types import make_array_type
 from ._dtypes import (
   BOOL,
@@ -592,7 +595,7 @@ def make_scalar_like_type(
   """
   from ._array_types import _VALID_CASTINGS
 
-  if casting not in _VALID_CASTINGS:
+  if not _is_valid_casting(casting):
     msg = f"Invalid casting {casting!r}, must be one of {sorted(_VALID_CASTINGS)}"
     raise ValueError(msg)
 
@@ -603,10 +606,10 @@ def make_scalar_like_type(
       return False
     try:
       arr = np.asarray(value)
-      return np.can_cast(arr.dtype, target, casting=casting)  # type: ignore[arg-type]  # pyright: ignore[reportArgumentType]
+      return np.can_cast(arr.dtype, target, casting=casting)
     except (TypeError, ValueError):
       return False
 
   _check.__name__ = name
   _check.__qualname__ = name
-  return A[_SCALAR_BASE, Is[_check]]  # type: ignore[return-value]
+  return tp.cast(type, A[_SCALAR_BASE, Is[_check]])

@@ -48,7 +48,24 @@ from ._shape import (
 
 __all__ = ["make_array_type", "make_array_like_type"]
 
-_VALID_CASTINGS = frozenset({"no", "equiv", "safe", "same_kind", "unsafe"})
+CastingMode = tp.Literal["no", "equiv", "safe", "same_kind", "unsafe"]
+
+_VALID_CASTINGS: frozenset[CastingMode] = frozenset({
+  "no",
+  "equiv",
+  "safe",
+  "same_kind",
+  "unsafe",
+})
+
+
+class _HasShape(tp.Protocol):
+  shape: tp.Any
+
+
+def _is_valid_casting(casting: str) -> tp.TypeGuard[CastingMode]:
+  return casting in _VALID_CASTINGS
+
 
 # ---------------------------------------------------------------------------
 # Trusted array type cache (for ArrayLike fast-path gating)
@@ -339,6 +356,8 @@ class _ArrayLikeChecker:
   accepted.
   """
 
+  _casting: CastingMode
+
   __slots__ = (
     "_dtype_spec",
     "_shape_spec",
@@ -355,7 +374,7 @@ class _ArrayLikeChecker:
     dtype_spec: DtypeSpec,
     shape_spec: tuple[DimSpec, ...],
     *,
-    casting: str,
+    casting: CastingMode,
     name: str,
     asarray: Callable[[object], object] | None = None,
     trusted_types: tuple[type, ...] | None = None,
@@ -433,7 +452,8 @@ class _ArrayLikeChecker:
     if arr is None:
       return failure
 
-    return self._check(arr, tuple(arr.shape), memo, scope)  # type: ignore[attr-defined]
+    converted = tp.cast(_HasShape, arr)
+    return self._check(arr, tuple(converted.shape), memo, scope)
 
   def _convert(self, obj: object) -> tuple[object | None, ValidationFailure | None]:
     """Convert *obj* to an array with ``.shape`` and ``.dtype``."""
@@ -508,7 +528,7 @@ class _ArrayLikeChecker:
 
     for target in self._dtype_spec.allowed:
       try:
-        if np.can_cast(source, target, casting=self._casting):  # type: ignore[arg-type]  # pyright: ignore[reportArgumentType]
+        if np.can_cast(source, target, casting=self._casting):
           if self._dtype_spec._check_byteorder(obj):
             return None
           return _dtype_mismatch(self._dtype_spec, obj, casting=self._casting)
@@ -534,6 +554,8 @@ class _ArrayLikeFactory:
   sequences, arrays) with dtype casting awareness.
   """
 
+  _casting: CastingMode
+
   __slots__ = (
     "_dtype_spec",
     "_casting",
@@ -548,7 +570,7 @@ class _ArrayLikeFactory:
     self,
     dtype_spec: DtypeSpec,
     *,
-    casting: str,
+    casting: CastingMode,
     name: str,
     asarray: Callable[[object], object] | None = None,
     trusted_types: tuple[type, ...] | None = None,
@@ -631,7 +653,7 @@ def make_array_like_type(
       F32Like = make_array_like_type(FLOAT32, name="F32Like")
       F32Like[N, C, H, W]  # → runtime hint class
   """
-  if casting not in _VALID_CASTINGS:
+  if not _is_valid_casting(casting):
     msg = f"Invalid casting {casting!r}, must be one of {sorted(_VALID_CASTINGS)}"
     raise ValueError(msg)
   return _ArrayLikeFactory(
