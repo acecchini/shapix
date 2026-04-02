@@ -169,7 +169,17 @@ def _is_beartype_wrapper_frame(frame: types.FrameType) -> bool:
   fn = locals_map.get("__beartype_func")
   args = locals_map.get("args")
   kwargs = locals_map.get("kwargs")
-  return callable(fn) and isinstance(args, tuple) and isinstance(kwargs, dict)
+  if callable(fn) and isinstance(args, tuple) and isinstance(kwargs, dict):
+    return True
+
+  # beartype.door.is_bearable() compiles per-call checker functions named like
+  # ``__beartype_checker_0`` that expose the validated object as one or more
+  # ``__beartype_pith_*`` locals. These frames are the right memo boundary for
+  # standalone bearability checks; falling back past them to shared internals
+  # can leak stale bindings across unrelated checks.
+  return frame.f_code.co_name.startswith("__beartype_checker_") and any(
+    name.startswith("__beartype_pith_") for name in locals_map
+  )
 
 
 def _find_beartype_wrapper_frame(*, _depth: int) -> types.FrameType | None:

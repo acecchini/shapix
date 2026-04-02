@@ -42,6 +42,31 @@ class TestExplicitMemo:
 
 
 class TestFrameBasedMemo:
+  def test_plain_is_bearable_uses_checker_frame(
+    self, monkeypatch: pytest.MonkeyPatch
+  ) -> None:
+    """Plain is_bearable() should anchor memos to the generated checker frame."""
+    from beartype.door import is_bearable
+
+    import shapix._array_types as array_types
+    import shapix._memo as memo_mod
+
+    seen_frames: list[str | None] = []
+    original_get_memo = array_types.get_memo
+
+    def tracked_get_memo(*args: object, **kwargs: object) -> ShapeMemo:
+      frame = memo_mod._find_beartype_wrapper_frame(_depth=2)
+      seen_frames.append(None if frame is None else frame.f_code.co_name)
+      return original_get_memo(*args, **kwargs)
+
+    monkeypatch.setattr(array_types, "get_memo", tracked_get_memo)
+
+    assert is_bearable(np.ones((3,), dtype=np.float32), F32[N])
+    assert any(
+      name is not None and name.startswith("__beartype_checker_")
+      for name in seen_frames
+    )
+
   def test_sequential_calls_get_fresh_memos(self) -> None:
     """Calling the same function twice should not reuse stale bindings."""
 
