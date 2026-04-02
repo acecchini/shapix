@@ -13,6 +13,15 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   release-based publishing and manual `workflow_dispatch` support for a chosen
   ref.
 
+### Changed
+
+- Hardened nearest-wrapper memo and scope resolution for plain `@beartype`
+  usage in decorated call stacks.
+- Array and tree runtime hints now report readable validation failures through
+  custom beartype diagnostics instead of boolean-only validator output.
+- Backend `Like[...]` diagnostics now identify JAX, PyTorch, and CuPy hints
+  with their owning `shapix` backend module instead of `numpy`.
+
 ## [0.0.1] - 2026-03-31
 
 ### Added

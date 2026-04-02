@@ -11,7 +11,7 @@ Array aliases such as `F32[N, C]` or `DT64[...]` are the core "strict array" sid
 - the allowed dtype family
 - the shape specification in the subscript
 
-At runtime these aliases become `Annotated[ArrayType, Is[validator]]`, so standard `@beartype` does the checking.
+At runtime these aliases become shapix runtime hint classes rather than `Annotated[...]` wrappers. Standard `@beartype` checks them through `__instancecheck__()`, and shapix supplies readable failure text through `__instancecheck_str__()`.
 
 ## Built-in backends
 

@@ -5,7 +5,7 @@ description: Install shapix, pick a backend, and learn the runtime and typing mo
 
 # Getting Started
 
-Shapix turns annotations like `F32[N, C]` into runtime-validated contracts using `typing.Annotated` and beartype validators.
+Shapix turns annotations like `F32[N, C]` into runtime-validated contracts by generating small runtime hint classes for arrays and trees. Beartype validates those hints through `__instancecheck__()`, and shapix provides readable failures through `__instancecheck_str__()`.
 
 The root `shapix` module is intentionally lightweight: it exports dimension symbols, tree structure symbols, `DtypeSpec`, the custom array factories, and the memo helpers. Backend modules such as `shapix.numpy`, `shapix.jax`, `shapix.torch`, and `shapix.cupy` add concrete array aliases once you install those dependencies.
 
