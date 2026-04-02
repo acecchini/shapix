@@ -631,7 +631,7 @@ class TestDiagnosticMessages:
 
     text = str(exc_info.value)
     assert "cannot evaluate" in text
-    assert "division or modulo by zero" in text
+    assert "division or modulo by zero" in text or "division by zero" in text
     assert "False == beartype.vale.Is" not in text
 
   def test_arraylike_conversion_failure_reports_conversion_detail(self) -> None:
@@ -1886,7 +1886,7 @@ class TestNumpyLikeForeignArrayRejection:
 
   def test_torch_meta_tensor_rejected_by_numpy_like(self) -> None:
     """torch.Tensor on meta device has shape/dtype but can't be np.asarray'd."""
-    import torch
+    torch = pytest.importorskip("torch")
 
     from shapix.numpy import F32Like
 
@@ -1895,7 +1895,7 @@ class TestNumpyLikeForeignArrayRejection:
 
   def test_torch_cpu_tensor_accepted_by_numpy_like(self) -> None:
     """torch.Tensor on CPU is convertible via np.asarray — should pass."""
-    import torch
+    torch = pytest.importorskip("torch")
 
     from shapix.numpy import F32Like
 
@@ -1904,7 +1904,7 @@ class TestNumpyLikeForeignArrayRejection:
 
   def test_jax_array_accepted_by_numpy_like(self) -> None:
     """jax.Array is convertible via np.asarray — should pass."""
-    import jax.numpy as jnp
+    jnp = pytest.importorskip("jax.numpy")
 
     from shapix.numpy import F32Like
 

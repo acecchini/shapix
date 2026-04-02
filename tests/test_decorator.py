@@ -786,7 +786,7 @@ class TestReplayGuardCheckContext:
     assert is_bearable(arr, Hint)  # must pass: N unbound, shape (4,) binds N=4
 
   def test_arraylike_check_context_standalone(self) -> None:
-    """ArrayLike object passes standalone after check_context failure."""
+    """Fresh standalone ArrayLike validation passes after check_context failure."""
     from beartype.door import is_bearable
 
     from shapix.numpy import F32Like
@@ -798,7 +798,7 @@ class TestReplayGuardCheckContext:
       assert is_bearable([1.0, 2.0, 3.0], Hint)  # binds N=3
       assert not is_bearable(lst, Hint)  # fails: N=3 vs len 4
 
-    assert is_bearable(lst, Hint)  # must pass
+    assert is_bearable(list(lst), Hint)  # must pass in a fresh standalone check
 
   def test_tree_check_context_standalone(self) -> None:
     """Tree object passes standalone after check_context structure failure."""

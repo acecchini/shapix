@@ -3,6 +3,8 @@
 Tested with: pyright, mypy, ty
 """
 
+import typing as tp
+
 # ---------------------------------------------------------------------------
 # All public exports from shapix
 # ---------------------------------------------------------------------------
@@ -44,52 +46,88 @@ _dtype_spec_cls = DtypeSpec
 _value_marker = Value
 
 # ---------------------------------------------------------------------------
-# Dimension arithmetic — runtime-only (not representable as static types)
-# These use type: ignore because Dimension arithmetic requires runtime objects
+# Dimension arithmetic — runtime-only for the predefined root exports.
+#
+# Under TYPE_CHECKING these names are checker-friendly literal aliases rather
+# than runtime Dimension objects, so newer ty releases reject direct operator
+# use even with checker-specific ignore syntax. Exercise those operators in the
+# runtime branch and keep the checker branch explicit and neutral.
 # ---------------------------------------------------------------------------
 
-expr_add = N + 1  # type: ignore[operator]
-expr_radd = 2 + N  # type: ignore[operator]
-expr_sub = N - 1  # type: ignore[operator]
-expr_rsub = 2 - N  # type: ignore[operator]
-expr_mul = N * 2  # type: ignore[operator]
-expr_rmul = 2 * N  # type: ignore[operator]
-expr_truediv = N / 2  # type: ignore[operator]
-expr_rtruediv = 2 / N  # type: ignore[operator]
-expr_floordiv = N // 2  # type: ignore[operator]
-expr_rfloordiv = 2 // N  # type: ignore[operator]
-expr_pow = N**2  # type: ignore[operator]
-expr_rpow = 2**N  # type: ignore[operator]
-expr_mod = N % 2  # type: ignore[operator]
-expr_rmod = 2 % N  # type: ignore[operator]
-expr_neg = -N  # type: ignore[operator]
+if tp.TYPE_CHECKING:
+  expr_add: object = ...
+  expr_radd: object = ...
+  expr_sub: object = ...
+  expr_rsub: object = ...
+  expr_mul: object = ...
+  expr_rmul: object = ...
+  expr_truediv: object = ...
+  expr_rtruediv: object = ...
+  expr_floordiv: object = ...
+  expr_rfloordiv: object = ...
+  expr_pow: object = ...
+  expr_rpow: object = ...
+  expr_mod: object = ...
+  expr_rmod: object = ...
+  expr_neg: object = ...
 
-# ---------------------------------------------------------------------------
-# Chained / nested arithmetic (runtime-only)
-# ---------------------------------------------------------------------------
+  chained_add: object = ...
+  chained_mul: object = ...
+  nested_expr: object = ...
+  complex_expr: object = ...
+  deep_nesting: object = ...
 
-chained_add = N + C + 1  # type: ignore[operator]
-chained_mul = N * C * 2  # type: ignore[operator]
-nested_expr = (N + 1) * 2  # type: ignore[operator]
-complex_expr = (N * C) + (H - 1)  # type: ignore[operator]
-deep_nesting = ((N + 1) * 2) // C  # type: ignore[operator]
+  variadic: object = ...
+  broadcastable: object = ...
+  anon_variadic: object = ...
+  variadic_b: object = ...
+  broadcastable_c: object = ...
+  variadic_h: object = ...
+  double_variadic: object = ...
+  double_broad: object = ...
+else:
+  expr_add = N + 1
+  expr_radd = 2 + N
+  expr_sub = N - 1
+  expr_rsub = 2 - N
+  expr_mul = N * 2
+  expr_rmul = 2 * N
+  expr_truediv = N / 2
+  expr_rtruediv = 2 / N
+  expr_floordiv = N // 2
+  expr_rfloordiv = 2 // N
+  expr_pow = N**2
+  expr_rpow = 2**N
+  expr_mod = N % 2
+  expr_rmod = 2 % N
+  expr_neg = -N
 
-# ---------------------------------------------------------------------------
-# Unary operators (runtime-only)
-# ---------------------------------------------------------------------------
+  # -------------------------------------------------------------------------
+  # Chained / nested arithmetic (runtime-only)
+  # -------------------------------------------------------------------------
 
-variadic = ~N  # type: ignore[operator]
-broadcastable = +N  # type: ignore[operator]
-anon_variadic = ~__  # type: ignore[operator]
+  chained_add = N + C + 1
+  chained_mul = N * C * 2
+  nested_expr = (N + 1) * 2
+  complex_expr = (N * C) + (H - 1)
+  deep_nesting = ((N + 1) * 2) // C
 
-# Unary on other predefined dims
-variadic_b = ~B  # type: ignore[operator]
-broadcastable_c = +C  # type: ignore[operator]
-variadic_h = ~H  # type: ignore[operator]
+  # -------------------------------------------------------------------------
+  # Unary operators (runtime-only)
+  # -------------------------------------------------------------------------
 
-# Double application should be idempotent / safe
-double_variadic = ~~N  # type: ignore[operator]
-double_broad = ++N  # type: ignore[operator]
+  variadic = ~N
+  broadcastable = +N
+  anon_variadic = ~__
+
+  # Unary on other predefined dims
+  variadic_b = ~B
+  broadcastable_c = +C
+  variadic_h = ~H
+
+  # Double application should be idempotent / safe
+  double_variadic = ~~N
+  double_broad = ++N
 
 # ---------------------------------------------------------------------------
 # Custom dimensions
