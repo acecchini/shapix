@@ -161,6 +161,7 @@ class DtypeSpec:
       INT32_LE = DtypeSpec("Int32LE", frozenset({"int32"}), byteorder="little")
       INT32_LE.matches(np.zeros(1, dtype="<i4"))  # True
       INT32_LE.matches(np.zeros(1, dtype=">i4"))  # False
+
   """
 
   name: str

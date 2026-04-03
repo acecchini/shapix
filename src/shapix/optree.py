@@ -22,7 +22,7 @@ from ._imports import require_module
 from ._tree import Structure as Structure
 from ._tree import _TreeFactory
 
-__all__ = ["Tree", "Structure"]
+__all__ = ["Structure", "Tree"]
 
 
 def _get_optree() -> tp.Any:

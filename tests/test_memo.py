@@ -9,7 +9,7 @@ import pytest
 from beartype import beartype
 from beartype.roar import BeartypeCallHintParamViolation
 
-from shapix import N, C, Value
+from shapix import C, N, Value
 from shapix._memo import ShapeMemo, get_memo, pop_memo, push_memo
 from shapix.numpy import F32
 
@@ -154,7 +154,7 @@ class TestThreadSafety:
       try:
         f(np.ones((size,), dtype=np.float32))
         results.append(True)
-      except Exception as e:
+      except Exception as e:  # noqa: BLE001
         errors.append(str(e))
 
     threads = [threading.Thread(target=worker, args=(i,)) for i in range(1, 6)]

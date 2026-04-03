@@ -246,11 +246,11 @@ class TestDimSpecEdgeCases:
 
   def test_dim_spec_variadic_rejects_numeric(self) -> None:
     with pytest.raises(TypeError, match="Cannot use variadic"):
-      Dimension("~3")._dim_spec  # noqa: B018, SLF001
+      Dimension("~3")._dim_spec  # noqa: B018
 
   def test_dim_spec_variadic_broadcastable_rejects_numeric(self) -> None:
     with pytest.raises(TypeError, match="Cannot use variadic"):
-      Dimension("~+3")._dim_spec  # noqa: B018, SLF001
+      Dimension("~+3")._dim_spec  # noqa: B018
 
   def test_dim_spec_broadcastable_fixed(self) -> None:
     spec = Dimension("+3")._dim_spec
@@ -260,7 +260,7 @@ class TestDimSpecEdgeCases:
 
   def test_dim_spec_broadcastable_negative_rejected(self) -> None:
     with pytest.raises(TypeError, match="Negative dimension"):
-      Dimension("+-3")._dim_spec  # noqa: B018, SLF001
+      Dimension("+-3")._dim_spec  # noqa: B018
 
   def test_dimension_accepts_int(self) -> None:
     d = Dimension(3)
@@ -287,11 +287,11 @@ class TestUnaryOnSymbolicExpressions:
 
   def test_dim_spec_variadic_symbolic_raises(self) -> None:
     with pytest.raises(TypeError, match="variadic requires a named dimension"):
-      Dimension("~(N+1)")._dim_spec  # noqa: B018, SLF001
+      Dimension("~(N+1)")._dim_spec  # noqa: B018
 
   def test_dim_spec_variadic_broadcastable_symbolic_raises(self) -> None:
     with pytest.raises(TypeError, match="variadic requires a named dimension"):
-      Dimension("~+(N+1)")._dim_spec  # noqa: B018, SLF001
+      Dimension("~+(N+1)")._dim_spec  # noqa: B018
 
   def test_dim_spec_broadcastable_symbolic(self) -> None:
     spec = Dimension("+(N+1)")._dim_spec
@@ -335,11 +335,11 @@ class TestUnaryPosRejection:
 
   def test_dim_spec_bare_plus_raises(self) -> None:
     with pytest.raises(TypeError, match="broadcastable requires a base dimension"):
-      Dimension("+")._dim_spec  # noqa: B018, SLF001
+      Dimension("+")._dim_spec  # noqa: B018
 
   def test_dim_spec_plus_anonymous_raises(self) -> None:
     with pytest.raises(TypeError, match="Cannot use broadcastable .* with anonymous"):
-      Dimension("+__")._dim_spec  # noqa: B018, SLF001
+      Dimension("+__")._dim_spec  # noqa: B018
 
 
 class TestBooleanDimRejection:
@@ -378,13 +378,13 @@ class TestValueExpressions:
       Value(1)  # type: ignore[arg-type]
 
   def test_value_expr(self) -> None:
-    spec = Value("size")._dim_spec  # noqa: SLF001
+    spec = Value("size")._dim_spec
     assert isinstance(spec, ValueDim)
     assert spec.expr == "size"
     assert spec.broadcastable is False
 
   def test_broadcastable_value_expr(self) -> None:
-    spec = (+Value("size"))._dim_spec  # noqa: SLF001
+    spec = (+Value("size"))._dim_spec
     assert isinstance(spec, ValueDim)
     assert spec.expr == "size"
     assert spec.broadcastable is True
@@ -417,7 +417,7 @@ class TestValueArithmetic:
   def test_value_add_int(self) -> None:
     r = Value("x") + 3
     assert str(r) == "(x+3)"
-    assert isinstance(r._dim_spec, ValueDim)  # noqa: SLF001
+    assert isinstance(r._dim_spec, ValueDim)
 
   def test_int_add_value(self) -> None:
     r = 3 + Value("x")
@@ -479,24 +479,24 @@ class TestValueArithmetic:
     N = Dimension("N")
     r = Value("x") + N
     assert str(r) == "(x+N)"
-    assert isinstance(r._dim_spec, ValueDim)  # noqa: SLF001
+    assert isinstance(r._dim_spec, ValueDim)
 
   def test_dimension_add_value(self) -> None:
     N = Dimension("N")
     r = N + Value("x")
     assert str(r) == "(N+x)"
-    assert isinstance(r._dim_spec, ValueDim)  # noqa: SLF001
+    assert isinstance(r._dim_spec, ValueDim)
 
   def test_value_add_value(self) -> None:
     r = Value("a") + Value("b")
     assert str(r) == "(a+b)"
-    assert isinstance(r._dim_spec, ValueDim)  # noqa: SLF001
+    assert isinstance(r._dim_spec, ValueDim)
 
   def test_dimension_mul_value(self) -> None:
     N = Dimension("N")
     r = N * Value("x")
     assert str(r) == "(N*x)"
-    assert isinstance(r._dim_spec, ValueDim)  # noqa: SLF001
+    assert isinstance(r._dim_spec, ValueDim)
 
   def test_chained_dim_value_int(self) -> None:
     N = Dimension("N")

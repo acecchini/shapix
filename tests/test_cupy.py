@@ -16,24 +16,23 @@ from beartype.roar import (
 )
 
 import shapix
-from shapix import B, C, N, Value, __, Dimension  # noqa: F811 — B used in ~B annotations
+from shapix import B, C, Dimension, N, Value, __
 from shapix.cupy import (
-  Bool,
   F16,
   F32,
-  F32Like,
   F64,
-  Float,
   I32,
   I64,
+  U8,
+  Bool,
+  BoolLike,
+  F32Like,
+  Float,
   I64Like,
   Int,
   Num,
   Shaped,
-  U8,
-  BoolLike,
 )
-
 
 # =====================================================================
 # Dtype acceptance / rejection
@@ -288,7 +287,8 @@ class TestCuPyLikeTypes:
         self.dtype = np.dtype(np.float32)
 
       def __array__(self, *_a: object, **_kw: object) -> None:  # noqa: PLW3201
-        raise TypeError("not convertible")
+        msg = "not convertible"
+        raise TypeError(msg)
 
     assert not is_bearable(SpoofedArray(), F32Like[...])
 
@@ -458,8 +458,8 @@ class TestCuPyScalarLikeReexports:
     ],
   )
   def test_identity(self, name: str) -> None:
-    import shapix.numpy as np_mod
     import shapix.cupy as cupy_mod
+    import shapix.numpy as np_mod
 
     assert getattr(cupy_mod, name) is getattr(np_mod, name)
 

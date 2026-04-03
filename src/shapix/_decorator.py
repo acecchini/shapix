@@ -74,7 +74,7 @@ def check(
 
     if inspect.iscoroutinefunction(fn):
       inner_code = getattr(inner, "__code__", None)
-      inner_async = tp.cast(Callable[P, tp.Awaitable[tp.Any]], inner)
+      inner_async = tp.cast("Callable[P, tp.Awaitable[tp.Any]]", inner)
 
       @functools.wraps(fn)
       async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> tp.Any:

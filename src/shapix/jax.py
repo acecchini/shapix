@@ -34,36 +34,33 @@ if tp.TYPE_CHECKING:
   from jax import Array as JaxArray
 else:
   JaxArray = tp.cast(
-    type[object], require_attr("jax", "Array", install_hint=_JAX_INSTALL_HINT)
+    "type[object]", require_attr("jax", "Array", install_hint=_JAX_INSTALL_HINT)
   )
 
 try:
-  import numpy as _np  # noqa: F401  # pyright: ignore[reportUnusedImport]
+  import numpy as np
 except ModuleNotFoundError as exc:
   raise ModuleNotFoundError(_NUMPY_INSTALL_HINT) from exc
 
 from ._array_types import make_array_like_type as _make_array_like_type
 from ._array_types import make_array_type
-from ._tree import Structure as Structure
-from ._tree import _TreeFactory
 from ._dtypes import (
   BFLOAT16,
   BOOL,
   COMPLEX,
   COMPLEX64,
   COMPLEX128,
-  DtypeSpec,
   FLOAT,
   FLOAT16,
   FLOAT32,
   FLOAT64,
+  INEXACT,
   INT,
   INT8,
   INT16,
   INT32,
   INT64,
   INTEGER,
-  INEXACT,
   NUM,
   REAL,
   SHAPED,
@@ -72,7 +69,10 @@ from ._dtypes import (
   UINT16,
   UINT32,
   UINT64,
+  DtypeSpec,
 )
+from ._tree import Structure as Structure
+from ._tree import _TreeFactory
 
 # ScalarLike types + factory (re-exported from numpy — no shape, just value)
 from .numpy import BoolScalarLike as BoolScalarLike
@@ -204,7 +204,7 @@ def _jax_asarray(obj: object) -> tp.Any:
 # Backend-scoped fast-path trust: only np.ndarray and jax.Array skip
 # conversion.  Foreign-backend arrays (e.g. torch.Tensor) fall through
 # to the slow path where jnp.asarray() verifies actual convertibility.
-_JAX_TRUSTED: tuple[type, ...] = (_np.ndarray, JaxArray)
+_JAX_TRUSTED: tuple[type, ...] = (np.ndarray, JaxArray)
 
 
 def make_array_like_type(
@@ -368,8 +368,7 @@ else:
 
 
 def _get_jax_tree_util() -> tp.Any:
-  jtu = require_module("jax.tree_util", install_hint=_JAX_INSTALL_HINT)
-  return jtu
+  return require_module("jax.tree_util", install_hint=_JAX_INSTALL_HINT)
 
 
 if tp.TYPE_CHECKING:

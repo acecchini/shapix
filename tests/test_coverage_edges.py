@@ -8,9 +8,9 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+from beartype import BeartypeConf
 
 import shapix._memo as memo_mod
-from beartype import BeartypeConf
 from shapix import N
 from shapix._array_types import _ArrayChecker, _to_shape_spec, make_array_type
 from shapix._dtypes import FLOAT32, extract_dtype_str
@@ -121,7 +121,9 @@ class TestDtypeEdgeBranches:
 
 
 class TestMemoEdgeBranches:
-  def test_get_memo_falls_back_if_frame_lookup_fails(self, monkeypatch) -> None:
+  def test_get_memo_falls_back_if_frame_lookup_fails(
+    self, monkeypatch: pytest.MonkeyPatch
+  ) -> None:
     def _raise_value_error(_depth: int = 0) -> None:
       raise ValueError
 
@@ -138,7 +140,7 @@ class TestMemoEdgeBranches:
 class TestTreeFactoryEdgeBranches:
   def test_tuple_with_only_leaf_type(self) -> None:
     tree = _TreeFactory(object, name="Tree")
-    hint = tree[(F32[N],)]
+    hint = tree[F32[N],]
     assert hasattr(hint, "__metadata__")
 
   def test_tree_factory_repr(self) -> None:
@@ -195,7 +197,7 @@ class TestArrayFactoryShapeSpecEdges:
     checker = _ArrayChecker(FLOAT32, (NamedDim("N"),))
     arr = np.ones((10,), dtype=np.float32)
     # Should fail because N=5 != 10, and memo should be restored
-    from shapix._memo import push_memo, pop_memo
+    from shapix._memo import pop_memo, push_memo
 
     push_memo_ref = push_memo()
     push_memo_ref.single["N"] = 5
@@ -237,7 +239,8 @@ class TestArrayLikeCheckerEdges:
 
     class Unconvertible:
       def __array__(self, *_a: object, **_kw: object) -> None:  # noqa: PLW3201
-        raise TypeError("nope")
+        msg = "nope"
+        raise TypeError(msg)
 
     assert checker(Unconvertible()) is False
 
@@ -257,7 +260,7 @@ class TestArrayLikeCheckerEdges:
   def test_arraylike_memo_restore_on_shape_failure(self) -> None:
     """ArrayLikeChecker should restore memo on shape mismatch."""
     from shapix._array_types import _ArrayLikeChecker
-    from shapix._memo import push_memo, pop_memo
+    from shapix._memo import pop_memo, push_memo
 
     checker = _ArrayLikeChecker(
       FLOAT32, (NamedDim("N"),), casting="same_kind", name="F32Like"
@@ -388,15 +391,17 @@ class TestScalarLikeFactory:
 
     class Unconvertible:
       def __array__(self, *_a: object, **_kw: object) -> None:  # noqa: PLW3201
-        raise TypeError("nope")
+        msg = "nope"
+        raise TypeError(msg)
 
     from beartype.door import is_bearable
 
     assert not is_bearable(Unconvertible(), T)
 
   def test_make_scalar_like_type_exact_match(self) -> None:
-    from shapix.numpy import make_scalar_like_type
     from beartype.door import is_bearable
+
+    from shapix.numpy import make_scalar_like_type
 
     T = make_scalar_like_type(np.float32, casting="no")
     assert is_bearable(np.float32(1.0), T)
@@ -531,6 +536,7 @@ class TestNewDimensionSymbols:
 
   def test_d_and_k_in_annotations(self) -> None:
     from beartype import beartype
+
     from shapix import D, K
     from shapix.numpy import F32  # noqa: F401
 
@@ -553,7 +559,7 @@ class TestTrustedTypesParameter:
     checker = _ArrayLikeChecker(
       FLOAT32, (NamedDim("X"),), casting="same_kind", name="F32Like"
     )
-    assert checker._trusted_types is None  # noqa: SLF001
+    assert checker._trusted_types is None
     assert checker(np.ones(3, dtype=np.float32)) is True
 
   def test_trusted_types_scoped(self) -> None:
@@ -568,7 +574,7 @@ class TestTrustedTypesParameter:
       name="F32Like",
       trusted_types=(np.ndarray,),
     )
-    assert checker._trusted_types == (np.ndarray,)  # noqa: SLF001
+    assert checker._trusted_types == (np.ndarray,)
     # ndarray goes through fast path
     assert checker(np.ones(3, dtype=np.float32)) is True
 
@@ -577,7 +583,7 @@ class TestTrustedTypesParameter:
     from shapix._array_types import make_array_like_type
 
     factory = make_array_like_type(FLOAT32, name="F32Like", trusted_types=(np.ndarray,))
-    assert factory._trusted_types == (np.ndarray,)  # noqa: SLF001
+    assert factory._trusted_types == (np.ndarray,)
 
 
 class TestTrustedArrayCache:
@@ -602,7 +608,9 @@ class TestTrustedArrayCache:
 
 
 class TestClawWrapper:
-  def test_shapix_this_package_delegates_to_beartype(self, monkeypatch) -> None:
+  def test_shapix_this_package_delegates_to_beartype(
+    self, monkeypatch: pytest.MonkeyPatch
+  ) -> None:
     captured: dict[str, object] = {}
 
     def _fake_beartype_this_package(*, conf: object) -> None:

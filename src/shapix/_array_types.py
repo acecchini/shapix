@@ -46,7 +46,7 @@ from ._shape import (
   check_shape,
 )
 
-__all__ = ["make_array_type", "make_array_like_type"]
+__all__ = ["make_array_like_type", "make_array_type"]
 
 CastingMode = tp.Literal["no", "equiv", "safe", "same_kind", "unsafe"]
 
@@ -180,7 +180,7 @@ class _ArrayChecker:
   ``Float32Array[N, C]``) and reused across all functions that share it.
   """
 
-  __slots__ = ("_array_type", "_dtype_spec", "_shape_spec", "_repr", "_fail_state")
+  __slots__ = ("_array_type", "_dtype_spec", "_fail_state", "_repr", "_shape_spec")
 
   def __init__(
     self,
@@ -190,11 +190,11 @@ class _ArrayChecker:
   ) -> None:
     if shape_spec is None:
       self._array_type = None
-      self._dtype_spec = tp.cast(DtypeSpec, array_type)
-      self._shape_spec = tp.cast(tuple[DimSpec, ...], dtype_spec)
+      self._dtype_spec = tp.cast("DtypeSpec", array_type)
+      self._shape_spec = tp.cast("tuple[DimSpec, ...]", dtype_spec)
     else:
-      self._array_type = tp.cast(type[object], array_type)
-      self._dtype_spec = tp.cast(DtypeSpec, dtype_spec)
+      self._array_type = tp.cast("type[object]", array_type)
+      self._dtype_spec = tp.cast("DtypeSpec", dtype_spec)
       self._shape_spec = shape_spec
     self._fail_state = ReplayFailureState()
 
@@ -278,7 +278,7 @@ class _ArrayFactory:
   Created via :func:`make_array_type` and not instantiated directly.
   """
 
-  __slots__ = ("_array_type", "_dtype_spec", "__name__", "_cache", "_module")
+  __slots__ = ("__name__", "_array_type", "_cache", "_dtype_spec", "_module")
 
   def __init__(self, array_type: type, dtype_spec: DtypeSpec) -> None:
     self._array_type = array_type
@@ -331,6 +331,7 @@ def make_array_type(array_type: type, dtype_spec: DtypeSpec) -> _ArrayFactory:
 
       Float32Array = make_array_type(np.ndarray, FLOAT32)
       Float32Array[N, C, H, W]  # → runtime hint class
+
   """
   return _ArrayFactory(array_type, dtype_spec)
 
@@ -359,14 +360,14 @@ class _ArrayLikeChecker:
   _casting: CastingMode
 
   __slots__ = (
-    "_dtype_spec",
-    "_shape_spec",
-    "_casting",
-    "_is_structured",
     "_asarray",
-    "_trusted_types",
-    "_repr",
+    "_casting",
+    "_dtype_spec",
     "_fail_state",
+    "_is_structured",
+    "_repr",
+    "_shape_spec",
+    "_trusted_types",
   )
 
   def __init__(
@@ -382,7 +383,7 @@ class _ArrayLikeChecker:
     self._dtype_spec = dtype_spec
     self._shape_spec = shape_spec
     self._casting = casting
-    self._is_structured: bool = dtype_spec._structured is not None  # noqa: SLF001
+    self._is_structured: bool = dtype_spec._structured is not None
     self._asarray = asarray
     self._trusted_types = trusted_types
     self._fail_state = ReplayFailureState()
@@ -452,7 +453,7 @@ class _ArrayLikeChecker:
     if arr is None:
       return failure
 
-    converted = tp.cast(_HasShape, arr)
+    converted = tp.cast("_HasShape", arr)
     return self._check(arr, tuple(converted.shape), memo, scope)
 
   def _convert(self, obj: object) -> tuple[object | None, ValidationFailure | None]:
@@ -526,14 +527,17 @@ class _ArrayLikeChecker:
 
     import numpy as np
 
-    for target in self._dtype_spec.allowed:
+    def _can_cast_to_target(target: str) -> bool:
       try:
-        if np.can_cast(source, target, casting=self._casting):
-          if self._dtype_spec._check_byteorder(obj):
-            return None
-          return _dtype_mismatch(self._dtype_spec, obj, casting=self._casting)
+        return np.can_cast(source, target, casting=self._casting)
       except TypeError:
-        continue
+        return False
+
+    for target in self._dtype_spec.allowed:
+      if _can_cast_to_target(target):
+        if self._dtype_spec._check_byteorder(obj):
+          return None
+        return _dtype_mismatch(self._dtype_spec, obj, casting=self._casting)
 
     return _dtype_mismatch(self._dtype_spec, obj, casting=self._casting)
 
@@ -557,13 +561,13 @@ class _ArrayLikeFactory:
   _casting: CastingMode
 
   __slots__ = (
-    "_dtype_spec",
-    "_casting",
-    "_asarray",
-    "_trusted_types",
     "__name__",
+    "_asarray",
     "_cache",
+    "_casting",
+    "_dtype_spec",
     "_module",
+    "_trusted_types",
   )
 
   def __init__(
@@ -652,6 +656,7 @@ def make_array_like_type(
 
       F32Like = make_array_like_type(FLOAT32, name="F32Like")
       F32Like[N, C, H, W]  # → runtime hint class
+
   """
   if not _is_valid_casting(casting):
     msg = f"Invalid casting {casting!r}, must be one of {sorted(_VALID_CASTINGS)}"
@@ -668,7 +673,7 @@ def make_array_like_type(
 
 def _is_scalar_token(d: object) -> bool:
   """True if *d* represents the scalar sentinel (zero-dim shape)."""
-  return isinstance(d, Dimension) and d._dim_spec is None  # noqa: SLF001
+  return isinstance(d, Dimension) and d._dim_spec is None
 
 
 def _to_shape_spec(dims: tuple[object, ...]) -> tuple[DimSpec, ...]:
@@ -700,7 +705,7 @@ def _to_shape_spec(dims: tuple[object, ...]) -> tuple[DimSpec, ...]:
     elif isinstance(d, (FixedDim, NamedDim, SymbolicDim, ValueDim, VariadicDim)):
       specs.append(d)
     elif isinstance(d, Dimension):
-      spec = d._dim_spec  # noqa: SLF001
+      spec = d._dim_spec
       if spec is not None:
         if isinstance(spec, FixedDim) and spec.size < 0:
           msg = (
@@ -709,7 +714,7 @@ def _to_shape_spec(dims: tuple[object, ...]) -> tuple[DimSpec, ...]:
           raise TypeError(msg)
         specs.append(spec)
     elif isinstance(d, _ValueExpr):
-      specs.append(d._dim_spec)  # noqa: SLF001
+      specs.append(d._dim_spec)
     else:
       msg = (
         "Invalid shape token "

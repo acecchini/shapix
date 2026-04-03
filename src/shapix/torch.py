@@ -34,11 +34,11 @@ if tp.TYPE_CHECKING:
   from torch import Tensor
 else:
   Tensor = tp.cast(
-    type[object], require_attr("torch", "Tensor", install_hint=_TORCH_INSTALL_HINT)
+    "type[object]", require_attr("torch", "Tensor", install_hint=_TORCH_INSTALL_HINT)
   )
 
 try:
-  import numpy as _np  # noqa: F401  # pyright: ignore[reportUnusedImport]
+  import numpy as np
 except ModuleNotFoundError as exc:
   raise ModuleNotFoundError(_NUMPY_INSTALL_HINT) from exc
 
@@ -50,18 +50,17 @@ from ._dtypes import (
   COMPLEX,
   COMPLEX64,
   COMPLEX128,
-  DtypeSpec,
   FLOAT,
   FLOAT16,
   FLOAT32,
   FLOAT64,
+  INEXACT,
   INT,
   INT8,
   INT16,
   INT32,
   INT64,
   INTEGER,
-  INEXACT,
   NUM,
   REAL,
   SHAPED,
@@ -70,6 +69,7 @@ from ._dtypes import (
   UINT16,
   UINT32,
   UINT64,
+  DtypeSpec,
 )
 
 # ScalarLike types + factory (re-exported from numpy — no shape, just value)
@@ -199,7 +199,7 @@ def _torch_asarray(obj: object) -> tp.Any:
 # Backend-scoped fast-path trust: only np.ndarray and torch.Tensor skip
 # conversion.  Foreign-backend arrays (e.g. jax.Array) fall through
 # to the slow path where torch.as_tensor() verifies actual convertibility.
-_TORCH_TRUSTED: tuple[type, ...] = (_np.ndarray, Tensor)
+_TORCH_TRUSTED: tuple[type, ...] = (np.ndarray, Tensor)
 
 
 def make_array_like_type(

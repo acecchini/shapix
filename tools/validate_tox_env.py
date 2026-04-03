@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Validate tox environment names follow the factor scheme.
 
 Usage: python tools/validate_tox_env.py <env_name>
@@ -96,13 +95,13 @@ def validate(env_name: str) -> str | None:
 
 def main() -> None:
   if len(sys.argv) != 2:
-    print(f"usage: {sys.argv[0]} <env_name>", file=sys.stderr)
+    sys.stderr.write(f"usage: {sys.argv[0]} <env_name>\n")
     sys.exit(2)
 
   env_name = sys.argv[1]
   error = validate(env_name)
   if error:
-    print(f"invalid tox env '{env_name}': {error}", file=sys.stderr)
+    sys.stderr.write(f"invalid tox env '{env_name}': {error}\n")
     sys.exit(1)
 
 

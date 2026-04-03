@@ -78,15 +78,15 @@ if tp.TYPE_CHECKING:
 else:
 
   def _make_value_dim(expr: str) -> Dimension:
-    return tp.cast(Dimension, Value(expr))
+    return tp.cast("Dimension", Value(expr))
 
 
 def _binop(left: object, op: str, right: object) -> Dimension:
   """Build a binary expression.  Returns ``Value`` if either operand is one."""
-  if isinstance(left, Dimension) and str(left) == "":
+  if isinstance(left, Dimension) and not str(left):
     msg = "Cannot use Scalar in arithmetic expressions"
     raise TypeError(msg)
-  if isinstance(right, Dimension) and str(right) == "":
+  if isinstance(right, Dimension) and not str(right):
     msg = "Cannot use Scalar in arithmetic expressions"
     raise TypeError(msg)
   if isinstance(left, Value) or isinstance(right, Value):
@@ -107,6 +107,8 @@ class Dimension(str):
       >>> 2 * N
       Dimension('(2*N)')
   """
+
+  __slots__ = ()
 
   def __new__(cls, value: str | int, /) -> Dimension:
     if isinstance(value, bool):
@@ -164,7 +166,7 @@ class Dimension(str):
     return _binop(other, "%", self)
 
   def __neg__(self) -> Dimension:
-    if str(self) == "":
+    if not str(self):
       msg = "Cannot use Scalar in arithmetic expressions"
       raise TypeError(msg)
     return Dimension(f"-{self}")
@@ -187,7 +189,7 @@ class Dimension(str):
     raw = str(self)
     if raw.startswith("+"):
       return self
-    if raw == "":
+    if not raw:
       msg = "Cannot apply + (broadcastable) to Scalar"
       raise TypeError(msg)
     if raw == "__":
@@ -214,7 +216,7 @@ class Dimension(str):
     raw = str(self)
 
     # Empty → scalar (no dims)
-    if raw == "":
+    if not raw:
       return None
 
     # Anonymous single dim
@@ -286,6 +288,7 @@ class _ValueExpr(str):
   since the result still needs runtime scope access.
   """
 
+  __slots__ = ("broadcastable",)
   broadcastable: bool
 
   def __new__(cls, expr: object, *, broadcastable: bool = False) -> _ValueExpr:

@@ -17,24 +17,23 @@ from beartype.roar import (
 )
 
 import shapix
-from shapix import B, C, N, Value, __, Dimension  # noqa: F811 — B used in ~B annotations
+from shapix import B, C, Dimension, N, Value, __
 from shapix.jax import (
   BF16,
-  BF16Like,
-  Bool,
   F16,
   F32,
+  I32,
+  U8,
+  BF16Like,
+  Bool,
+  BoolLike,
   F32Like,
   Float,
-  I32,
   I64Like,
   Int,
   Num,
   Shaped,
-  U8,
-  BoolLike,
 )
-
 
 # =====================================================================
 # Dtype acceptance / rejection
@@ -369,7 +368,8 @@ class TestJaxLikeTypes:
         self.dtype = np.dtype(np.float32)
 
       def __array__(self, *_a: object, **_kw: object) -> None:  # noqa: PLW3201
-        raise TypeError("not convertible")
+        msg = "not convertible"
+        raise TypeError(msg)
 
     assert not is_bearable(SpoofedArray(), F32Like[...])
 

@@ -9,7 +9,7 @@ from beartype import beartype
 from beartype.roar import BeartypeCallHintParamViolation
 
 import shapix
-from shapix import N, C, T, Value  # noqa: F401
+from shapix import C, N, T, Value
 from shapix.numpy import F32
 
 
@@ -86,9 +86,8 @@ class TestCheckContext:
   def test_check_context_returns_self(self) -> None:
     """check_context() works as a context manager and returns itself."""
     ctx = shapix.check_context()
-    result = ctx.__enter__()
-    assert result is ctx
-    ctx.__exit__(None, None, None)
+    with ctx as result:
+      assert result is ctx
 
 
 class TestDecoratorEdgeCases:
@@ -98,7 +97,8 @@ class TestDecoratorEdgeCases:
     @shapix.check
     @beartype
     def boom(x: F32[N]) -> F32[N]:
-      raise RuntimeError("boom")
+      msg = "boom"
+      raise RuntimeError(msg)
 
     with pytest.raises(RuntimeError, match="boom"):
       boom(np.ones(5, dtype=np.float32))
@@ -293,7 +293,7 @@ class TestMemoIsolation:
 
 class TestAsyncCheckContext:
   def test_async_check_context(self) -> None:
-    """async with check_context() works correctly."""
+    """Async with check_context() works correctly."""
     import asyncio
 
     from beartype.door import is_bearable
@@ -461,7 +461,8 @@ class TestAsyncCheckDecorator:
     @shapix.check
     @beartype
     async def boom(x: F32[N]) -> F32[N]:
-      raise RuntimeError("boom")
+      msg = "boom"
+      raise RuntimeError(msg)
 
     with pytest.raises(RuntimeError, match="boom"):
       asyncio.run(boom(np.ones(5, dtype=np.float32)))
@@ -734,6 +735,7 @@ class TestReplayGuardReusedHint:
   def test_arraylike_reused_hint_standalone(self) -> None:
     """is_bearable passes for reused F32Like[N] hint after cross-arg failure."""
     from beartype.door import is_bearable
+
     from shapix.numpy import F32Like
 
     Hint = F32Like[N]
@@ -753,6 +755,7 @@ class TestReplayGuardReusedHint:
     """is_bearable passes for reused Tree hint after cross-structure failure."""
     pytest.importorskip("optree")
     from beartype.door import is_bearable
+
     from shapix.optree import Tree
 
     Hint = Tree[F32[N], T]  # type: ignore[type-arg]

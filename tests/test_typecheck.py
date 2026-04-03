@@ -12,6 +12,7 @@ from __future__ import annotations
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -62,6 +63,13 @@ def _run(tool: str, *args: str, cwd: Path = ROOT) -> subprocess.CompletedProcess
   )
 
 
+def _run_mypy(*args: str, cwd: Path = ROOT) -> subprocess.CompletedProcess[str]:
+  # Give each invocation its own cache directory so xdist workers do not race
+  # through the shared .mypy_cache during the typecheck suite.
+  with tempfile.TemporaryDirectory(prefix="shapix-mypy-cache-") as cache_dir:
+    return _run("mypy", "--show-traceback", "--cache-dir", cache_dir, *args, cwd=cwd)
+
+
 # ---------------------------------------------------------------------------
 # Pyright
 # ---------------------------------------------------------------------------
@@ -95,14 +103,14 @@ class TestMypy:
   @pytest.mark.parametrize("filename", ALL_FILES)
   def test_mypy(self, filename: str) -> None:
     _skip_if_missing("mypy")
-    result = _run("mypy", str(TYPING_DIR / filename))
+    result = _run_mypy(str(TYPING_DIR / filename))
     assert result.returncode == 0, (
       f"mypy failed on {filename}:\n{result.stdout}\n{result.stderr}"
     )
 
   def test_mypy_source_tree(self) -> None:
     _skip_if_missing("mypy")
-    result = _run("mypy", *WHOLE_TREE_TARGETS)
+    result = _run_mypy(*WHOLE_TREE_TARGETS)
     assert result.returncode == 0, (
       f"mypy failed on source tree:\n{result.stdout}\n{result.stderr}"
     )

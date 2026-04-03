@@ -38,14 +38,14 @@ from dataclasses import dataclass
 from ._memo import ShapeMemo
 
 __all__ = [
-  "NamedDim",
-  "FixedDim",
-  "SymbolicDim",
-  "ValueDim",
-  "VariadicDim",
   "ANONYMOUS",
   "ANONYMOUS_VARIADIC",
   "DimSpec",
+  "FixedDim",
+  "NamedDim",
+  "SymbolicDim",
+  "ValueDim",
+  "VariadicDim",
   "check_shape",
 ]
 
@@ -190,6 +190,7 @@ def check_shape(
   -------
   str
       ``""`` on success. A human-readable error message on mismatch.
+
   """
   # Find the variadic dim (at most one allowed)
   variadic_idx: int | None = None
@@ -233,7 +234,8 @@ def check_shape(
   if isinstance(variadic_dim, _AnonymousVariadic):
     return ""
 
-  assert isinstance(variadic_dim, VariadicDim)
+  if not isinstance(variadic_dim, VariadicDim):
+    return f"internal error: expected variadic dim, got {variadic_dim!r}"
   return _check_variadic(variadic_dim, middle_shape, memo)
 
 
@@ -284,7 +286,7 @@ def _check_one(
       return ""
     try:
       expected = _evaluate_dim_expr(dim.expr, memo.single, allow_attr=False)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
       return f"cannot evaluate '{dim.expr}': {e}"
     err = _check_expected_value(dim.expr, expected, size)
     if err:
@@ -299,7 +301,7 @@ def _check_one(
       if scope is not None:
         names.update(scope)
       expected = _evaluate_dim_expr(dim.expr, names, allow_attr=True)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
       return f"cannot evaluate {dim!r}: {e}"
     err = _check_expected_value(repr(dim), expected, size)
     if err:
@@ -352,7 +354,8 @@ def _parse_expr(expr: str, *, allow_attr: bool) -> ast.Expression:
   try:
     tree = ast.parse(expr, mode="eval")
   except SyntaxError as e:  # pragma: no cover - exercised via public errors
-    raise ValueError(f"invalid syntax: {e.msg}") from e
+    msg = f"invalid syntax: {e.msg}"
+    raise ValueError(msg) from e
   _validate_expr(tree, allow_attr=allow_attr)
   return tree
 
@@ -364,14 +367,16 @@ def _validate_expr(node: ast.AST, *, allow_attr: bool) -> None:
 
   if isinstance(node, ast.BinOp):
     if type(node.op) not in _BINOPS:
-      raise ValueError(f"unsupported operator '{type(node.op).__name__}'")
+      msg = f"unsupported operator '{type(node.op).__name__}'"
+      raise ValueError(msg)
     _validate_expr(node.left, allow_attr=allow_attr)
     _validate_expr(node.right, allow_attr=allow_attr)
     return
 
   if isinstance(node, ast.UnaryOp):
     if type(node.op) not in _UNARYOPS:
-      raise ValueError(f"unsupported unary operator '{type(node.op).__name__}'")
+      msg = f"unsupported unary operator '{type(node.op).__name__}'"
+      raise ValueError(msg)
     _validate_expr(node.operand, allow_attr=allow_attr)
     return
 
@@ -380,21 +385,23 @@ def _validate_expr(node: ast.AST, *, allow_attr: bool) -> None:
 
   if isinstance(node, ast.Attribute):
     if not allow_attr:
-      raise ValueError("attribute access is not allowed here")
+      msg = "attribute access is not allowed here"
+      raise ValueError(msg)
     if node.attr.startswith("__"):
-      raise ValueError("dunder attribute access is not allowed")
+      msg = "dunder attribute access is not allowed"
+      raise ValueError(msg)
     _validate_expr(node.value, allow_attr=allow_attr)
     return
 
   if isinstance(node, ast.Constant):
     value = node.value
     if isinstance(value, bool) or not isinstance(value, (int, float)):
-      raise ValueError(f"unsupported literal {value!r}")
+      msg = f"unsupported literal {value!r}"
+      raise ValueError(msg)
     return
 
-  raise ValueError(
-    f"unsupported expression form '{ast.dump(node, include_attributes=False)}'"
-  )
+  msg = f"unsupported expression form '{ast.dump(node, include_attributes=False)}'"
+  raise ValueError(msg)
 
 
 def _evaluate_dim_expr(
@@ -418,16 +425,19 @@ def _evaluate_expr_node(node: ast.AST, names: Mapping[str, object]) -> object:
     try:
       return names[node.id]
     except KeyError as e:
-      raise NameError(f"unknown name '{node.id}'") from e
+      msg = f"unknown name '{node.id}'"
+      raise NameError(msg) from e
 
   if isinstance(node, ast.Attribute):
     base = _evaluate_expr_node(node.value, names)
     try:
       return getattr(base, node.attr)
     except AttributeError as e:
-      raise AttributeError(f"object {base!r} has no attribute '{node.attr}'") from e
+      msg = f"object {base!r} has no attribute '{node.attr}'"
+      raise AttributeError(msg) from e
 
   if isinstance(node, ast.Constant):
     return node.value
 
-  raise ValueError(f"unsupported expression node '{type(node).__name__}'")
+  msg = f"unsupported expression node '{type(node).__name__}'"
+  raise ValueError(msg)

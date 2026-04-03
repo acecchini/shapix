@@ -8,6 +8,10 @@ only the tests relevant to the active backend are collected. When running
 from __future__ import annotations
 
 import os
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+  import pytest
 
 _BACKEND_TESTS: dict[str, set[str]] = {
   "numpy": {
@@ -26,7 +30,9 @@ _BACKEND_TESTS: dict[str, set[str]] = {
 }
 
 
-def pytest_collection_modifyitems(config, items):  # noqa: ANN001
+def pytest_collection_modifyitems(
+  config: pytest.Config, items: list[pytest.Item]
+) -> None:
   env_name = os.environ.get("TOX_ENV_NAME", "")
   if not env_name or env_name == "dev":
     return

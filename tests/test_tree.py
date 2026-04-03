@@ -6,7 +6,7 @@ consistency, structure binding, cross-argument matching, edge cases,
 decorator integration, and the new positional structure notation.
 """
 
-from collections import namedtuple
+from typing import NamedTuple
 
 import numpy as np
 import pytest
@@ -22,10 +22,9 @@ from beartype.roar import (
 
 import shapix
 from shapix import C, H, N, S, T, Value, W, __
-from shapix.optree import Tree
 from shapix._tree import Structure, _TreeFactory
 from shapix.numpy import F32, F64, I64, Shaped
-
+from shapix.optree import Tree
 
 # =====================================================================
 # Basic leaf type checking
@@ -327,7 +326,9 @@ class TestEdgeCases:
     f([])
 
   def test_namedtuple_tree(self) -> None:
-    Point = namedtuple("Point", ["x", "y"])
+    class Point(NamedTuple):
+      x: object
+      y: object
 
     @beartype
     def f(p: Tree[F32[N]]) -> Tree[F32[N]]:
@@ -807,7 +808,7 @@ class TestStructureBindingFailures:
       f(x, y)
 
   def test_different_nesting_depths(self) -> None:
-    """x is flat dict, y is nested dict — different structures."""
+    """X is flat dict, y is nested dict — different structures."""
 
     @shapix.check
     @beartype
@@ -1028,7 +1029,7 @@ class TestBottomLevelFailures:
   """Failures for Tree[leaf, ..., T] — bottom-level structure mismatches."""
 
   def test_different_bottom_container_type(self) -> None:
-    """x has list at bottom, y has dict at bottom."""
+    """X has list at bottom, y has dict at bottom."""
 
     @shapix.check
     @beartype

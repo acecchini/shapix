@@ -6,25 +6,25 @@ Tests the full shapix annotation pattern with CuPy backend types.
 Tested with: pyright, mypy, ty
 """
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeAlias
 
 from beartype import beartype
 
 from shapix import B, C, Dimension, H, N, Scalar, W, __, check
 from shapix.cupy import (
-  Bool,
-  BoolLike,
   F16,
   F32,
-  F32Like,
   F64,
   I32,
   I64,
+  U8,
+  Bool,
+  BoolLike,
+  F32Like,
   I64Like,
   Int,
   Num,
   Shaped,
-  U8,
 )
 
 # ---------------------------------------------------------------------------
@@ -119,8 +119,8 @@ def scalar_fn(x: F32[Scalar]) -> F32[Scalar]:
 
 
 if TYPE_CHECKING:
-  type Vocab = int
-  type PaddedN = int
+  Vocab: TypeAlias = int
+  PaddedN: TypeAlias = int
 else:
   Vocab = Dimension("Vocab")
   PaddedN = N + 2

@@ -24,17 +24,17 @@ import contextvars
 import inspect
 import sys
 import threading
-import typing as tp
 import types
+import typing as tp
 from dataclasses import dataclass, field
 
 __all__ = [
   "ShapeMemo",
   "get_memo",
   "get_scope",
-  "push_memo",
-  "pop_memo",
   "has_untagged_memo",
+  "pop_memo",
+  "push_memo",
 ]
 
 _FRAME_STACK_GC_THRESHOLD = 8
@@ -112,12 +112,13 @@ def push_memo(
       When set, this entry is only visible to frames whose ``f_code``
       matches.  Untagged entries (``None``) are unconditional and used
       by :class:`check_context` and :class:`_TreeChecker`.
+
   """
   if memo is None:
     memo = ShapeMemo()
-  _explicit_stack.set(_explicit_stack.get() + (memo,))
-  _explicit_scope_stack.set(_explicit_scope_stack.get() + (scope,))
-  _explicit_owner_stack.set(_explicit_owner_stack.get() + (owner_code,))
+  _explicit_stack.set((*_explicit_stack.get(), memo))
+  _explicit_scope_stack.set((*_explicit_scope_stack.get(), scope))
+  _explicit_owner_stack.set((*_explicit_owner_stack.get(), owner_code))
   return memo
 
 
@@ -212,6 +213,7 @@ def get_memo(_depth: int = 2) -> ShapeMemo:
       Internal. Number of frames to skip when locating the beartype wrapper.
       Default ``2`` accounts for: our validator → beartype's ``_is_valid_bool``
       → beartype wrapper.
+
   """
   # 1. Explicit stack takes priority (if owner matches or untagged)
   explicit = _explicit_stack.get()

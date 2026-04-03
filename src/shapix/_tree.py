@@ -67,7 +67,7 @@ from ._runtime_hints import (
   make_runtime_hint,
 )
 
-__all__ = ["Structure", "T", "S"]
+__all__ = ["S", "Structure", "T"]
 
 
 # ---------------------------------------------------------------------------
@@ -90,6 +90,8 @@ class Structure(str):
       def f(x: Tree[F32[N, C], Params], y: Tree[F32[N, C], Params]): ...
   """
 
+  __slots__ = ()
+
   def __repr__(self) -> str:
     return str(self)
 
@@ -102,7 +104,7 @@ class Structure(str):
 class _TreeChecker:
   """Beartype validator for tree leaf types and structure consistency."""
 
-  __slots__ = ("_leaf_type", "_structure_spec", "_get_ops", "_repr", "_fail_state")
+  __slots__ = ("_fail_state", "_get_ops", "_leaf_type", "_repr", "_structure_spec")
 
   def __init__(
     self,
@@ -215,7 +217,7 @@ class _TreeChecker:
 
     from beartype.door import is_bearable
 
-    if is_bearable(leaf, tp.cast(tp.Any, leaf_type)):
+    if is_bearable(leaf, tp.cast("tp.Any", leaf_type)):
       return None
     return ValidationFailure(
       f"tree leaf {leaf!r} does not match {hint_label(leaf_type)}"
@@ -351,7 +353,7 @@ class _TreeFactory:
       Tree[LeafType, ..., T, S]  # S = bottom, T = second-from-bottom
   """
 
-  __slots__ = ("_get_ops", "_name", "_cache", "_module")
+  __slots__ = ("_cache", "_get_ops", "_module", "_name")
 
   def __init__(self, get_ops: Callable[[], tp.Any], *, name: str = "Tree") -> None:
     self._get_ops = get_ops
@@ -381,8 +383,8 @@ class _TreeFactory:
   @staticmethod
   def _validate_leaf_type(leaf_type: object, *, owner_name: str = "Tree") -> None:
     try:
-      TypeHint(tp.cast(tp.Any, leaf_type))
-    except Exception as exc:  # noqa: BLE001
+      TypeHint(tp.cast("tp.Any", leaf_type))
+    except Exception as exc:
       msg = (
         f"{owner_name} leaf type must be a beartype-valid type hint, got {leaf_type!r}"
       )

@@ -25,8 +25,8 @@ _st = Structure  # Structure should be importable
 if tp.TYPE_CHECKING:
   T: Structure
   S: Structure
-  type BoundTree = Tree[F32[N]]
-  type TopTree = Tree[F32[N]]
+  BoundTree: tp.TypeAlias = Tree[F32[N]]
+  TopTree: tp.TypeAlias = Tree[F32[N]]
 else:
   T = Structure("T")
   S = Structure("S")

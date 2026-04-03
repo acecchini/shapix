@@ -282,7 +282,7 @@ class TestValueDim:
 
   def test_value_dim_dunder_attribute_blocked(self) -> None:
     class Obj:
-      __secret__ = 42  # noqa: N815
+      __secret__ = 42
 
     memo = ShapeMemo()
     scope = {"self": Obj()}

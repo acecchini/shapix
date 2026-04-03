@@ -99,10 +99,6 @@ from ._array_types import make_array_like_type as make_array_like_type
 from ._array_types import make_array_type as make_array_type
 from ._decorator import check as check
 from ._decorator import check_context as check_context
-from ._tree import S as S
-from ._tree import Structure as Structure
-from ._tree import T as T
-from ._dimensions import __ as __
 from ._dimensions import B as B
 from ._dimensions import C as C
 from ._dimensions import D as D
@@ -115,4 +111,8 @@ from ._dimensions import P as P
 from ._dimensions import Scalar as Scalar
 from ._dimensions import Value as Value
 from ._dimensions import W as W
+from ._dimensions import __ as __
 from ._dtypes import DtypeSpec as DtypeSpec
+from ._tree import S as S
+from ._tree import Structure as Structure
+from ._tree import T as T

@@ -8,6 +8,8 @@ detection, ArrayLike types, and edge cases.
 
 from __future__ import annotations
 
+import math
+
 import numpy as np
 import pytest
 from beartype import beartype
@@ -18,28 +20,32 @@ from beartype.roar import (
 )
 
 import shapix
-from shapix import B, C, H, N, Dimension, Value, __
+from shapix import B, C, Dimension, H, N, Value, __
 from shapix._array_types import _ArrayFactory, make_array_like_type, make_array_type
 from shapix._dtypes import COMPLEX256, FLOAT32, FLOAT128, DtypeSpec
 from shapix.numpy import (
-  Bool,
-  BoolLike,
-  Bytes,
+  C256,
   DT64,
   F16,
   F32,
-  F32Like,
-  F32ScalarLike,
   F64,
   F128,
+  I32,
+  I64,
+  TD64,
+  U8,
+  Bool,
+  BoolLike,
+  Bytes,
+  C256Like,
+  F32Like,
+  F32ScalarLike,
   F128Like,
   Float,
   I8ScalarLike,
   I16ScalarLike,
-  I32,
-  I64,
-  I64ScalarLike,
   I64Like,
+  I64ScalarLike,
   InexactScalarLike,
   Int,
   Num,
@@ -47,16 +53,11 @@ from shapix.numpy import (
   Shaped,
   Str,
   StringLike,
-  TD64,
-  U8,
   U8ScalarLike,
   U16ScalarLike,
   U64ScalarLike,
   V,
-  C256,
-  C256Like,
 )
-
 
 # =====================================================================
 # Factory internals
@@ -497,7 +498,7 @@ class TestValueExpressions:
     assert f(3, 5).shape == (8,)
 
   def test_int_add_value_in_annotation(self) -> None:
-    """int + Value arithmetic works in type annotations."""
+    """Int + Value arithmetic works in type annotations."""
 
     @beartype
     def f(x: F32[N]) -> F32[3 + Value("N")]:  # type: ignore[valid-type]
@@ -650,7 +651,8 @@ class TestDiagnosticMessages:
   def test_arraylike_runtimeerror_reports_conversion_detail(self) -> None:
     class Boom:
       def __array__(self, *_a: object, **_kw: object) -> None:  # noqa: PLW3201
-        raise RuntimeError("boom")
+        msg = "boom"
+        raise RuntimeError(msg)
 
     @beartype
     def f(x: F32Like[N]) -> None:
@@ -1206,7 +1208,7 @@ class TestArrayLikeAcceptance:
   @pytest.mark.parametrize(
     "value",
     [
-      3.14,
+      math.pi,
       np.float32(2.5),
       [1.0, 2.0, 3.0],
       [[1.0, 2.0], [3.0, 4.0]],
@@ -1259,14 +1261,16 @@ class TestArrayLikeRejection:
         self.dtype = np.dtype(np.float32)
 
       def __array__(self, *_a: object, **_kw: object) -> None:  # noqa: PLW3201
-        raise TypeError("not convertible")
+        msg = "not convertible"
+        raise TypeError(msg)
 
     assert not is_bearable(SpoofedArray(), F32Like[...])
 
   def test_runtimeerror_from_array_protocol_is_rejected(self) -> None:
     class Boom:
       def __array__(self, *_a: object, **_kw: object) -> None:  # noqa: PLW3201
-        raise RuntimeError("boom")
+        msg = "boom"
+        raise RuntimeError(msg)
 
     assert not is_bearable(Boom(), F32Like[...])
 
@@ -1294,7 +1298,7 @@ class TestArrayLikeVariousTypes:
     def f(x: MyLike[...]) -> float:
       return float(np.asarray(x).sum())
 
-    assert f(3.14) == 3.14
+    assert f(math.pi) == math.pi
     assert f([1.0, 2.0]) == 3.0
     assert f(np.array([1.0, 2.0])) == 3.0
 
@@ -1368,7 +1372,7 @@ class TestScalarLikeBoundaries:
 
   def test_scalar_like_rejects_wrong_type(self) -> None:
     assert not is_bearable("hello", I8ScalarLike)
-    assert not is_bearable(3.14, U8ScalarLike)
+    assert not is_bearable(math.pi, U8ScalarLike)
 
   def test_scalar_like_numpy_integers(self) -> None:
     assert is_bearable(np.int8(42), I8ScalarLike)
@@ -1433,7 +1437,7 @@ class TestArrayLikeDtypeViolations:
     assert not is_bearable(np.ones(3, dtype=np.complex128), I64Like[...])
 
   def test_boollike_rejects_float(self) -> None:
-    assert not is_bearable(3.14, BoolLike[...])
+    assert not is_bearable(math.pi, BoolLike[...])
 
 
 class TestArrayLikeMemoRestore:
@@ -1641,12 +1645,12 @@ class TestLikeCastingVariants:
     assert is_bearable(np.ones(3, dtype=np.int32), T[...])
 
   def test_like_same_kind_complex_rejected(self) -> None:
-    """complex → float is NOT same_kind."""
+    """Complex → float is NOT same_kind."""
     T = make_array_like_type(FLOAT32, casting="same_kind")
     assert not is_bearable(np.ones(3, dtype=np.complex128), T[...])
 
   def test_like_unsafe_accepts_complex_to_float(self) -> None:
-    """complex → float IS unsafe-castable."""
+    """Complex → float IS unsafe-castable."""
     T = make_array_like_type(FLOAT32, casting="unsafe")
     assert is_bearable(np.ones(3, dtype=np.complex128), T[...])
 

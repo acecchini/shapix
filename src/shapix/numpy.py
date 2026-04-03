@@ -53,7 +53,7 @@ scalar values with range checking — no shape, just value::
 from __future__ import annotations
 
 import typing as tp
-from typing import Annotated as A
+from typing import Annotated
 
 import numpy as np
 from beartype.vale import Is
@@ -155,11 +155,8 @@ __all__ = [
   "ShapedLike",
 ]
 
-from ._array_types import (
-  _is_valid_casting,
-  make_array_like_type as _make_array_like_type,
-)
-from ._array_types import make_array_type
+from ._array_types import _is_valid_casting, make_array_type
+from ._array_types import make_array_like_type as _make_array_like_type
 from ._dtypes import (
   BOOL,
   BYTES,
@@ -266,57 +263,67 @@ _nb = Is[_not_bool]
 StringLike: tp.TypeAlias = str | np.str_
 BoolScalarLike: tp.TypeAlias = bool | np.bool_
 
-I8ScalarLike: tp.TypeAlias = A[
+I8ScalarLike: tp.TypeAlias = Annotated[
   int | np.integer[tp.Any], _ge(_INT8_MIN) & _le(_INT8_MAX) & _nb
 ]
-I16ScalarLike: tp.TypeAlias = A[
+I16ScalarLike: tp.TypeAlias = Annotated[
   int | np.integer[tp.Any], _ge(_INT16_MIN) & _le(_INT16_MAX) & _nb
 ]
-I32ScalarLike: tp.TypeAlias = A[
+I32ScalarLike: tp.TypeAlias = Annotated[
   int | np.integer[tp.Any], _ge(_INT32_MIN) & _le(_INT32_MAX) & _nb
 ]
-I64ScalarLike: tp.TypeAlias = A[
+I64ScalarLike: tp.TypeAlias = Annotated[
   int | np.integer[tp.Any], _ge(_INT64_MIN) & _le(_INT64_MAX) & _nb
 ]
 
-U8ScalarLike: tp.TypeAlias = A[int | np.integer[tp.Any], _ge(0) & _le(_UINT8_MAX) & _nb]
-U16ScalarLike: tp.TypeAlias = A[
+U8ScalarLike: tp.TypeAlias = Annotated[
+  int | np.integer[tp.Any], _ge(0) & _le(_UINT8_MAX) & _nb
+]
+U16ScalarLike: tp.TypeAlias = Annotated[
   int | np.integer[tp.Any], _ge(0) & _le(_UINT16_MAX) & _nb
 ]
-U32ScalarLike: tp.TypeAlias = A[
+U32ScalarLike: tp.TypeAlias = Annotated[
   int | np.integer[tp.Any], _ge(0) & _le(_UINT32_MAX) & _nb
 ]
-U64ScalarLike: tp.TypeAlias = A[
+U64ScalarLike: tp.TypeAlias = Annotated[
   int | np.integer[tp.Any], _ge(0) & _le(_UINT64_MAX) & _nb
 ]
 
-F16ScalarLike: tp.TypeAlias = A[
+F16ScalarLike: tp.TypeAlias = Annotated[
   float | np.floating[tp.Any], _ge(_FLOAT16_MIN) & _le(_FLOAT16_MAX) & _nb
 ]
-F32ScalarLike: tp.TypeAlias = A[
+F32ScalarLike: tp.TypeAlias = Annotated[
   float | np.floating[tp.Any], _ge(_FLOAT32_MIN) & _le(_FLOAT32_MAX) & _nb
 ]
-F64ScalarLike: tp.TypeAlias = A[
+F64ScalarLike: tp.TypeAlias = Annotated[
   float | np.floating[tp.Any], _ge(_FLOAT64_MIN) & _le(_FLOAT64_MAX) & _nb
 ]
-F128ScalarLike: tp.TypeAlias = A[
+F128ScalarLike: tp.TypeAlias = Annotated[
   float | np.floating[tp.Any], _ge(_FLOAT128_MIN) & _le(_FLOAT128_MAX) & _nb
 ]
 
-C64ScalarLike: tp.TypeAlias = A[complex | np.complexfloating[tp.Any, tp.Any], _nb]
-C128ScalarLike: tp.TypeAlias = A[complex | np.complexfloating[tp.Any, tp.Any], _nb]
-C256ScalarLike: tp.TypeAlias = A[complex | np.complexfloating[tp.Any, tp.Any], _nb]
+C64ScalarLike: tp.TypeAlias = Annotated[
+  complex | np.complexfloating[tp.Any, tp.Any], _nb
+]
+C128ScalarLike: tp.TypeAlias = Annotated[
+  complex | np.complexfloating[tp.Any, tp.Any], _nb
+]
+C256ScalarLike: tp.TypeAlias = Annotated[
+  complex | np.complexfloating[tp.Any, tp.Any], _nb
+]
 
 IntScalarLike: tp.TypeAlias = I64ScalarLike
 UIntScalarLike: tp.TypeAlias = U64ScalarLike
-IntegerScalarLike: tp.TypeAlias = A[int | np.integer[tp.Any], _nb]
+IntegerScalarLike: tp.TypeAlias = Annotated[int | np.integer[tp.Any], _nb]
 FloatScalarLike: tp.TypeAlias = F64ScalarLike
-RealScalarLike: tp.TypeAlias = A[
+RealScalarLike: tp.TypeAlias = Annotated[
   int | float | np.integer[tp.Any] | np.floating[tp.Any], _nb
 ]
-ComplexScalarLike: tp.TypeAlias = A[complex | np.complexfloating[tp.Any, tp.Any], _nb]
-InexactScalarLike: tp.TypeAlias = A[float | complex | np.inexact[tp.Any], _nb]
-NumScalarLike: tp.TypeAlias = A[int | float | complex | np.number[tp.Any], _nb]
+ComplexScalarLike: tp.TypeAlias = Annotated[
+  complex | np.complexfloating[tp.Any, tp.Any], _nb
+]
+InexactScalarLike: tp.TypeAlias = Annotated[float | complex | np.inexact[tp.Any], _nb]
+NumScalarLike: tp.TypeAlias = Annotated[int | float | complex | np.number[tp.Any], _nb]
 ShapedScalarLike: tp.TypeAlias = bool | np.bool_ | NumScalarLike
 
 # ---------------------------------------------------------------------------
@@ -592,6 +599,7 @@ def make_scalar_like_type(
   -------
   type
       An ``Annotated`` type that beartype validates at runtime.
+
   """
   from ._array_types import _VALID_CASTINGS
 
@@ -612,4 +620,4 @@ def make_scalar_like_type(
 
   _check.__name__ = name
   _check.__qualname__ = name
-  return tp.cast(type, A[_SCALAR_BASE, Is[_check]])
+  return tp.cast("type", Annotated[_SCALAR_BASE, Is[_check]])

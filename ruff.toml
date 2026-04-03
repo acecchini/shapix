@@ -1,23 +1,127 @@
-preview = true
-indent-width = 2
-exclude = ["__pycache__"]
+exclude = [
+  "__pycache__",
+  "examples/*.ipynb",
+]
 line-length = 88
-target-version = "py312"
+indent-width = 2
+target-version = "py310"
+preview = true
 
 [lint]
-select = ["B", "C", "E", "F", "W", "YTT", "ASYNC", "PLW"]
+select = [
+  "YTT",
+  "ANN",
+  "ASYNC",
+  "S",
+  "BLE",
+  "FBT",
+  "B",
+  "A",
+  "COM",
+  "C4",
+  "DTZ",
+  "T10",
+  "EM",
+  "EXE",
+  "FA",
+  "FIX",
+  "INT",
+  "ISC",
+  "ICN",
+  "LOG",
+  "G",
+  "INP",
+  "PIE",
+  "T20",
+  "PYI",
+  "PT",
+  "Q",
+  "RSE",
+  "RET",
+  "SLOT",
+  "SIM",
+  "TID",
+  "TD",
+  "TC",
+  "ARG",
+  "PTH",
+  "FLY",
+  "I",
+  "NPY",
+  "N",
+  "PERF",
+  "E",
+  "W",
+  "D",
+  "F",
+  "PGH",
+  "PL",
+  "PLE",
+  "PLR",
+  "PLW",
+  "UP",
+  "FURB",
+  "RUF",
+  "TRY",
+]
 ignore = [
   # Zip without explicit strict — more idiomatic
   "B905",
-  # Function is too complex
-  "C901",
   # Mutable default in function arg — intentional for BeartypeConf()
   "B008",
+  # Formatter owns trailing-comma layout
+  "COM812",
+  # `Any` is required in a few runtime-integration seams
+  "ANN401",
+  # The repo is not enforcing blanket docstring coverage
+  "D100",
+  "D101",
+  "D102",
+  "D103",
+  "D104",
+  "D105",
+  "D106",
+  "D107",
+  # Keep Black-compatible docstring layout
+  "D203",
+  "D213",
+  # Grouped export lists and focused docstring coverage are intentional here
+  "D401",
+  "D403",
+  "D413",
+  "D417",
+  "FURB189",
   # Indentation rules — incompatible with 2-space indent
-  "E111", "E114",
+  "E111",
+  "E114",
   # Line too long — handled by formatter
   "E501",
+  # Intentional re-export and optional-import patterns
+  "PLC0414",
+  "PLC0415",
+  "PLC2701",
+  # Complexity thresholds are too noisy for validator code
+  "PLR0904",
+  "PLR0911",
+  "PLR0912",
+  "PLR0913",
+  "PLR2004",
+  "PLR6301",
+  # Intentional runtime protocol patterns
+  "PYI034",
+  "RUF022",
+  "RUF023",
+  "RUF067",
+  # Stringized imports are already handled via postponed evaluation
+  "TC001",
+  "TC003",
+  # Readable library error messages matter more than these stylistic rules
+  "TRY003",
+  "TRY004",
 ]
+
+[lint.flake8-pytest-style]
+parametrize-names-type = "csv"
 
 [lint.per-file-ignores]
 "tests/**" = [
@@ -27,13 +131,48 @@ ignore = [
   "B017",
   # subprocess.run without check= — we inspect returncode manually
   "PLW1510",
+  # flake8-boolean-trap is useful for API code but too noisy for tests that
+  # intentionally pass boolean values as sample inputs.
+  "FBT",
+  # Tests and fixtures intentionally use pytest asserts and symbolic names
+  "ARG001",
+  "ARG002",
+  "N802",
+  "N803",
+  "N806",
+  "N811",
+  "PGH003",
+  "PLC1901",
+  "PT011",
+  "RUF002",
+  "RUF043",
+  "RUF029",
+  "S404",
+  "S603",
+  "RUF069",
+  "S101",
 ]
 "tests/typing/**" = [
   # Unary prefix increment (++N) — testing operator chaining
   "B002",
+  # Typing fixtures intentionally exercise awkward-but-supported signatures
+  "ANN001",
+  "ANN201",
+  "ARG001",
+  "ARG002",
+  "N802",
+  "N803",
+  "N806",
+  "N811",
+  "PGH003",
+  "PYI024",
+  "RUF029",
+]
+"src/shapix/_decorator.py" = [
+  # Public API intentionally exposes snake_case context manager name
+  "N801",
 ]
 
 [format]
-skip-magic-trailing-comma = true
 docstring-code-format = true
 docstring-code-line-length = 100

@@ -16,26 +16,25 @@ from beartype.roar import (
 )
 
 import shapix
-from shapix import B, C, N, Value, __, Dimension  # noqa: F811 — B used in ~B annotations
+from shapix import B, C, Dimension, N, Value, __
 from shapix.torch import (
   BF16,
-  BF16Like,
-  Bool,
   F16,
   F32,
-  F32Like,
   F64,
-  Float,
   I32,
   I64,
+  U8,
+  BF16Like,
+  Bool,
+  BoolLike,
+  F32Like,
+  Float,
   I64Like,
   Int,
   Num,
   Shaped,
-  U8,
-  BoolLike,
 )
-
 
 # =====================================================================
 # Dtype acceptance / rejection
@@ -351,7 +350,8 @@ class TestTorchLikeTypes:
         self.dtype = np.dtype(np.float32)
 
       def __array__(self, *_a: object, **_kw: object) -> None:  # noqa: PLW3201
-        raise TypeError("not convertible")
+        msg = "not convertible"
+        raise TypeError(msg)
 
     assert not is_bearable(SpoofedArray(), F32Like[...])
 
@@ -385,7 +385,8 @@ class TestTorchAsarrayFallback:
 
     class Unconvertible:
       def __array__(self, *_a: object, **_kw: object) -> None:  # noqa: PLW3201
-        raise TypeError("nope")
+        msg = "nope"
+        raise TypeError(msg)
 
     assert not is_bearable(Unconvertible(), F32Like[...])
 

@@ -10,14 +10,13 @@ clean without weakening runtime semantics.
 Tested with: pyright, mypy, ty
 """
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeAlias
 
 import numpy as np
 from beartype import beartype
 
 from shapix import B, C, Dimension, H, N, Scalar, Value, W, __, check, check_context
 from shapix.numpy import (
-  Bool,
   C64,
   C128,
   C256,
@@ -29,14 +28,15 @@ from shapix.numpy import (
   I16,
   I32,
   I64,
-  Int,
-  Integer,
-  Num,
-  Shaped,
   U8,
   U16,
   U32,
   U64,
+  Bool,
+  Int,
+  Integer,
+  Num,
+  Shaped,
 )
 
 # ---------------------------------------------------------------------------
@@ -199,10 +199,10 @@ def scalar_fn(x: F32[Scalar]) -> F32[Scalar]:
 # ---------------------------------------------------------------------------
 
 if TYPE_CHECKING:
-  type PaddedN = int
-  type DoubleChannels = int
-  type FromSize = int
-  type FromSelf = int
+  PaddedN: TypeAlias = int
+  DoubleChannels: TypeAlias = int
+  FromSize: TypeAlias = int
+  FromSelf: TypeAlias = int
 else:
   PaddedN = N + 2
   DoubleChannels = C * 2
@@ -253,8 +253,8 @@ def with_anon(x: F32[__, C]) -> F32[__, C]:
 # ---------------------------------------------------------------------------
 
 if TYPE_CHECKING:
-  type Vocab = int
-  type Embed = int
+  Vocab: TypeAlias = int
+  Embed: TypeAlias = int
 else:
   Vocab = Dimension("Vocab")
   Embed = Dimension("Embed")

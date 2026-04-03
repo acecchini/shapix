@@ -16,13 +16,13 @@ from shapix._dtypes import (
   FLOAT32,
   FLOAT64,
   FLOAT128,
+  INEXACT,
   INT,
   INT8,
   INT16,
   INT32,
   INT64,
   INTEGER,
-  INEXACT,
   NUM,
   REAL,
   SHAPED,
@@ -34,7 +34,6 @@ from shapix._dtypes import (
   DtypeSpec,
   extract_dtype_str,
 )
-
 
 # =====================================================================
 # extract_dtype_str — NumPy
@@ -394,7 +393,7 @@ class TestByteorderMatching:
     assert FLOAT32_LE._check_byteorder(42)
 
   def test_byteorder_empty_str_passes(self) -> None:
-    """dtype with empty .str always passes."""
+    """Dtype with empty .str always passes."""
     from shapix._dtypes import FLOAT32_LE
 
     class FakeDtype:

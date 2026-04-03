@@ -89,7 +89,15 @@ def get_runtime_validator(hint: object) -> _RuntimeValidator | None:
     validator, "instancecheck_str"
   ):
     return None
-  return tp.cast(_RuntimeValidator, validator)
+  return tp.cast("_RuntimeValidator", validator)
+
+
+def _require_runtime_validator(hint: object) -> _RuntimeValidator:
+  validator = get_runtime_validator(hint)
+  if validator is None:
+    msg = f"{hint!r} is not a shapix runtime hint"
+    raise TypeError(msg)
+  return validator
 
 
 def hint_label(hint: object) -> str:
@@ -101,13 +109,11 @@ def hint_label(hint: object) -> str:
 
 class _ShapixRuntimeHintMeta(type):
   def __instancecheck__(cls, obj: object) -> bool:
-    validator = get_runtime_validator(cls)
-    assert validator is not None
+    validator = _require_runtime_validator(cls)
     return validator.instancecheck(obj)
 
   def __instancecheck_str__(cls, obj: object) -> str:  # noqa: PLW3201
-    validator = get_runtime_validator(cls)
-    assert validator is not None
+    validator = _require_runtime_validator(cls)
     return validator.instancecheck_str(obj)
 
 
