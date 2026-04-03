@@ -4,10 +4,13 @@
 
 ```bash
 uv sync                     # install all deps (dev + optional + static)
-uv run pytest tests/        # run all tests
+uv run pytest tests/ -n=auto  # run all tests with xdist
 uv run pyright src/         # type-check source
 uv run tox run -e dev       # locked env with all deps
 ```
+
+Use `-n=auto` by default. Fall back to `-n0` only when debugging an xdist-specific
+failure or when you need fully serial, deterministic reproduction of a narrow test.
 
 ## Tox environment naming
 
