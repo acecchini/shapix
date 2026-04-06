@@ -6,6 +6,8 @@ hide:
   - toc
 ---
 
+<!-- markdownlint-disable-file MD001 MD013 MD033 -->
+
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@700;800;900&display=swap" rel="stylesheet">
 
 <style>
@@ -403,7 +405,8 @@ Powered by <a href="https://github.com/beartype/beartype" class="beartype-link">
 
 ### :material-lightning-bolt: Zero Boilerplate
 
-Works with standard `@beartype` decorators and `beartype.claw` import hooks. No custom decorator required.
+Works with standard `@beartype` decorators and `beartype.claw` import hooks. No
+custom decorator required.
 
 </div>
 
@@ -411,7 +414,8 @@ Works with standard `@beartype` decorators and `beartype.claw` import hooks. No 
 
 ### :material-link-variant: Cross-Argument Consistency
 
-Named dimensions are enforced across all parameters and the return value within a single function call.
+Named dimensions are enforced across all parameters and the return value within
+a single function call.
 
 </div>
 
@@ -419,7 +423,8 @@ Named dimensions are enforced across all parameters and the return value within 
 
 ### :material-check-decagram: Static Type Checker Friendly
 
-Core annotations type-check on pyright, mypy, and ty, with documented tricks for runtime-only syntax such as fixed literal dims and symbolic shapes.
+Core annotations type-check on pyright, mypy, and ty, with documented tricks for
+runtime-only syntax such as fixed literal dims and symbolic shapes.
 
 </div>
 
@@ -435,7 +440,8 @@ Core annotations type-check on pyright, mypy, and ty, with documented tricks for
 
 ### :material-cog: Full BeartypeConf Support
 
-Unlike jaxtyping, shapix doesn't replace your beartype configuration. Full `BeartypeConf` support out of the box.
+Unlike jaxtyping, shapix doesn't replace your beartype configuration. Full
+`BeartypeConf` support out of the box.
 
 </div>
 
@@ -443,7 +449,8 @@ Unlike jaxtyping, shapix doesn't replace your beartype configuration. Full `Bear
 
 ### :material-shield-lock: Thread-Safe & Async-Safe
 
-Automatic memo discovery is thread-safe, and the explicit memo stack used by `@shapix.check` and `check_context()` is async-safe too.
+Automatic memo discovery is thread-safe, and the explicit memo stack used by
+`@shapix.check` and `check_context()` is async-safe too.
 
 </div>
 

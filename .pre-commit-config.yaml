@@ -84,7 +84,15 @@ repos:
     hooks:
       - id: mdformat
         language: python # means renovate will also update `additional_dependencies`
+        args:
+          - --wrap
+          - "80"
+          - --extensions
+          - mkdocs
+          - --extensions
+          - frontmatter
         additional_dependencies:
+          - mdformat-frontmatter==2.0.10
           - mdformat-mkdocs==v5.2.0b2
         priority: 30
 

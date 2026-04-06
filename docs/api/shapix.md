@@ -1,11 +1,11 @@
 ---
-title: "shapix"
 description: Lightweight root API for dimensions, dtype specs, memo helpers, and factories.
 ---
 
 # `shapix`
 
-The root module is intentionally small and optional-dependency-safe. It is the place to import:
+The root module is intentionally small and optional-dependency-safe. It is the
+place to import:
 
 - dimension symbols such as `N`, `C`, `Scalar`, and `Value`
 - tree structure symbols such as `T`, `S`, and `Structure`
@@ -36,25 +36,33 @@ import shapix
 print(shapix.__version__)
 ```
 
-In an installed package this is the package version. In a plain source checkout without installed metadata it falls back to a non-empty string such as `0+unknown`.
+In an installed package this is the package version. In a plain source checkout
+without installed metadata it falls back to a non-empty string such as
+`0+unknown`.
 
 ## Pre-defined dimensions
 
-| Name | Meaning |
-|------|---------|
-| `N`, `B`, `C`, `D`, `K`, `H`, `W`, `L`, `P` | Named dimensions |
-| `__` | Anonymous single dimension |
-| `Scalar` | Zero-dimensional array shape |
-| `Value("expr")` | Runtime value-based dimension expression |
+<!-- markdownlint-disable MD013 -->
+
+| Name | Meaning | | ------------------------------------------- |
+---------------------------------------- | | `N`, `B`, `C`, `D`, `K`, `H`, `W`,
+`L`, `P` | Named dimensions | | `__` | Anonymous single dimension | | `Scalar` |
+Zero-dimensional array shape | | `Value("expr")` | Runtime value-based dimension
+expression |
+
+<!-- markdownlint-enable MD013 -->
 
 Use `Dimension("Name")` to create your own.
 
 ## Pre-defined structure symbols
 
-| Name | Meaning |
-|------|---------|
-| `T`, `S` | Named tree structure symbols |
-| `Structure("Name")` | Custom tree structure symbol |
+<!-- markdownlint-disable MD013 -->
+
+| Name | Meaning | | ------------------- | ---------------------------- | | `T`,
+`S` | Named tree structure symbols | | `Structure("Name")` | Custom tree
+structure symbol |
+
+<!-- markdownlint-enable MD013 -->
 
 Remember that `Tree` itself lives in `shapix.optree` or `shapix.jax`.
 
@@ -88,7 +96,8 @@ Batch = Value("batch")
 WidthPlus3 = Value("self.width + 3")
 ```
 
-It supports names, attribute access, numeric literals, and arithmetic. It rejects calls, indexing, and arbitrary evaluation.
+It supports names, attribute access, numeric literals, and arithmetic. It
+rejects calls, indexing, and arbitrary evaluation.
 
 ## `DtypeSpec`
 
@@ -109,7 +118,8 @@ Key features:
 
 ## `make_array_type`
 
-`make_array_type(array_type, dtype_spec)` creates a strict array factory for custom array classes.
+`make_array_type(array_type, dtype_spec)` creates a strict array factory for
+custom array classes.
 
 ```python
 import numpy as np
@@ -128,7 +138,9 @@ The `array_type` only needs `.shape` and `.dtype` at runtime.
 
 ## `make_array_like_type`
 
-`make_array_like_type(dtype_spec, *, casting="same_kind", name="ArrayLike")` creates a broader input-contract factory for values that will be converted before use.
+`make_array_like_type(dtype_spec, *, casting="same_kind", name="ArrayLike")`
+creates a broader input-contract factory for values that will be converted
+before use.
 
 ```python
 from shapix import make_array_like_type
@@ -138,7 +150,9 @@ F32Input = make_array_like_type(FLOAT32, name="F32Input")
 F32StrictInput = make_array_like_type(FLOAT32, casting="no", name="F32StrictInput")
 ```
 
-Use backend modules when you want the built-in NumPy/JAX/Torch/CuPy `Like` aliases. Use the root factory when you want custom dtype combinations or custom conversion hooks.
+Use backend modules when you want the built-in NumPy/JAX/Torch/CuPy `Like`
+aliases. Use the root factory when you want custom dtype combinations or custom
+conversion hooks.
 
 ## `check`
 

@@ -1,11 +1,11 @@
 ---
-title: "shapix.optree"
 description: Explicit Tree backend using OpTree.
 ---
 
 # `shapix.optree`
 
-`shapix.optree` provides the explicit OpTree-backed `Tree` annotation plus the shared `Structure` type.
+`shapix.optree` provides the explicit OpTree-backed `Tree` annotation plus the
+shared `Structure` type.
 
 ```python
 from shapix.optree import Tree, Structure
@@ -13,7 +13,8 @@ from shapix.optree import Tree, Structure
 
 ## `Tree`
 
-At runtime, `Tree` validates pytree leaves and optional structure bindings using OpTree.
+At runtime, `Tree` validates pytree leaves and optional structure bindings using
+OpTree.
 
 ```python
 from beartype import beartype
@@ -34,7 +35,8 @@ Static typing split:
 
 ## `Structure`
 
-`Structure` is the same structure-symbol type exported from the root `shapix` module.
+`Structure` is the same structure-symbol type exported from the root `shapix`
+module.
 
 ```python
 from shapix import Structure
@@ -48,4 +50,5 @@ Use this module when:
 
 - you want tree annotations without bringing in JAX
 - you want an explicit, stable OpTree backend in a NumPy or Torch project
-- you do not want tree behavior to depend on which optional packages happen to be installed
+- you do not want tree behavior to depend on which optional packages happen to
+    be installed

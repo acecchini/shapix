@@ -1,5 +1,4 @@
 ---
-title: "shapix.torch"
 description: PyTorch tensor aliases, Like aliases, and ScalarLike re-exports.
 ---
 
@@ -19,8 +18,10 @@ from shapix.torch import (
 
 Strict array aliases:
 
-- concrete families such as `Bool`, `I32`, `I64`, `F16`, `F32`, `F64`, `BF16`, `C64`, `C128`
-- category families such as `Int`, `UInt`, `Integer`, `Float`, `Real`, `Complex`, `Inexact`, `Num`, `Shaped`
+- concrete families such as `Bool`, `I32`, `I64`, `F16`, `F32`, `F64`, `BF16`,
+    `C64`, `C128`
+- category families such as `Int`, `UInt`, `Integer`, `Float`, `Real`,
+    `Complex`, `Inexact`, `Num`, `Shaped`
 
 `Like` aliases:
 
@@ -62,9 +63,11 @@ Static type checkers still see the result as `torch.Tensor`.
 
 ## `ScalarLike` re-exports
 
-`ScalarLike` aliases are re-exported from `shapix.numpy`. They validate Python and NumPy scalar values, not Torch 0-D tensors.
+`ScalarLike` aliases are re-exported from `shapix.numpy`. They validate Python
+and NumPy scalar values, not Torch 0-D tensors.
 
-For Torch scalar tensors, prefer a `Like` alias with `Scalar`, for example `F32Like[Scalar]`.
+For Torch scalar tensors, prefer a `Like` alias with `Scalar`, for example
+`F32Like[Scalar]`.
 
 ## Trees
 
@@ -73,4 +76,5 @@ For Torch scalar tensors, prefer a `Like` alias with `Scalar`, for example `F32L
 If you want tree annotations in a Torch project, import:
 
 - `Tree` from `shapix.optree` for an explicit OpTree backend
-- or `Tree` from `shapix.jax` if your project already depends on JAX's tree utilities
+- or `Tree` from `shapix.jax` if your project already depends on JAX's tree
+    utilities

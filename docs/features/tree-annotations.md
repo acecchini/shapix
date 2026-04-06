@@ -1,11 +1,13 @@
 ---
-title: Tree Annotations
 description: Validate pytree leaves and optionally bind tree structure across arguments.
 ---
 
+<!-- markdownlint-disable-file MD046 -->
+
 # Tree Annotations
 
-Tree annotations validate nested container structures such as dicts, lists, tuples, namedtuples, and other pytree-compatible objects.
+Tree annotations validate nested container structures such as dicts, lists,
+tuples, namedtuples, and other pytree-compatible objects.
 
 Import `Tree` from an explicit backend module:
 
@@ -21,7 +23,8 @@ Import `Tree` from an explicit backend module:
     from shapix.jax import Tree
     ```
 
-The root `shapix` module exports `Structure`, `T`, and `S`, but not `Tree` itself.
+The root `shapix` module exports `Structure`, `T`, and `S`, but not `Tree`
+itself.
 
 ## Basic leaf checking
 
@@ -44,11 +47,13 @@ process({
 })
 ```
 
-Dimension bindings are shared across the whole tree, so `N` and `C` must agree across all leaves.
+Dimension bindings are shared across the whole tree, so `N` and `C` must agree
+across all leaves.
 
 ## Structure binding
 
-Named structure symbols (`T`, `S`) enforce that multiple arguments share identical tree shapes:
+Named structure symbols (`T`, `S`) enforce that multiple arguments share
+identical tree shapes:
 
 ```python
 import numpy as np
@@ -58,15 +63,21 @@ from shapix.numpy import F32
 from shapix.optree import Tree
 
 @beartype
-def add_trees(x: Tree[F32[N], T], y: Tree[F32[N], T]) -> Tree[F32[N]]:  # type: ignore[valid-type]
+def add_trees(
+  x: Tree[F32[N], T],
+  y: Tree[F32[N], T],
+) -> Tree[F32[N]]:  # type: ignore[valid-type]
   ...
 ```
 
-Structure symbols are runtime-only. Static type checkers understand `Tree[F32[N]]`, but not the extra structure arguments, so those function signatures need a targeted `# type: ignore`.
+Structure symbols are runtime-only. Static type checkers understand
+`Tree[F32[N]]`, but not the extra structure arguments, so those function
+signatures need a targeted `# type: ignore`.
 
 ## Multi-level structure matching
 
-Structure names are interpreted from outer to inner unless `...` changes the direction or truncates the match.
+Structure names are interpreted from outer to inner unless `...` changes the
+direction or truncates the match.
 
 ### Full structure binding
 
@@ -78,7 +89,8 @@ def f(x: Tree[F32[N], T], y: Tree[F32[N], T]):  # type: ignore[valid-type]
 
 ### Top-level only
 
-Trailing `...` makes each name capture only one level, with inner levels unchecked:
+Trailing `...` makes each name capture only one level, with inner levels
+unchecked:
 
 ```python
 @beartype
@@ -149,12 +161,10 @@ Runtime-only add-ons:
 
 ## Summary
 
-| Pattern | Meaning |
-|---------|---------|
-| `Tree[LeafType]` | Leaf checking only |
-| `Tree[LeafType, T]` | Full structure binding |
-| `Tree[LeafType, T, ...]` | Top-level only |
-| `Tree[LeafType, ..., T]` | Bottom-level only |
-| `Tree[LeafType, T, S]` | T = top (one level), S = full remaining |
-| `Tree[LeafType, T, S, ...]` | T = top, S = next, inner unchecked |
+| Pattern | Meaning | | --------------------------- |
+--------------------------------------- | | `Tree[LeafType]` | Leaf checking
+only | | `Tree[LeafType, T]` | Full structure binding | |
+`Tree[LeafType, T, ...]` | Top-level only | | `Tree[LeafType, ..., T]` |
+Bottom-level only | | `Tree[LeafType, T, S]` | T = top (one level), S = full
+remaining | | `Tree[LeafType, T, S, ...]` | T = top, S = next, inner unchecked |
 | `Tree[LeafType, ..., T, S]` | S = bottom, T = second-from-bottom |

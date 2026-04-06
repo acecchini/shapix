@@ -1,5 +1,4 @@
 ---
-title: "shapix.numpy"
 description: NumPy array aliases, Like aliases, ScalarLike aliases, and NumPy-specific helpers.
 ---
 
@@ -49,12 +48,14 @@ Additional NumPy-only aliases:
 
 Notes:
 
-- `DT64` and `TD64` accept unit-qualified NumPy dtypes such as `datetime64[ns]` and `timedelta64[ms]`.
+- `DT64` and `TD64` accept unit-qualified NumPy dtypes such as `datetime64[ns]`
+    and `timedelta64[ms]`.
 - `Shaped` accepts any dtype at runtime and checks only shape.
 
 ## `Structured`
 
-`Structured(fields)` creates a strict array alias for one exact NumPy structured dtype.
+`Structured(fields)` creates a strict array alias for one exact NumPy structured
+dtype.
 
 ```python
 import numpy as np
@@ -75,9 +76,12 @@ This is a convenience wrapper over `DtypeSpec.structured(...)`.
 - `NumLike[N, C]`
 - `ShapedLike[...]`
 
-At runtime they accept scalars, nested sequences, arrays, and convertible values. Static type checkers see a narrower model.
+At runtime they accept scalars, nested sequences, arrays, and convertible
+values. Static type checkers see a narrower model.
 
-Built-in `Like` aliases use the default `make_array_like_type(..., casting="same_kind")` behavior. That is why `F32Like[...]` accepts integer inputs but rejects complex inputs by default.
+Built-in `Like` aliases use the default
+`make_array_like_type(..., casting="same_kind")` behavior. That is why
+`F32Like[...]` accepts integer inputs but rejects complex inputs by default.
 
 ## `ScalarLike` aliases
 
@@ -95,7 +99,9 @@ Numeric scalar aliases intentionally reject booleans.
 
 ## `make_scalar_like_type`
 
-Use `make_scalar_like_type(target_dtype, *, casting="same_kind", name="ScalarLike")` when the built-in scalar aliases are close but not exact enough.
+Use
+`make_scalar_like_type(target_dtype, *, casting="same_kind", name="ScalarLike")`
+when the built-in scalar aliases are close but not exact enough.
 
 ```python
 import numpy as np
@@ -112,13 +118,17 @@ Common interpretations:
 - `"same_kind"`: same numeric family, and the default
 - `"unsafe"`: most permissive
 
-Numeric factories still reject booleans. For example, `make_scalar_like_type(np.float32)` rejects `True`, while `make_scalar_like_type(np.bool_)` accepts it.
+Numeric factories still reject booleans. For example,
+`make_scalar_like_type(np.float32)` rejects `True`, while
+`make_scalar_like_type(np.bool_)` accepts it.
 
-`make_scalar_like_type` is deliberately documented here rather than on the root module, because the root import stays NumPy-optional.
+`make_scalar_like_type` is deliberately documented here rather than on the root
+module, because the root import stays NumPy-optional.
 
 ## `ArrayLike`
 
-`ArrayLike` is the public recursive typing template behind the static `Like` surface:
+`ArrayLike` is the public recursive typing template behind the static `Like`
+surface:
 
 ```python
 import numpy as np
@@ -127,4 +137,5 @@ from shapix.numpy import ArrayLike
 type MyInput = ArrayLike[float, np.float32]
 ```
 
-It is useful when you want a checker-friendly custom alias that still follows the shapix "scalar or nested sequence or array" model.
+It is useful when you want a checker-friendly custom alias that still follows
+the shapix "scalar or nested sequence or array" model.

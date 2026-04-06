@@ -1,7 +1,8 @@
 ---
-title: Installation
 description: Install shapix-rt with your preferred array backend.
 ---
+
+<!-- markdownlint-disable-file MD046 -->
 
 # Installation
 
@@ -16,13 +17,15 @@ description: Install shapix-rt with your preferred array backend.
 pip install shapix-rt
 ```
 
-The distribution name is `shapix-rt`, where `rt` means `runtime`. The import path stays:
+The distribution name is `shapix-rt`, where `rt` means `runtime`. The import
+path stays:
 
 ```python
 import shapix
 ```
 
-Shapix intentionally does **not** use extras such as `shapix-rt[numpy]`. Install `shapix-rt` and your backend packages explicitly.
+Shapix intentionally does **not** use extras such as `shapix-rt[numpy]`. Install
+`shapix-rt` and your backend packages explicitly.
 
 === "NumPy"
 
@@ -54,8 +57,9 @@ Shapix intentionally does **not** use extras such as `shapix-rt[numpy]`. Install
     pip install shapix-rt numpy optree  # or install jax and use shapix.jax.Tree
     ```
 
-!!! note
-    `shapix.jax`, `shapix.torch`, and `shapix.cupy` require `numpy` alongside the backend. The lightweight root import `import shapix` does not.
+!!! note `shapix.jax`, `shapix.torch`, and `shapix.cupy` require `numpy`
+
+alongside the backend. The lightweight root import `import shapix` does not.
 
 ## Install with uv
 
@@ -65,13 +69,12 @@ uv add shapix-rt
 
 ## Optional dependencies
 
-| Package | Purpose |
-|---------|---------|
-| `numpy` | NumPy array aliases, `ScalarLike`, and backend dtype helpers |
-| `torch` | PyTorch tensor aliases and Torch `Like` types |
-| `jax` | JAX array aliases, JAX `Like` types, and JAX `Tree` |
-| `cupy` | CuPy array aliases and CuPy `Like` types |
-| `optree` | Explicit OpTree backend via `shapix.optree.Tree` |
+| Package | Purpose | | -------- |
+------------------------------------------------------------ | | `numpy` | NumPy
+array aliases, `ScalarLike`, and backend dtype helpers | | `torch` | PyTorch
+tensor aliases and Torch `Like` types | | `jax` | JAX array aliases, JAX `Like`
+types, and JAX `Tree` | | `cupy` | CuPy array aliases and CuPy `Like` types | |
+`optree` | Explicit OpTree backend via `shapix.optree.Tree` |
 
 ## Import boundaries
 
@@ -84,7 +87,8 @@ print(shapix.__version__)
 print(shapix.N, shapix.C)
 ```
 
-That works even in a plain source checkout without installed package metadata. In that case `__version__` falls back to a non-empty string such as `0+unknown`.
+That works even in a plain source checkout without installed package metadata.
+In that case `__version__` falls back to a non-empty string such as `0+unknown`.
 
 Backend modules are stricter:
 

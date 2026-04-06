@@ -1,5 +1,4 @@
 ---
-title: Decorator & Memo
 description: Explicit memo management with @shapix.check and check_context.
 ---
 
@@ -7,7 +6,8 @@ description: Explicit memo management with @shapix.check and check_context.
 
 ## How cross-argument checking works
 
-A dimension memo maps names such as `N` and `C` to the concrete sizes seen during one call. That shared memo is why:
+A dimension memo maps names such as `N` and `C` to the concrete sizes seen
+during one call. That shared memo is why:
 
 - `x: F32[N, C]` can bind `N = 4`
 - `y: F32[N, C]` is then required to use the same `N = 4`
@@ -23,19 +23,27 @@ def f(x: F32[N, C], y: F32[N, C]) -> F32[N, C]:
   ...
 ```
 
-Plain `@beartype` is the normal entry point. Most users never need more than that.
+Plain `@beartype` is the normal entry point. Most users never need more than
+that.
 
 ## Which decorator should you choose?
 
 Use plain `@beartype` by default.
 
-Add `@shapix.check` only when you need explicit memo scope rather than frame discovery.
+Add `@shapix.check` only when you need explicit memo scope rather than frame
+discovery.
 
-| Choice | What it does | When it is the right fit |
-|--------|---------------|--------------------------|
-| `@beartype` | lets shapix find the shared memo by walking the beartype call stack | normal application code with no unusual wrapper layers |
-| `@shapix.check` + `@beartype` | pushes one memo explicitly before the call and pops it after | middleware-heavy stacks, wrapper decorators, async `Value(...)`, or defensive correctness |
-| `@shapix.check(conf=...)` | same explicit memo handling, and applies beartype for you | when you also want to pass `BeartypeConf` without stacking both decorators manually |
+- `@beartype` What it does: lets shapix find the shared memo by walking the
+    beartype call stack. Right fit: normal application code with no unusual
+    wrapper layers.
+
+- `@shapix.check` + `@beartype` What it does: pushes one memo explicitly before
+    the call and pops it after. Right fit: middleware-heavy stacks, wrapper
+    decorators, async `Value(...)`, or defensive correctness.
+
+- `@shapix.check(conf=...)` What it does: same explicit memo handling, and
+    applies beartype for you. Right fit: when you also want to pass
+    `BeartypeConf` without stacking both decorators manually.
 
 What `@shapix.check` changes:
 
@@ -50,7 +58,9 @@ What it does **not** change:
 
 ## `@shapix.check`
 
-`@shapix.check` provides explicit memo management. Instead of discovering the correct beartype frame dynamically, it pushes a memo before the call and pops it afterwards.
+`@shapix.check` provides explicit memo management. Instead of discovering the
+correct beartype frame dynamically, it pushes a memo before the call and pops it
+afterwards.
 
 ### Usage mode 1: memo only
 
@@ -94,8 +104,10 @@ Concrete examples:
 
 - web frameworks or middleware that wrap handlers before beartype sees them
 - utility decorators around model code that add their own frames
-- async code where a `Value("size")` expression should keep using the original bound scope until the coroutine finishes
-- tests or runtime environments where you do not want frame-layout assumptions to be part of correctness
+- async code where a `Value("size")` expression should keep using the original
+    bound scope until the coroutine finishes
+- tests or runtime environments where you do not want frame-layout assumptions
+    to be part of correctness
 
 ## Async support
 
@@ -111,12 +123,15 @@ Generator functions are intentionally rejected:
 - sync generators raise `TypeError`
 - async generators raise `TypeError`
 
-!!! tip "When you don't need it"
-    If plain `@beartype` is already working in your codebase, keep it simple. `@shapix.check` is an explicit escape hatch, not the default style.
+!!! tip "When you don't need it" If plain `@beartype` is already working in your
+
+codebase, keep it simple. `@shapix.check` is an explicit escape hatch, not the
+default style.
 
 ## `check_context`
 
-For manual `is_bearable()` checks, use `check_context` so multiple validations share one memo.
+For manual `is_bearable()` checks, use `check_context` so multiple validations
+share one memo.
 
 ```python
 from beartype.door import is_bearable
@@ -140,14 +155,18 @@ with shapix.check_context():
 ## Thread and async safety
 
 - frame-based auto-detection uses `threading.local()` for thread isolation
-- the explicit memo stack used by `@shapix.check` and `check_context()` uses `contextvars.ContextVar`
+- the explicit memo stack used by `@shapix.check` and `check_context()` uses
+    `contextvars.ContextVar`
 
-!!! note
-    Child tasks inheriting an active parent context share the same live memo by reference. For full task isolation, each task should enter its own `check_context()`.
+!!! note Child tasks inheriting an active parent context share the same live
+
+memo by reference. For full task isolation, each task should enter its own
+`check_context()`.
 
 ## `from __future__ import annotations`
 
-Shapix works with `from __future__ import annotations`, but every symbol used inside the annotation must still be imported in module scope:
+Shapix works with `from __future__ import annotations`, but every symbol used
+inside the annotation must still be imported in module scope:
 
 ```python
 from __future__ import annotations
@@ -160,4 +179,6 @@ def f(x: F32[~B, C]):  # type: ignore[valid-type]
   ...
 ```
 
-The same rule applies to custom dimensions and structure symbols: if the annotation refers to a runtime object, that symbol must exist in module scope when beartype resolves the annotation.
+The same rule applies to custom dimensions and structure symbols: if the
+annotation refers to a runtime object, that symbol must exist in module scope
+when beartype resolves the annotation.

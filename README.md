@@ -4,7 +4,8 @@
 ![Coverage 91%](https://img.shields.io/badge/coverage-91%25-34D058?style=flat-square&logo=codecov&logoColor=F01F7A&labelColor=1F2937)
 [![Docs](https://img.shields.io/badge/docs-live-526CFE?style=flat-square&logo=materialformkdocs&logoColor=white&labelColor=1F2937)](https://acecchini.github.io/shapix/)
 
-Elegant runtime shape and dtype checking for NumPy, JAX, PyTorch, and CuPy arrays — powered by [beartype](https://github.com/beartype/beartype).
+Elegant runtime shape and dtype checking for NumPy, JAX, PyTorch, and CuPy
+arrays — powered by [beartype](https://github.com/beartype/beartype).
 
 ```python
 from beartype import beartype
@@ -16,18 +17,29 @@ from shapix.numpy import F32
 def conv2d(x: F32[N, C, H, W], weight: F32[C, C, 3, 3]) -> F32[N, C, H, W]: ...
 ```
 
-Shapix turns array shape annotations into **Python objects** that beartype validates at runtime. Dimensions like `N` and `C` are checked for consistency across all parameters — if `x` has batch size 8, then `weight` must agree, automatically.
+Shapix turns array shape annotations into **Python objects** that beartype
+validates at runtime. Dimensions like `N` and `C` are checked for consistency
+across all parameters — if `x` has batch size 8, then `weight` must agree,
+automatically.
 
 ## Features
 
-- **Zero boilerplate** — works with standard `@beartype` decorators and `beartype.claw` import hooks. No custom decorator required.
-- **Cross-argument consistency** — named dimensions are enforced across all parameters and the return value within a single function call.
-- **Readable diagnostics** — dtype, shape, `Value(...)`, and tree mismatches surface the actual failure reason instead of opaque validator booleans.
-- **Static type checker friendly** — core annotations type-check on pyright, mypy, and ty, and richer runtime-only patterns use checker-friendly aliases or narrow per-annotation ignores.
+- **Zero boilerplate** — works with standard `@beartype` decorators and
+    `beartype.claw` import hooks. No custom decorator required.
+- **Cross-argument consistency** — named dimensions are enforced across all
+    parameters and the return value within a single function call.
+- **Readable diagnostics** — dtype, shape, `Value(...)`, and tree mismatches
+    surface the actual failure reason instead of opaque validator booleans.
+- **Static type checker friendly** — core annotations type-check on pyright,
+    mypy, and ty, and richer runtime-only patterns use checker-friendly aliases
+    or narrow per-annotation ignores.
 - **Readable annotations** — `F32[N, C, H, W]` reads like documentation.
-- **Full `BeartypeConf` support** — unlike jaxtyping, shapix doesn't replace your beartype configuration.
-- **Thread-safe and async-safe** — `@shapix.check` and `check_context()` use task-local memo state for explicit checks.
-- **Multi-backend** — NumPy, JAX, PyTorch, and CuPy out of the box, plus a factory for custom array types.
+- **Full `BeartypeConf` support** — unlike jaxtyping, shapix doesn't replace
+    your beartype configuration.
+- **Thread-safe and async-safe** — `@shapix.check` and `check_context()` use
+    task-local memo state for explicit checks.
+- **Multi-backend** — NumPy, JAX, PyTorch, and CuPy out of the box, plus a
+    factory for custom array types.
 
 ## Installation
 
@@ -35,16 +47,22 @@ Shapix turns array shape annotations into **Python objects** that beartype valid
 pip install shapix-rt
 ```
 
-The PyPI package name is `shapix-rt`, where `rt` stands for `runtime`. The import path stays `shapix`:
+The PyPI package name is `shapix-rt`, where `rt` stands for `runtime`. The
+import path stays `shapix`:
 
 ```python
 import shapix
 ```
 
-Shapix has one dependency: [beartype](https://github.com/beartype/beartype) (>= 0.20, tested with 0.20–0.22). Plain `@beartype` support depends on shapix being able to find the nearest active beartype wrapper frame at runtime; if you encounter issues with a newer beartype version, please file a bug. Install your preferred array framework separately:
+Shapix has one dependency: [beartype](https://github.com/beartype/beartype) (>=
+0.20, tested with 0.20–0.22). Plain `@beartype` support depends on shapix being
+able to find the nearest active beartype wrapper frame at runtime; if you
+encounter issues with a newer beartype version, please file a bug. Install your
+preferred array framework separately:
 
 Install optional dependencies alongside `shapix-rt` with plain package names.
-Avoid extras-style installs such as `shapix-rt[numpy]` or `shapix-rt[torch]` (`shapix-rt` intentionally does not provide extras).
+Avoid extras-style installs such as `shapix-rt[numpy]` or `shapix-rt[torch]`
+(`shapix-rt` intentionally does not provide extras).
 
 ```bash
 pip install shapix-rt                # lightweight root import only
@@ -63,10 +81,10 @@ pip install shapix-rt numpy torch
 pip install shapix-rt numpy cupy
 ```
 
-`import shapix` stays lightweight and does not require NumPy. Backend modules do:
-`shapix.numpy` requires `numpy`, `shapix.jax` requires `jax` + `numpy`,
-`shapix.torch` requires `torch` + `numpy`, `shapix.cupy` requires `cupy` + `numpy`,
-and `shapix.optree` requires `optree`.
+`import shapix` stays lightweight and does not require NumPy. Backend modules
+do: `shapix.numpy` requires `numpy`, `shapix.jax` requires `jax` + `numpy`,
+`shapix.torch` requires `torch` + `numpy`, `shapix.cupy` requires `cupy` +
+`numpy`, and `shapix.optree` requires `optree`.
 
 ## Quick start
 
@@ -91,7 +109,8 @@ normalize(np.ones((4,), dtype=np.float32))  # Raises — wrong rank
 
 ### Cross-argument consistency
 
-Named dimensions are tracked within each function call. If `N` is bound to 4 by the first argument, all subsequent arguments must agree:
+Named dimensions are tracked within each function call. If `N` is bound to 4 by
+the first argument, all subsequent arguments must agree:
 
 ```python
 @beartype
@@ -124,23 +143,17 @@ f(np.ones((100,), dtype=np.float32))  # N=100 — no conflict with previous call
 
 ## Dimension symbols
 
-Shapix provides pre-defined dimension symbols for common use cases. You can also create your own.
+Shapix provides pre-defined dimension symbols for common use cases. You can also
+create your own.
 
 ### Named dimensions
 
 Bind to a size on first occurrence and enforce consistency on subsequent ones.
 
-| Symbol | Typical use |
-|--------|-------------|
-| `N` | Batch size, count |
-| `B` | Batch |
-| `C` | Channels |
-| `D` | Embedding dimension |
-| `K` | Number of heads |
-| `H` | Height |
-| `W` | Width |
-| `L` | Sequence length |
-| `P` | Points / parameters |
+| Symbol | Typical use | | ------ | ------------------- | | `N` | Batch size,
+count | | `B` | Batch | | `C` | Channels | | `D` | Embedding dimension | | `K` |
+Number of heads | | `H` | Height | | `W` | Width | | `L` | Sequence length | |
+`P` | Points / parameters |
 
 ```python
 from shapix import N, C, H, W
@@ -161,14 +174,15 @@ def rgb_to_gray(x: F32[N, 3, H, W]) -> F32[N, 1, H, W]: ...
 ```
 
 At runtime this is fully supported. Static type checkers still treat integer
-literal dimensions as runtime-only syntax, so use a targeted `# type: ignore`
-on the annotation when you need checker-clean files. If you prefer cleaner
+literal dimensions as runtime-only syntax, so use a targeted `# type: ignore` on
+the annotation when you need checker-clean files. If you prefer cleaner
 signatures, you can also use a checker-only alias pattern with `tp.Literal[3]`
 under `TYPE_CHECKING` and `Dimension(3)` at runtime.
 
 ### Symbolic dimensions
 
-Dimensions support arithmetic. Expressions are evaluated against bound dimension values:
+Dimensions support arithmetic. Expressions are evaluated against bound dimension
+values:
 
 ```python
 from shapix import N, C
@@ -222,7 +236,8 @@ indexing, and other arbitrary Python expressions.
 
 ### Variadic dimensions
 
-Apply `~` (tilde) to a named dimension to make it **variadic** — matching zero or more contiguous dimensions:
+Apply `~` (tilde) to a named dimension to make it **variadic** — matching zero
+or more contiguous dimensions:
 
 ```python
 from shapix import B, C
@@ -239,7 +254,8 @@ normalize(np.ones((4, 3), dtype=np.float32))  # *B=(4,),   C=3
 normalize(np.ones((2, 4, 3), dtype=np.float32))  # *B=(2,4),  C=3
 ```
 
-Named variadic dimensions enforce cross-argument consistency on the matched shape:
+Named variadic dimensions enforce cross-argument consistency on the matched
+shape:
 
 ```python
 @beartype
@@ -260,7 +276,8 @@ def last_dim(x: F32[~__, C]) -> F32[~__, C]:
 
 ### Broadcastable dimensions
 
-Apply `+` (unary plus) to a named dimension, integer, or expression to make it **broadcastable** — size 1 always matches, regardless of the bound value:
+Apply `+` (unary plus) to a named dimension, integer, or expression to make it
+**broadcastable** — size 1 always matches, regardless of the bound value:
 
 ```python
 from shapix import N, C
@@ -276,11 +293,13 @@ broadcast_add(
 )  # OK — +N allows size 1
 ```
 
-Broadcastable also works with variadic dimensions: `~+B` matches zero or more dims where each can be 1 or the bound value.
+Broadcastable also works with variadic dimensions: `~+B` matches zero or more
+dims where each can be 1 or the bound value.
 
 ### Anonymous dimensions
 
-`__` matches any single dimension without binding — no cross-argument consistency:
+`__` matches any single dimension without binding — no cross-argument
+consistency:
 
 ```python
 from shapix import __, C
@@ -296,7 +315,8 @@ def f(x: F32[__, C]) -> F32[__, C]:
 
 ### Scalar dimension
 
-`Scalar` represents a zero-dimensional array (a scalar array). Use it when a function accepts or returns a scalar:
+`Scalar` represents a zero-dimensional array (a scalar array). Use it when a
+function accepts or returns a scalar:
 
 ```python
 from shapix import Scalar
@@ -308,7 +328,9 @@ def dot(x: F32[N], y: F32[N]) -> F32[Scalar]:
   return np.dot(x, y)  # returns shape ()
 ```
 
-> **Note:** `Scalar` must be the only shape token. Mixed forms like `F32[N, Scalar]` or `F32[Scalar, ...]` raise `TypeError` at hint construction time.
+> **Note:** `Scalar` must be the only shape token. Mixed forms like
+> `F32[N, Scalar]` or `F32[Scalar, ...]` raise `TypeError` at hint construction
+> time.
 
 ### Custom dimensions
 
@@ -323,12 +345,17 @@ Seq = Dimension("Seq")
 
 
 @beartype
-def embed(tokens: I64[N, Seq], table: F32[Vocab, Embed]) -> F32[N, Seq, Embed]: ...
+def embed(
+  tokens: I64[N, Seq],
+  table: F32[Vocab, Embed],
+) -> F32[N, Seq, Embed]: ...
 ```
 
-Unary operators work on custom dimensions too: `~Vocab` (variadic), `+Vocab` (broadcastable).
+Unary operators work on custom dimensions too: `~Vocab` (variadic), `+Vocab`
+(broadcastable).
 
-To keep checker-facing signatures clean on custom dimensions, use the `TYPE_CHECKING` pattern:
+To keep checker-facing signatures clean on custom dimensions, use the
+`TYPE_CHECKING` pattern:
 
 ```python
 import typing as tp
@@ -344,18 +371,15 @@ else:
 
 ### Summary
 
-| Syntax | Meaning | Example | Behavior |
-|--------|---------|---------|----------|
-| *(none)* | Named | `N` | Bind & enforce |
-| `int` | Fixed | `3` | Exact match |
-| `~` | Variadic | `~B` | Zero or more dims |
-| `+` | Broadcastable | `+N` | Size 1 always OK |
-| `~+` | Broadcastable variadic | `~+B` | Variadic + broadcast |
-| `__` | Anonymous | `__` | Match any, no binding |
-| `~__` | Anonymous variadic | `~__` | Zero or more, no binding |
-| `...` | Ellipsis (alias) | `...` | Same as `~__` |
-| `Scalar` | Scalar | `Scalar` | Zero dimensions |
-| arithmetic | Symbolic | `N + 1` | Expression |
+| Syntax | Meaning | Example | Behavior | | ---------- | ----------------------
+| -------- | ------------------------ | | _(none)_ | Named | `N` | Bind &
+enforce | | `int` | Fixed | `3` | Exact match | | `~` | Variadic | `~B` | Zero
+or more dims | | `+` | Broadcastable | `+N` | Size 1 always OK | | `~+` |
+Broadcastable variadic | `~+B` | Variadic + broadcast | | `__` | Anonymous |
+`__` | Match any, no binding | | `~__` | Anonymous variadic | `~__` | Zero or
+more, no binding | | `...` | Ellipsis (alias) | `...` | Same as `~__` | |
+`Scalar` | Scalar | `Scalar` | Zero dimensions | | arithmetic | Symbolic |
+`N + 1` | Expression |
 
 ## Array types
 
@@ -367,13 +391,18 @@ Concise names for fast, readable annotations:
 from shapix.numpy import F32, I64, Shaped  # and many more
 ```
 
-**Concrete dtypes:** `Bool`, `I8`, `I16`, `I32`, `I64`, `U8`, `U16`, `U32`, `U64`, `F16`, `F32`, `F64`, `F128`, `C64`, `C128`, `C256`
+**Concrete dtypes:** `Bool`, `I8`, `I16`, `I32`, `I64`, `U8`, `U16`, `U32`,
+`U64`, `F16`, `F32`, `F64`, `F128`, `C64`, `C128`, `C256`
 
-**Category dtypes:** `Int` (signed), `UInt` (unsigned), `Integer` (all int), `Float`, `Real` (int + float), `Complex`, `Inexact` (float + complex), `Num` (all numeric), `Shaped` (any dtype; static alias approximates as bool | numeric)
+**Category dtypes:** `Int` (signed), `UInt` (unsigned), `Integer` (all int),
+`Float`, `Real` (int + float), `Complex`, `Inexact` (float + complex), `Num`
+(all numeric), `Shaped` (any dtype; static alias approximates as bool | numeric)
 
-**Additional dtypes:** `V` (void), `Str` (string), `Bytes` (bytes), `Obj` (object), `DT64` (datetime64), `TD64` (timedelta64)
+**Additional dtypes:** `V` (void), `Str` (string), `Bytes` (bytes), `Obj`
+(object), `DT64` (datetime64), `TD64` (timedelta64)
 
-> `DT64` and `TD64` accept unit-qualified NumPy dtypes such as `datetime64[ns]`, `datetime64[D]`, `timedelta64[ms]`, etc.
+> `DT64` and `TD64` accept unit-qualified NumPy dtypes such as `datetime64[ns]`,
+> `datetime64[D]`, `timedelta64[ms]`, etc.
 
 ### JAX
 
@@ -381,7 +410,9 @@ from shapix.numpy import F32, I64, Shaped  # and many more
 from shapix.jax import F32, BF16
 ```
 
-Most NumPy type names, plus `BF16` and `BF16Like`. Base type is `jax.Array`. JAX does not expose NumPy-only extended-precision array aliases such as `F128` / `C256`. Also exports `Like` types and `Tree`.
+Most NumPy type names, plus `BF16` and `BF16Like`. Base type is `jax.Array`. JAX
+does not expose NumPy-only extended-precision array aliases such as `F128` /
+`C256`. Also exports `Like` types and `Tree`.
 
 ### PyTorch
 
@@ -389,7 +420,9 @@ Most NumPy type names, plus `BF16` and `BF16Like`. Base type is `jax.Array`. JAX
 from shapix.torch import F32, BF16
 ```
 
-Most NumPy type names, plus `BF16` and `BF16Like`. Base type is `torch.Tensor`. PyTorch does not expose NumPy-only extended-precision array aliases such as `F128` / `C256`. Also exports `Like` types.
+Most NumPy type names, plus `BF16` and `BF16Like`. Base type is `torch.Tensor`.
+PyTorch does not expose NumPy-only extended-precision array aliases such as
+`F128` / `C256`. Also exports `Like` types.
 
 ### CuPy
 
@@ -397,11 +430,16 @@ Most NumPy type names, plus `BF16` and `BF16Like`. Base type is `torch.Tensor`. 
 from shapix.cupy import F32, I64
 ```
 
-Most NumPy type names. Base type is `cupy.ndarray`. CuPy does not support `F128` / `C256`, `BF16`, or non-numeric dtypes (`V`, `Str`, `Bytes`, `Obj`, `DT64`, `TD64`). Also exports `Like` types and `ScalarLike` types (re-exported from numpy).
+Most NumPy type names. Base type is `cupy.ndarray`. CuPy does not support `F128`
+/ `C256`, `BF16`, or non-numeric dtypes (`V`, `Str`, `Bytes`, `Obj`, `DT64`,
+`TD64`). Also exports `Like` types and `ScalarLike` types (re-exported from
+numpy).
 
 ### Endianness variants
 
-For multi-byte dtypes, create endianness-constrained types programmatically using `make_array_type` with endianness `DtypeSpec` constants from `shapix._dtypes`:
+For multi-byte dtypes, create endianness-constrained types programmatically
+using `make_array_type` with endianness `DtypeSpec` constants from
+`shapix._dtypes`:
 
 ```python
 from shapix import make_array_type, N, C
@@ -421,9 +459,12 @@ process_le(np.ones((4, 3), dtype="<f4"))  # OK — little-endian
 process_le(np.ones((4, 3), dtype=">f4"))  # Raises — big-endian
 ```
 
-Available endianness specs for all multi-byte types: `INT16_LE`/`INT16_BE`/`INT16_N`, `INT32_LE`/`INT32_BE`/`INT32_N`, etc., plus category groups (`INT_LE`, `FLOAT_BE`, `REAL_N`, `SHAPED_LE`, etc.).
+Available endianness specs for all multi-byte types:
+`INT16_LE`/`INT16_BE`/`INT16_N`, `INT32_LE`/`INT32_BE`/`INT32_N`, etc., plus
+category groups (`INT_LE`, `FLOAT_BE`, `REAL_N`, `SHAPED_LE`, etc.).
 
-Single-byte types (`Bool`, `I8`, `U8`) have no endianness variants (byte order is irrelevant).
+Single-byte types (`Bool`, `I8`, `U8`) have no endianness variants (byte order
+is irrelevant).
 
 ### Structured dtypes
 
@@ -450,7 +491,8 @@ process_points(wrong)  # Raises — field names don't match
 
 ## Like types (input validation)
 
-`Like` types accept scalars, nested sequences of any depth, or arrays — use them for function inputs that will be converted:
+`Like` types accept scalars, nested sequences of any depth, or arrays — use them
+for function inputs that will be converted:
 
 ```python
 from shapix.numpy import F32Like
@@ -468,7 +510,8 @@ to_array(np.ones((3, 4)))  # ndarray
 to_array([[[[[[1.0]]]]]])  # 6D+ — no depth limit
 ```
 
-Like types **must be subscripted** — use `[...]` (Ellipsis) to accept any shape, or `[N, C]` to enforce specific dimensions:
+Like types **must be subscripted** — use `[...]` (Ellipsis) to accept any shape,
+or `[N, C]` to enforce specific dimensions:
 
 ```python
 @beartype
@@ -476,11 +519,17 @@ def process(x: F32Like[N, C]) -> F32[N, C]:
   return np.asarray(x, dtype=np.float32)
 ```
 
-All built-in `Like` aliases are created with the default `casting="same_kind"` behavior from `make_array_like_type(...)`. That means `int32` can be passed where `float32` is expected, but `complex128` cannot.
+All built-in `Like` aliases are created with the default `casting="same_kind"`
+behavior from `make_array_like_type(...)`. That means `int32` can be passed
+where `float32` is expected, but `complex128` cannot.
 
-**Available:** `BoolLike`, `I8Like`, `I16Like`, `I32Like`, `I64Like`, `U8Like`–`U64Like`, `F16Like`, `F32Like`, `F64Like`, `F128Like`, `C64Like`, `C128Like`, `C256Like`, plus category aliases `IntLike`, `FloatLike`, `NumLike`, `ShapedLike`, etc.
+**Available:** `BoolLike`, `I8Like`, `I16Like`, `I32Like`, `I64Like`,
+`U8Like`–`U64Like`, `F16Like`, `F32Like`, `F64Like`, `F128Like`, `C64Like`,
+`C128Like`, `C256Like`, plus category aliases `IntLike`, `FloatLike`, `NumLike`,
+`ShapedLike`, etc.
 
-> **Note:** `ShapedLike` has the same runtime-vs-static approximation as `Shaped`: runtime accepts any dtype, static alias narrows to bool | numeric.
+> **Note:** `ShapedLike` has the same runtime-vs-static approximation as
+> `Shaped`: runtime accepts any dtype, static alias narrows to bool | numeric.
 
 Like types are also available in JAX and PyTorch backends:
 
@@ -489,14 +538,19 @@ from shapix.jax import F32Like  # accepts jax.Array, ndarray, scalars, sequences
 from shapix.torch import F32Like  # accepts Tensor, ndarray, scalars, sequences
 ```
 
-> **Typing note:** JAX and PyTorch Like types resolve to `jax.Array` / `torch.Tensor`
-> for static checkers. The broader scalar/sequence acceptance is runtime-only.
+> **Typing note:** JAX and PyTorch Like types resolve to `jax.Array` /
+> `torch.Tensor` for static checkers. The broader scalar/sequence acceptance is
+> runtime-only.
 
 ### ScalarLike types (range-validated scalars)
 
-ScalarLike types validate individual scalar values with range checking — no shape, just value.
+ScalarLike types validate individual scalar values with range checking — no
+shape, just value.
 
-> **Note:** Numeric scalar aliases (`I8ScalarLike`, `F32ScalarLike`, `NumScalarLike`, etc.) reject `bool` and `np.bool_` values. Python `bool` is a subclass of `int`, but shapix treats booleans as non-numeric. Use `BoolScalarLike` for boolean scalars.
+> **Note:** Numeric scalar aliases (`I8ScalarLike`, `F32ScalarLike`,
+> `NumScalarLike`, etc.) reject `bool` and `np.bool_` values. Python `bool` is a
+> subclass of `int`, but shapix treats booleans as non-numeric. Use
+> `BoolScalarLike` for boolean scalars.
 
 ```python
 from shapix.numpy import I8ScalarLike, F32ScalarLike, U8ScalarLike
@@ -513,9 +567,12 @@ clamp_pixel(256)  # Raises — out of uint8 range
 clamp_pixel(-1)  # Raises — negative not allowed for unsigned
 ```
 
-**Available:** `BoolScalarLike`, `I8ScalarLike`–`I64ScalarLike`, `U8ScalarLike`–`U64ScalarLike`, `F16ScalarLike`–`F128ScalarLike`, `C64ScalarLike`, `C128ScalarLike`, `C256ScalarLike`, plus category aliases `IntScalarLike`, `FloatScalarLike`, `NumScalarLike`, etc.
+**Available:** `BoolScalarLike`, `I8ScalarLike`–`I64ScalarLike`,
+`U8ScalarLike`–`U64ScalarLike`, `F16ScalarLike`–`F128ScalarLike`,
+`C64ScalarLike`, `C128ScalarLike`, `C256ScalarLike`, plus category aliases
+`IntScalarLike`, `FloatScalarLike`, `NumScalarLike`, etc.
 
-Also: `StringLike` (str | np.str_).
+Also: `StringLike` (str | np.str\_).
 
 ScalarLike types are available from all backends:
 
@@ -526,8 +583,8 @@ from shapix.torch import U8ScalarLike  # re-exported
 ```
 
 > **Note:** Backend ScalarLike types validate Python and NumPy scalar values.
-> For backend-native 0-D arrays (`jnp.array(1.0)`, `torch.tensor(1.0)`),
-> use the corresponding `Like` type with `Scalar` instead (e.g. `F32Like[Scalar]`).
+> For backend-native 0-D arrays (`jnp.array(1.0)`, `torch.tensor(1.0)`), use the
+> corresponding `Like` type with `Scalar` instead (e.g. `F32Like[Scalar]`).
 
 For custom casting rules, use `make_scalar_like_type`:
 
@@ -542,7 +599,10 @@ F32ScalarSafe = make_scalar_like_type(
 )  # float16 OK, complex rejected
 ```
 
-`make_scalar_like_type(np.float32)` uses `casting="same_kind"` by default, just like the built-in `Like` aliases. Numeric scalar factories still reject booleans by design, so `make_scalar_like_type(np.float32)` rejects `True`, while `make_scalar_like_type(np.bool_)` accepts it.
+`make_scalar_like_type(np.float32)` uses `casting="same_kind"` by default, just
+like the built-in `Like` aliases. Numeric scalar factories still reject booleans
+by design, so `make_scalar_like_type(np.float32)` rejects `True`, while
+`make_scalar_like_type(np.bool_)` accepts it.
 
 The `ArrayLike` template is also public for custom static type combinations:
 
@@ -554,17 +614,19 @@ type MyInputType = ArrayLike[float, np.float32]
 
 ### Casting rules
 
-The `casting` parameter on `make_array_like_type` and `make_scalar_like_type` controls dtype strictness using NumPy casting rules:
+The `casting` parameter on `make_array_like_type` and `make_scalar_like_type`
+controls dtype strictness using NumPy casting rules:
 
-| Casting | Meaning | Example (target=float32) |
-|---------|---------|--------------------------|
-| `"no"` | Exact dtype only | Only `float32` accepted |
-| `"equiv"` | Same kind, same size | `float32` only (no size change) |
-| `"safe"` | No data loss | `int16` OK, `float64` rejected |
-| `"same_kind"` | Same kind allowed | `int32` OK, `complex64` rejected |
-| `"unsafe"` | Any cast | `complex128` OK, strings rejected |
+| Casting | Meaning | Example (target=float32) | | ------------- |
+-------------------- | --------------------------------- | | `"no"` | Exact
+dtype only | Only `float32` accepted | | `"equiv"` | Same kind, same size |
+`float32` only (no size change) | | `"safe"` | No data loss | `int16` OK,
+`float64` rejected | | `"same_kind"` | Same kind allowed | `int32` OK,
+`complex64` rejected | | `"unsafe"` | Any cast | `complex128` OK, strings
+rejected |
 
-The built-in `Like` aliases such as `F32Like`, `IntLike`, `NumLike`, and `ShapedLike` all use `casting="same_kind"`.
+The built-in `Like` aliases such as `F32Like`, `IntLike`, `NumLike`, and
+`ShapedLike` all use `casting="same_kind"`.
 
 ```python
 from shapix import make_array_like_type
@@ -583,7 +645,8 @@ F32ScalarSafe = make_scalar_like_type(np.float32, casting="safe")
 
 ### Custom array types and Like types
 
-Use `make_array_type` and `make_array_like_type` to create types for custom array classes or dtype combinations:
+Use `make_array_type` and `make_array_like_type` to create types for custom
+array classes or dtype combinations:
 
 ```python
 from shapix import make_array_type, make_array_like_type, DtypeSpec
@@ -601,11 +664,13 @@ MixedLike = make_array_like_type(MIXED, name="MixedLike")
 MixedExact = make_array_like_type(MIXED, casting="no", name="MixedExact")
 ```
 
-The `casting` parameter controls dtype strictness using NumPy casting rules: `"no"` < `"equiv"` < `"safe"` < `"same_kind"` (default) < `"unsafe"`.
+The `casting` parameter controls dtype strictness using NumPy casting rules:
+`"no"` < `"equiv"` < `"safe"` < `"same_kind"` (default) < `"unsafe"`.
 
 ## Tree annotations
 
-Tree annotations validate all leaves in a nested structure (dicts, lists, tuples, namedtuples). Import `Tree` from an explicit backend module:
+Tree annotations validate all leaves in a nested structure (dicts, lists,
+tuples, namedtuples). Import `Tree` from an explicit backend module:
 
 ```python
 from shapix.optree import Tree  # backed by OpTree
@@ -633,11 +698,15 @@ process({
 
 ### Structure binding
 
-Named structure symbols (`T`, `S`) enforce that multiple arguments share identical tree shapes:
+Named structure symbols (`T`, `S`) enforce that multiple arguments share
+identical tree shapes:
 
 ```python
 @beartype
-def add_trees(x: Tree[F32[N], T], y: Tree[F32[N], T]) -> Tree[F32[N]]:  # type: ignore
+def add_trees(
+  x: Tree[F32[N], T],
+  y: Tree[F32[N], T],
+) -> Tree[F32[N]]:  # type: ignore
   ...
 
 
@@ -647,7 +716,10 @@ add_trees({"a": x1}, [y1, y2])  # Raises — different structure
 
 ### Multi-level structure matching
 
-Structure names are listed left-to-right from outer to inner. Without `...`, each name except the last captures ONE level; the last captures the full remaining structure. Trailing `...` makes all names one-level-only with inner levels unchecked. Leading `...` matches names from the bottom up.
+Structure names are listed left-to-right from outer to inner. Without `...`,
+each name except the last captures ONE level; the last captures the full
+remaining structure. Trailing `...` makes all names one-level-only with inner
+levels unchecked. Leading `...` matches names from the bottom up.
 
 ```python
 # T = full tree structure (all levels)
@@ -686,16 +758,22 @@ State = Structure("State")
 
 
 @beartype
-def train(params: Tree[F32[N], Params], state: Tree[I64[N], State]): ...  # type: ignore
+def train(
+  params: Tree[F32[N], Params],
+  state: Tree[I64[N], State],
+): ...  # type: ignore
 ```
 
 ## Advanced usage
 
 ### `from __future__ import annotations` (PEP 563)
 
-Shapix is fully compatible with `from __future__ import annotations`. The library itself uses it in every source file.
+Shapix is fully compatible with `from __future__ import annotations`. The
+library itself uses it in every source file.
 
-The one rule: **every dimension symbol used in an annotation must be imported in the module scope.** This is true with or without the future import — the difference is only the error you get if you forget:
+The one rule: **every dimension symbol used in an annotation must be imported in
+the module scope.** This is true with or without the future import — the
+difference is only the error you get if you forget:
 
 ```python
 from __future__ import annotations
@@ -704,7 +782,9 @@ from shapix.numpy import F32
 
 
 @beartype
-def f(x: F32[~B, C]): ...  # BeartypeDecorHintForwardRefException — B is not in scope
+def f(
+  x: F32[~B, C],
+): ...  # BeartypeDecorHintForwardRefException — B is not in scope
 ```
 
 Fix: import `B`:
@@ -713,11 +793,15 @@ Fix: import `B`:
 from shapix import B, C
 ```
 
-This applies to all dimension symbols — named (`N`, `B`), custom (`Vocab = Dimension("Vocab")`), and any symbol used with operators (`~B`, `+N`). The operators (`~`, `+`) are evaluated on the imported object, so the base symbol must be available.
+This applies to all dimension symbols — named (`N`, `B`), custom
+(`Vocab = Dimension("Vocab")`), and any symbol used with operators (`~B`, `+N`).
+The operators (`~`, `+`) are evaluated on the imported object, so the base
+symbol must be available.
 
 ### Package-wide instrumentation with `beartype.claw`
 
-Instead of decorating each function with `@beartype`, you can instrument an entire package:
+Instead of decorating each function with `@beartype`, you can instrument an
+entire package:
 
 ```python
 # In your_package/__init__.py
@@ -731,28 +815,43 @@ from shapix.claw import shapix_this_package
 shapix_this_package()
 ```
 
-Every function in your package that uses shapix type annotations will be checked automatically.
+Every function in your package that uses shapix type annotations will be checked
+automatically.
 
 ### How cross-argument checking works (the memo)
 
-A **dimension memo** maps dimension names to sizes (e.g., `N->4`, `C->3`). Each function call gets a fresh memo. All parameter checks within that call share the same memo — that's how shapix knows `N=4` in `x` must match `N=4` in `y`.
+A **dimension memo** maps dimension names to sizes (e.g., `N->4`, `C->3`). Each
+function call gets a fresh memo. All parameter checks within that call share the
+same memo — that's how shapix knows `N=4` in `x` must match `N=4` in `y`.
 
-This happens **automatically** with `@beartype`. Shapix walks upward with `sys._getframe()` to find the nearest active beartype wrapper frame and associates a memo with it. No extra decorator needed.
+This happens **automatically** with `@beartype`. Shapix walks upward with
+`sys._getframe()` to find the nearest active beartype wrapper frame and
+associates a memo with it. No extra decorator needed.
 
 ### `@shapix.check` — explicit memo management
 
 To understand `@shapix.check`, you need to understand the problem it solves.
 
-**The problem: sharing state across parameter checks.** When beartype validates `f(x, y)`, it checks `x` and `y` independently. But shapix needs those checks to share the same dimension memo, so that `N=4` bound by `x` is enforced on `y`. Something has to connect them.
+**The problem: sharing state across parameter checks.** When beartype validates
+`f(x, y)`, it checks `x` and `y` independently. But shapix needs those checks to
+share the same dimension memo, so that `N=4` bound by `x` is enforced on `y`.
+Something has to connect them.
 
-**The automatic approach** (no extra decorator needed) is frame-based detection. Shapix walks up the call stack with `sys._getframe()` to find the nearest beartype wrapper frame. Since all parameter and return checks within one `f(x, y)` call share that wrapper scope, shapix can key a memo to it. This just works:
+**The automatic approach** (no extra decorator needed) is frame-based detection.
+Shapix walks up the call stack with `sys._getframe()` to find the nearest
+beartype wrapper frame. Since all parameter and return checks within one
+`f(x, y)` call share that wrapper scope, shapix can key a memo to it. This just
+works:
 
 ```python
 @beartype  # Shapix auto-detects this frame — nothing else needed
 def f(x: F32[N, C], y: F32[N, C]) -> F32[N, C]: ...
 ```
 
-**`@shapix.check`** takes a different approach: instead of detecting the frame, it explicitly pushes a fresh memo onto a stack before the call and pops it after. All validators see this explicit memo first (it takes priority over frame detection):
+**`@shapix.check`** takes a different approach: instead of detecting the frame,
+it explicitly pushes a fresh memo onto a stack before the call and pops it
+after. All validators see this explicit memo first (it takes priority over frame
+detection):
 
 ```python
 @shapix.check  # Pushes memo before call, pops after
@@ -760,7 +859,8 @@ def f(x: F32[N, C], y: F32[N, C]) -> F32[N, C]: ...
 def f(x: F32[N, C], y: F32[N, C]) -> F32[N, C]: ...
 ```
 
-**Combined mode** — `@shapix.check` can also apply `@beartype` for you with a custom `BeartypeConf`:
+**Combined mode** — `@shapix.check` can also apply `@beartype` for you with a
+custom `BeartypeConf`:
 
 ```python
 from beartype import BeartypeConf
@@ -773,14 +873,18 @@ def f(x: F32[N, C], y: F32[N, C]) -> F32[N, C]: ...
 Decision rule:
 
 - use plain `@beartype` by default
-- add `@shapix.check` when you want explicit memo scope instead of frame discovery
+- add `@shapix.check` when you want explicit memo scope instead of frame
+    discovery
 - use `@shapix.check(conf=...)` when you also want to supply `BeartypeConf`
 
-Both approaches produce identical results in normal usage. You only need `@shapix.check` in specific situations:
+Both approaches produce identical results in normal usage. You only need
+`@shapix.check` in specific situations:
 
 #### 1. You want explicit memo scope instead of wrapper discovery
 
-The automatic path is already hardened to search for the nearest beartype wrapper, so ordinary wrapper layers usually work fine. Use `@shapix.check` when you want memo lifetime to be explicit rather than discovered:
+The automatic path is already hardened to search for the nearest beartype
+wrapper, so ordinary wrapper layers usually work fine. Use `@shapix.check` when
+you want memo lifetime to be explicit rather than discovered:
 
 ```python
 @beartype
@@ -794,19 +898,28 @@ def f(x: F32[N, C], y: F32[N, C]) -> F32[N, C]: ...
 
 #### 2. An integration obscures beartype's wrapper locals
 
-If some decorator, framework, or instrumentation layer still prevents shapix from finding the correct beartype wrapper scope, `@shapix.check` removes that dependence entirely by pushing the memo explicitly.
+If some decorator, framework, or instrumentation layer still prevents shapix
+from finding the correct beartype wrapper scope, `@shapix.check` removes that
+dependence entirely by pushing the memo explicitly.
 
 #### 3. You want a single explicit scope across the whole call
 
-It is also the clearer choice when `Value(...)` should keep using one explicit bound scope across the full lifetime of an async call.
+It is also the clearer choice when `Value(...)` should keep using one explicit
+bound scope across the full lifetime of an async call.
 
-`@shapix.check` supports both sync and async functions. For async functions, the memo scope covers the full awaited execution, and `inspect.iscoroutinefunction()` is preserved on the decorated function.
+`@shapix.check` supports both sync and async functions. For async functions, the
+memo scope covers the full awaited execution, and
+`inspect.iscoroutinefunction()` is preserved on the decorated function.
 
-**When you don't need it:** If you're using plain `@beartype` and your tests pass, the frame-based detection is working. Most applications never need `@shapix.check`.
+**When you don't need it:** If you're using plain `@beartype` and your tests
+pass, the frame-based detection is working. Most applications never need
+`@shapix.check`.
 
 ### Manual checks with `check_context`
 
-For `isinstance`-style checks outside of decorated functions, use `check_context` with beartype's `is_bearable`. Without it, each check gets an independent memo — dimensions aren't cross-checked:
+For `isinstance`-style checks outside of decorated functions, use
+`check_context` with beartype's `is_bearable`. Without it, each check gets an
+independent memo — dimensions aren't cross-checked:
 
 ```python
 from beartype.door import is_bearable
@@ -828,46 +941,66 @@ with shapix.check_context():
 
 Shapix uses three key mechanisms:
 
-1. **Custom runtime hints for arrays and trees** — Each array or tree annotation (for example `F32[N, C]` or `Tree[F32[N], T]`) produces a small runtime hint class with shapix's validator attached. Beartype calls that validator through `__instancecheck__()` and uses `__instancecheck_str__()` to report readable dtype, shape, `Value(...)`, and tree-structure failures.
+1. **Custom runtime hints for arrays and trees** — Each array or tree annotation
+    (for example `F32[N, C]` or `Tree[F32[N], T]`) produces a small runtime
+    hint class with shapix's validator attached. Beartype calls that validator
+    through `__instancecheck__()` and uses `__instancecheck_str__()` to report
+    readable dtype, shape, `Value(...)`, and tree-structure failures.
 
-2. **Nearest-wrapper memo discovery** — Plain `@beartype` checks still share a cross-argument memo automatically. Shapix walks upward with `sys._getframe()` to find the nearest active beartype wrapper frame and keys a memo to that scope. This keeps the public annotation syntax unchanged while avoiding fixed-depth frame assumptions.
+1. **Nearest-wrapper memo discovery** — Plain `@beartype` checks still share a
+    cross-argument memo automatically. Shapix walks upward with
+    `sys._getframe()` to find the nearest active beartype wrapper frame and
+    keys a memo to that scope. This keeps the public annotation syntax
+    unchanged while avoiding fixed-depth frame assumptions.
 
-3. **Thread and async safety** — Frame-based auto-detection uses `threading.local()` for thread isolation. The explicit memo stack (`@shapix.check`, `check_context()`) uses `contextvars.ContextVar`, making it both thread-safe and async-task-safe. Note that child tasks inheriting an active parent context share the same live memo by reference; for full task isolation, each task should enter its own `check_context()`.
+1. **Thread and async safety** — Frame-based auto-detection uses
+    `threading.local()` for thread isolation. The explicit memo stack
+    (`@shapix.check`, `check_context()`) uses `contextvars.ContextVar`, making
+    it both thread-safe and async-task-safe. Note that child tasks inheriting
+    an active parent context share the same live memo by reference; for full
+    task isolation, each task should enter its own `check_context()`.
 
 ## Static type checkers (pyright, mypy, ty)
 
-Shapix ships typing fixtures exercised by **pyright**, **mypy**, and **ty**
-in `tests/test_typecheck.py`. Under `TYPE_CHECKING`, built-in dimensions such as
-`N`, `C`, `H`, and `W` resolve to checker-friendly placeholders, and array aliases
-resolve to backend-appropriate static types.
+Shapix ships typing fixtures exercised by **pyright**, **mypy**, and **ty** in
+`tests/test_typecheck.py`. Under `TYPE_CHECKING`, built-in dimensions such as
+`N`, `C`, `H`, and `W` resolve to checker-friendly placeholders, and array
+aliases resolve to backend-appropriate static types.
 
 The checker-clean core surface includes:
 
 - `F32[N, C]`, `F32[N, C, H, W]`
 - `F32[Scalar]`
 - `F32[__, C]`
-- backend aliases such as `shapix.jax.F32[...]`, `shapix.torch.F32[...]`, and `shapix.cupy.F32[...]`
+- backend aliases such as `shapix.jax.F32[...]`, `shapix.torch.F32[...]`, and
+    `shapix.cupy.F32[...]`
 - Like types such as `F32Like[N, C]`
 - leaf-only tree annotations such as `Tree[F32[N]]` and `Tree[F32[N, C]]`
 - sync and async functions decorated with `@shapix.check`
 
-Some richer runtime forms are still hostile to static checkers when written inline.
-For widest compatibility, prefer a named alias inside a `TYPE_CHECKING` branch.
-Inline `# type: ignore` remains a fallback when an alias would make the signature
-less readable, but it should not be the default pattern in docs or examples.
+Some richer runtime forms are still hostile to static checkers when written
+inline. For widest compatibility, prefer a named alias inside a `TYPE_CHECKING`
+branch. Inline `# type: ignore` remains a fallback when an alias would make the
+signature less readable, but it should not be the default pattern in docs or
+examples.
 
-| Pattern | Example | Workaround |
-|---------|---------|------------|
-| Integer literals | `F32[N, 3, H, W]` | named `TYPE_CHECKING` alias |
-| Unary operators | `F32[~B, C]`, `F32[+N, C]` | named `TYPE_CHECKING` alias or `# type: ignore` |
-| Arithmetic | `F32[N + 2]` | named `TYPE_CHECKING` alias |
-| Custom dimensions | `F32[Vocab, Embed]` | named `TYPE_CHECKING` alias |
-| `Value(...)` | `F32[Value("size")]` | named `TYPE_CHECKING` alias |
-| Tree structure args | `Tree[F32[N], T]`, `Tree[F32[N], T, ...]` | named `TYPE_CHECKING` alias |
+<!-- markdownlint-disable MD013 -->
+
+| Pattern | Example | Workaround | | ------------------- |
+----------------------------------------- |
+----------------------------------------------- | | Integer literals |
+`F32[N, 3, H, W]` | named `TYPE_CHECKING` alias | | Unary operators |
+`F32[~B, C]`, `F32[+N, C]` | named `TYPE_CHECKING` alias or `# type: ignore` | |
+Arithmetic | `F32[N + 2]` | named `TYPE_CHECKING` alias | | Custom dimensions |
+`F32[Vocab, Embed]` | named `TYPE_CHECKING` alias | | `Value(...)` |
+`F32[Value("size")]` | named `TYPE_CHECKING` alias | | Tree structure args |
+`Tree[F32[N], T]`, `Tree[F32[N], T, ...]` | named `TYPE_CHECKING` alias |
+
+<!-- markdownlint-enable MD013 -->
 
 Avoid disabling diagnostics globally just for shapix. Narrow, local fixes are
-the right tradeoff for syntax that is meaningful at runtime but not representable
-in Python's static type grammar.
+the right tradeoff for syntax that is meaningful at runtime but not
+representable in Python's static type grammar.
 
 For example, fixed literal dims can use `tp.Literal[3]` under `TYPE_CHECKING`
 and `Dimension(3)` at runtime, and variadic or symbolic tokens can use a
@@ -875,9 +1008,9 @@ checker-only placeholder alias in the same way.
 
 ### `TYPE_CHECKING` aliases for advanced patterns
 
-For arithmetic dims, `Value(...)`, custom dimensions, and structure-bearing
-tree annotations, prefer a named alias that resolves to a plain type during
-static analysis and to the richer runtime object otherwise:
+For arithmetic dims, `Value(...)`, custom dimensions, and structure-bearing tree
+annotations, prefer a named alias that resolves to a plain type during static
+analysis and to the richer runtime object otherwise:
 
 ```python
 import typing as tp
@@ -917,11 +1050,13 @@ def rgb_to_gray(x: F32[N, 3, H, W]) -> F32[N, 1, H, W]:  # type: ignore
   ...
 ```
 
-Use inline `# type: ignore` only when an alias would make the signature less readable than the local suppression.
+Use inline `# type: ignore` only when an alias would make the signature less
+readable than the local suppression.
 
 ### Custom dimensions under TYPE_CHECKING
 
-Custom dimensions created with `Dimension()` are runtime objects. To make them work with all type checkers, use the `TYPE_CHECKING` pattern:
+Custom dimensions created with `Dimension()` are runtime objects. To make them
+work with all type checkers, use the `TYPE_CHECKING` pattern:
 
 ```python
 import typing as tp
@@ -937,20 +1072,24 @@ else:
 
 ## Compared to jaxtyping
 
-| | jaxtyping | shapix |
-|---|---|---|
-| Decorator | Custom `@jaxtyped` replaces `@beartype` | Standard `@beartype` |
-| Shape syntax | String-based: `"batch channels"` | Python objects: `N, C` |
-| BeartypeConf | Not supported (decorator conflict) | Fully supported |
-| Type checker | Metaclass magic (harder on static checkers) | Checker-friendly aliases exercised with pyright, mypy, and ty |
-| Backends | NumPy, JAX | NumPy, JAX, PyTorch, CuPy |
-| Tree | Built-in with structure binding | Built-in with structure binding (via OpTree or `jax.tree_util`) |
-| Dependencies | jaxtyping + beartype | beartype only |
-| Custom decorator | Required | Not required |
-| Endianness | Not supported | Programmatic LE/BE/N variants |
-| Structured dtypes | Not supported | `Structured()` helper |
-| ArrayLike | Not supported | `F32Like`, `IntLike`, etc. |
-| ScalarLike | Not supported | Range-validated scalar types |
+<!-- markdownlint-disable MD013 -->
+
+| | jaxtyping | shapix | | ----------------- |
+------------------------------------------- |
+--------------------------------------------------------------- | | Decorator |
+Custom `@jaxtyped` replaces `@beartype` | Standard `@beartype` | | Shape syntax
+| String-based: `"batch channels"` | Python objects: `N, C` | | BeartypeConf |
+Not supported (decorator conflict) | Fully supported | | Type checker |
+Metaclass magic (harder on static checkers) | Checker-friendly aliases exercised
+with pyright, mypy, and ty | | Backends | NumPy, JAX | NumPy, JAX, PyTorch, CuPy
+| | Tree | Built-in with structure binding | Built-in with structure binding
+(via OpTree or `jax.tree_util`) | | Dependencies | jaxtyping + beartype |
+beartype only | | Custom decorator | Required | Not required | | Endianness |
+Not supported | Programmatic LE/BE/N variants | | Structured dtypes | Not
+supported | `Structured()` helper | | ArrayLike | Not supported | `F32Like`,
+`IntLike`, etc. | | ScalarLike | Not supported | Range-validated scalar types |
+
+<!-- markdownlint-enable MD013 -->
 
 ## Complete API reference
 
@@ -959,51 +1098,55 @@ else:
 The root import is intentionally lightweight and optional-dependency-safe.
 `import shapix` does not require NumPy.
 
-`N`, `B`, `C`, `D`, `K`, `H`, `W`, `L`, `P` — named dimensions
-`__` — anonymous dimension
-`Scalar` — scalar (zero dimensions)
-`T`, `S` — tree structure symbols
-`Dimension("Name")` — custom dimension
-`Structure("Name")` — custom structure symbol
-`DtypeSpec` — custom dtype specification
-`make_array_type(...)` — custom array type factory
-`make_array_like_type(...)` — custom Like-type factory
+`N`, `B`, `C`, `D`, `K`, `H`, `W`, `L`, `P` — named dimensions `__` — anonymous
+dimension `Scalar` — scalar (zero dimensions) `T`, `S` — tree structure symbols
+`Dimension("Name")` — custom dimension `Structure("Name")` — custom structure
+symbol `DtypeSpec` — custom dtype specification `make_array_type(...)` — custom
+array type factory `make_array_like_type(...)` — custom Like-type factory
 `@shapix.check` — explicit memo management for sync and async functions
 `shapix.check_context()` — shared memo for manual checks
 
-The root module does **not** export `Tree` or `make_scalar_like_type`.
-Import `Tree` from `shapix.optree` or `shapix.jax`, and import
-`make_scalar_like_type` from `shapix.numpy` or the backend re-exports.
+The root module does **not** export `Tree` or `make_scalar_like_type`. Import
+`Tree` from `shapix.optree` or `shapix.jax`, and import `make_scalar_like_type`
+from `shapix.numpy` or the backend re-exports.
 
 ### Array types (`shapix.numpy`)
 
-**Concrete:** `Bool`, `I8`, `I16`, `I32`, `I64`, `U8`, `U16`, `U32`, `U64`, `F16`, `F32`, `F64`, `F128`, `C64`, `C128`, `C256`
-**Categories:** `Int`, `UInt`, `Integer`, `Float`, `Real`, `Complex`, `Inexact`, `Num`, `Shaped`
-**Other:** `V`, `Str`, `Bytes`, `Obj`, `DT64`, `TD64`
-**Endianness:** Programmatic via `make_array_type(np.ndarray, FLOAT32_LE)` using `DtypeSpec` constants
+**Concrete:** `Bool`, `I8`, `I16`, `I32`, `I64`, `U8`, `U16`, `U32`, `U64`,
+`F16`, `F32`, `F64`, `F128`, `C64`, `C128`, `C256` **Categories:** `Int`,
+`UInt`, `Integer`, `Float`, `Real`, `Complex`, `Inexact`, `Num`, `Shaped`
+**Other:** `V`, `Str`, `Bytes`, `Obj`, `DT64`, `TD64` **Endianness:**
+Programmatic via `make_array_type(np.ndarray, FLOAT32_LE)` using `DtypeSpec`
+constants
 
 ### Like types (`shapix.numpy`)
 
-**ArrayLike:** `BoolLike`, `I8Like`–`I64Like`, `U8Like`–`U64Like`, `F16Like`–`F128Like`, `C64Like`, `C128Like`, `C256Like`, `IntLike`, `FloatLike`, `NumLike`, `ShapedLike`, etc.
-**ScalarLike:** `BoolScalarLike`, `I8ScalarLike`–`I64ScalarLike`, `U8ScalarLike`–`U64ScalarLike`, `F16ScalarLike`–`F128ScalarLike`, `C64ScalarLike`, `C128ScalarLike`, `C256ScalarLike`, `IntScalarLike`, `FloatScalarLike`, `NumScalarLike`, etc.
+**ArrayLike:** `BoolLike`, `I8Like`–`I64Like`, `U8Like`–`U64Like`,
+`F16Like`–`F128Like`, `C64Like`, `C128Like`, `C256Like`, `IntLike`, `FloatLike`,
+`NumLike`, `ShapedLike`, etc. **ScalarLike:** `BoolScalarLike`,
+`I8ScalarLike`–`I64ScalarLike`, `U8ScalarLike`–`U64ScalarLike`,
+`F16ScalarLike`–`F128ScalarLike`, `C64ScalarLike`, `C128ScalarLike`,
+`C256ScalarLike`, `IntScalarLike`, `FloatScalarLike`, `NumScalarLike`, etc.
 **Other:** `StringLike`, `ArrayLike[scalar, dtype]` (template)
 
 ### JAX (`shapix.jax`)
 
-Most NumPy array types, plus `BF16` and `BF16Like`. NumPy-only extended-precision
-array aliases such as `F128` / `C256` stay in `shapix.numpy`. Also exports Like
-types, ScalarLike types (re-exported from NumPy), `make_scalar_like_type`, and `Tree`.
+Most NumPy array types, plus `BF16` and `BF16Like`. NumPy-only
+extended-precision array aliases such as `F128` / `C256` stay in `shapix.numpy`.
+Also exports Like types, ScalarLike types (re-exported from NumPy),
+`make_scalar_like_type`, and `Tree`.
 
 ### PyTorch (`shapix.torch`)
 
-Most NumPy array types, plus `BF16` and `BF16Like`. NumPy-only extended-precision
-array aliases such as `F128` / `C256` stay in `shapix.numpy`. Also exports Like
-types, ScalarLike types (re-exported from NumPy), and `make_scalar_like_type`.
+Most NumPy array types, plus `BF16` and `BF16Like`. NumPy-only
+extended-precision array aliases such as `F128` / `C256` stay in `shapix.numpy`.
+Also exports Like types, ScalarLike types (re-exported from NumPy), and
+`make_scalar_like_type`.
 
 ### CuPy (`shapix.cupy`)
 
-Most NumPy array types (no `BF16`, `F128`, `C256`, or non-numeric dtypes).
-Also exports Like types, ScalarLike types (re-exported from NumPy), and
+Most NumPy array types (no `BF16`, `F128`, `C256`, or non-numeric dtypes). Also
+exports Like types, ScalarLike types (re-exported from NumPy), and
 `make_scalar_like_type`.
 
 ### Factories
@@ -1011,18 +1154,20 @@ Also exports Like types, ScalarLike types (re-exported from NumPy), and
 From `shapix` (root):
 
 `make_array_type(array_class, dtype_spec)` — custom array type
-`make_array_like_type(dtype_spec, *, casting="same_kind", name="ArrayLike")` — custom Like type
-`DtypeSpec(name, allowed)` — custom dtype specification
+`make_array_like_type(dtype_spec, *, casting="same_kind", name="ArrayLike")` —
+custom Like type `DtypeSpec(name, allowed)` — custom dtype specification
 `DtypeSpec.structured(fields)` — structured dtype specification
 
-From `shapix.numpy` (requires NumPy, also re-exported by `shapix.jax`, `shapix.torch`, and `shapix.cupy`):
+From `shapix.numpy` (requires NumPy, also re-exported by `shapix.jax`,
+`shapix.torch`, and `shapix.cupy`):
 
-`make_scalar_like_type(target_dtype, *, casting="same_kind", name="ScalarLike")` — custom ScalarLike type
+`make_scalar_like_type(target_dtype, *, casting="same_kind", name="ScalarLike")`
+— custom ScalarLike type
 
 ### Decorators & context managers (`shapix`)
 
-`@shapix.check` — explicit memo management (supports both sync and async functions)
-`@shapix.check(conf=BeartypeConf())` — combined memo + beartype
+`@shapix.check` — explicit memo management (supports both sync and async
+functions) `@shapix.check(conf=BeartypeConf())` — combined memo + beartype
 `shapix.check_context()` — sync and async context manager for manual checks
 
 ## License

@@ -1,5 +1,4 @@
 ---
-title: "shapix.claw"
 description: Thin wrapper around beartype.claw for package-wide instrumentation.
 ---
 
@@ -15,7 +14,8 @@ from shapix.claw import shapix_this_package
 
 `shapix_this_package(*, conf: BeartypeConf = BeartypeConf()) -> None`
 
-It forwards directly to `beartype.claw.beartype_this_package`, but gives shapix users a semantic entry point that matches the rest of the library.
+It forwards directly to `beartype.claw.beartype_this_package`, but gives shapix
+users a semantic entry point that matches the rest of the library.
 
 ### Example
 
@@ -26,7 +26,8 @@ from shapix.claw import shapix_this_package
 shapix_this_package()
 ```
 
-All subsequently imported submodules in `your_package` are instrumented with beartype, so shapix array annotations start working there automatically.
+All subsequently imported submodules in `your_package` are instrumented with
+beartype, so shapix array annotations start working there automatically.
 
 ### Custom configuration
 

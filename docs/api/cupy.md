@@ -1,5 +1,4 @@
 ---
-title: "shapix.cupy"
 description: CuPy array aliases, Like aliases, and ScalarLike re-exports.
 ---
 
@@ -19,8 +18,10 @@ from shapix.cupy import (
 
 Strict array aliases:
 
-- concrete families such as `Bool`, `I32`, `I64`, `F16`, `F32`, `F64`, `C64`, `C128`
-- category families such as `Int`, `UInt`, `Integer`, `Float`, `Real`, `Complex`, `Inexact`, `Num`, `Shaped`
+- concrete families such as `Bool`, `I32`, `I64`, `F16`, `F32`, `F64`, `C64`,
+    `C128`
+- category families such as `Int`, `UInt`, `Integer`, `Float`, `Real`,
+    `Complex`, `Inexact`, `Num`, `Shaped`
 
 `Like` aliases:
 
@@ -62,6 +63,8 @@ Static type checkers still see the result as `cupy.ndarray`.
 
 ## `ScalarLike` re-exports
 
-`ScalarLike` aliases are re-exported from `shapix.numpy`. They validate Python and NumPy scalar values, not CuPy 0-D arrays.
+`ScalarLike` aliases are re-exported from `shapix.numpy`. They validate Python
+and NumPy scalar values, not CuPy 0-D arrays.
 
-For CuPy scalar arrays, prefer a `Like` alias with `Scalar`, for example `F32Like[Scalar]`.
+For CuPy scalar arrays, prefer a `Like` alias with `Scalar`, for example
+`F32Like[Scalar]`.

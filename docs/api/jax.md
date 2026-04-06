@@ -1,5 +1,4 @@
 ---
-title: "shapix.jax"
 description: JAX array aliases, Like aliases, ScalarLike re-exports, and JAX Tree support.
 ---
 
@@ -20,8 +19,10 @@ from shapix.jax import (
 
 Strict array aliases:
 
-- concrete families such as `Bool`, `I32`, `I64`, `F16`, `F32`, `F64`, `BF16`, `C64`, `C128`
-- category families such as `Int`, `UInt`, `Integer`, `Float`, `Real`, `Complex`, `Inexact`, `Num`, `Shaped`
+- concrete families such as `Bool`, `I32`, `I64`, `F16`, `F32`, `F64`, `BF16`,
+    `C64`, `C128`
+- category families such as `Int`, `UInt`, `Integer`, `Float`, `Real`,
+    `Complex`, `Inexact`, `Num`, `Shaped`
 
 `Like` aliases:
 
@@ -66,9 +67,11 @@ Static type checkers still see the result as `jax.Array`.
 
 ## `ScalarLike` re-exports
 
-`ScalarLike` aliases are re-exported from `shapix.numpy`. They validate Python and NumPy scalar values, not JAX 0-D arrays.
+`ScalarLike` aliases are re-exported from `shapix.numpy`. They validate Python
+and NumPy scalar values, not JAX 0-D arrays.
 
-For JAX scalar arrays, prefer a `Like` alias with `Scalar`, for example `F32Like[Scalar]`.
+For JAX scalar arrays, prefer a `Like` alias with `Scalar`, for example
+`F32Like[Scalar]`.
 
 ## `Tree`
 
@@ -85,4 +88,5 @@ def process(params: Tree[F32[N], T],
   ...
 ```
 
-Leaf-only annotations such as `Tree[F32[N]]` are checker-friendly. Structure-bearing forms such as `Tree[..., T]` are runtime-only.
+Leaf-only annotations such as `Tree[F32[N]]` are checker-friendly.
+Structure-bearing forms such as `Tree[..., T]` are runtime-only.

@@ -1,5 +1,4 @@
 ---
-title: Dimensions
 description: Named, fixed, variadic, broadcastable, anonymous, scalar, symbolic, and runtime value dimensions.
 ---
 
@@ -11,11 +10,13 @@ Dimensions are the core shape language in shapix. They describe:
 - which axes must agree across parameters
 - where fixed sizes, symbolic expressions, or runtime values are expected
 
-Every array alias such as `F32[...]`, `I64[...]`, or `BF16Like[...]` is subscripted with these tokens.
+Every array alias such as `F32[...]`, `I64[...]`, or `BF16Like[...]` is
+subscripted with these tokens.
 
 ## Named dimensions
 
-Named dimensions bind on first use and are enforced on every later use inside the same call.
+Named dimensions bind on first use and are enforced on every later use inside
+the same call.
 
 ```python
 from beartype import beartype
@@ -29,17 +30,10 @@ def forward(x: F32[N, C, H, W]) -> F32[N, C, H, W]:
 
 Pre-defined symbols:
 
-| Symbol | Typical use |
-|--------|-------------|
-| `N` | Batch size, count |
-| `B` | Batch |
-| `C` | Channels |
-| `D` | Embedding dimension |
-| `K` | Number of heads |
-| `H` | Height |
-| `W` | Width |
-| `L` | Sequence length |
-| `P` | Points / parameters |
+| Symbol | Typical use | | ------ | ------------------- | | `N` | Batch size,
+count | | `B` | Batch | | `C` | Channels | | `D` | Embedding dimension | | `K` |
+Number of heads | | `H` | Height | | `W` | Width | | `L` | Sequence length | |
+`P` | Points / parameters |
 
 ## Fixed dimensions
 
@@ -51,14 +45,18 @@ def rgb_to_gray(x: F32[N, 3, H, W]) -> F32[N, 1, H, W]:
   ...
 ```
 
-Static type checkers generally do **not** understand integer literals in these shape positions. Keep them for runtime correctness and either:
+Static type checkers generally do **not** understand integer literals in these
+shape positions. Keep them for runtime correctness and either:
 
 - add a targeted `# type: ignore`, or
-- use the notebook-style checker-only alias pattern from [Static Typing](static-typing.md), for example `Three = tp.Literal[3]` under `TYPE_CHECKING` and `Three = Dimension(3)` at runtime
+- use the notebook-style checker-only alias pattern from
+    [Static Typing](static-typing.md), for example `Three = tp.Literal[3]` under
+    `TYPE_CHECKING` and `Three = Dimension(3)` at runtime
 
 ## Symbolic dimensions
 
-Dimensions support arithmetic. Expressions are evaluated against already-bound shape names:
+Dimensions support arithmetic. Expressions are evaluated against already-bound
+shape names:
 
 ```python
 from shapix import N, C
@@ -79,11 +77,15 @@ These expressions are intentionally narrow:
 - allowed: named dimensions and numeric literals
 - rejected: attribute access, indexing, function calls, arbitrary Python code
 
-For static typing, arithmetic dimensions are runtime-only and typically need `# type: ignore`. If you use them heavily, you can also bind a checker-only alias such as `PaddedN` under `TYPE_CHECKING` and assign `PaddedN = N + 2` at runtime.
+For static typing, arithmetic dimensions are runtime-only and typically need
+`# type: ignore`. If you use them heavily, you can also bind a checker-only
+alias such as `PaddedN` under `TYPE_CHECKING` and assign `PaddedN = N + 2` at
+runtime.
 
 ## Runtime value dimensions
 
-Use `Value("expr")` when the shape depends on a runtime parameter or `self` attribute rather than a previously bound shape symbol.
+Use `Value("expr")` when the shape depends on a runtime parameter or `self`
+attribute rather than a previously bound shape symbol.
 
 ```python
 import numpy as np
@@ -115,7 +117,8 @@ class SomeClass:
 
 It rejects calls, indexing, comprehensions, and arbitrary evaluation.
 
-When `Value(...)` appears in an async function, use `@shapix.check` if you want the scope to be explicitly preserved across the await.
+When `Value(...)` appears in an async function, use `@shapix.check` if you want
+the scope to be explicitly preserved across the await.
 
 ## Scalar dimension
 
@@ -132,8 +135,10 @@ def dot(x: F32[N], y: F32[N]) -> F32[Scalar]:
   return np.dot(x, y)
 ```
 
-!!! warning
-    `Scalar` must be the only shape token. Mixed forms like `F32[N, Scalar]` or `F32[Scalar, ...]` raise `TypeError` at hint construction time.
+!!! warning `Scalar` must be the only shape token. Mixed forms like
+
+`F32[N, Scalar]` or `F32[Scalar, ...]` raise `TypeError` at hint construction
+time.
 
 ## Variadic dimensions
 
@@ -154,7 +159,8 @@ normalize(np.ones((4, 3), dtype=np.float32))  # B = (4,), C = 3
 normalize(np.ones((2, 4, 3), dtype=np.float32))  # B = (2, 4), C = 3
 ```
 
-Named variadic dimensions enforce cross-argument consistency on the matched sub-shape:
+Named variadic dimensions enforce cross-argument consistency on the matched
+sub-shape:
 
 ```python
 @beartype
@@ -162,7 +168,10 @@ def add(x: F32[~B, C], y: F32[~B, C]) -> F32[~B, C]:
   return x + y
 ```
 
-Static type checkers still treat `~B` as runtime-only syntax. The same notebook-style alias trick works here too: bind a placeholder such as `VariadicBatch` under `TYPE_CHECKING`, and assign `VariadicBatch = ~B` at runtime.
+Static type checkers still treat `~B` as runtime-only syntax. The same
+notebook-style alias trick works here too: bind a placeholder such as
+`VariadicBatch` under `TYPE_CHECKING`, and assign `VariadicBatch = ~B` at
+runtime.
 
 ### Anonymous variadic
 
@@ -185,12 +194,14 @@ def last_dim(x: F32[..., C]) -> F32[..., C]:
   return x
 ```
 
-!!! note "One variadic per spec"
-    Only one variadic dimension is allowed per shape specification.
+!!! note "One variadic per spec" Only one variadic dimension is allowed per
+
+shape specification.
 
 ## Broadcastable dimensions
 
-Apply unary `+` to make a dimension broadcastable. Size `1` always matches the bound value.
+Apply unary `+` to make a dimension broadcastable. Size `1` always matches the
+bound value.
 
 ```python
 import numpy as np
@@ -206,7 +217,8 @@ broadcast_add(np.ones((4, 3), dtype=np.float32),
               np.ones((1, 3), dtype=np.float32))  # OK
 ```
 
-Broadcastable also works with variadic dimensions: `~+B` matches zero or more dims where each can be `1` or the bound value.
+Broadcastable also works with variadic dimensions: `~+B` matches zero or more
+dims where each can be `1` or the bound value.
 
 ## Anonymous dimensions
 
@@ -222,7 +234,8 @@ def f(x: F32[__, C]) -> F32[__, C]:
   return x
 ```
 
-Unlike variadic and broadcastable syntax, `__` is part of the checker-tested static surface and can be used directly with pyright, mypy, and ty.
+Unlike variadic and broadcastable syntax, `__` is part of the checker-tested
+static surface and can be used directly with pyright, mypy, and ty.
 
 ## Custom dimensions
 
@@ -242,7 +255,8 @@ def embed(tokens: I64[N, Seq], table: F32[Vocab, Embed]) -> F32[N, Seq, Embed]:
   ...
 ```
 
-Custom dimensions work at runtime immediately. For static typing, use the `TYPE_CHECKING` pattern:
+Custom dimensions work at runtime immediately. For static typing, use the
+`TYPE_CHECKING` pattern:
 
 ```python
 import typing as tp
@@ -260,24 +274,25 @@ Unary operators work on custom dimensions too: `~Vocab`, `+Vocab`, `~+Vocab`.
 
 ## Summary table
 
-| Syntax | Meaning | Example | Behavior |
-|--------|---------|---------|----------|
-| *(none)* | Named | `N` | Bind & enforce |
-| `int` | Fixed | `3` | Exact match |
-| `~` | Variadic | `~B` | Zero or more dims |
-| `+` | Broadcastable | `+N` | Size 1 always OK |
-| `~+` | Broadcastable variadic | `~+B` | Variadic + broadcast |
-| `Scalar` | Scalar | `Scalar` | Zero dimensions |
-| `__` | Anonymous | `__` | Match any, no binding |
-| `~__` | Anonymous variadic | `~__` | Zero or more, no binding |
-| `...` | Ellipsis (alias) | `...` | Same as `~__` |
-| arithmetic | Symbolic | `N + 1` | Expression |
+| Syntax | Meaning | Example | Behavior | | ---------- | ----------------------
+| -------- | ------------------------ | | _(none)_ | Named | `N` | Bind &
+enforce | | `int` | Fixed | `3` | Exact match | | `~` | Variadic | `~B` | Zero
+or more dims | | `+` | Broadcastable | `+N` | Size 1 always OK | | `~+` |
+Broadcastable variadic | `~+B` | Variadic + broadcast | | `Scalar` | Scalar |
+`Scalar` | Zero dimensions | | `__` | Anonymous | `__` | Match any, no binding |
+| `~__` | Anonymous variadic | `~__` | Zero or more, no binding | | `...` |
+Ellipsis (alias) | `...` | Same as `~__` | | arithmetic | Symbolic | `N + 1` |
+Expression |
 
 ## Static typing notes
 
-The checker-supported subset is documented in [Static Typing](static-typing.md). The short version:
+The checker-supported subset is documented in [Static Typing](static-typing.md).
+The short version:
 
-- `F32[N, C]`, `F32[Scalar]`, and `F32[__, C]` are part of the tested cross-checker surface
+- `F32[N, C]`, `F32[Scalar]`, and `F32[__, C]` are part of the tested
+    cross-checker surface
 - custom dimensions need the `TYPE_CHECKING` pattern above
-- arithmetic, fixed integer literals, and unary operator forms such as `~B` and `+N` are still runtime-only syntax for static checkers
-- for those runtime-only forms, either use targeted ignores or the notebook-style checker-only alias pattern
+- arithmetic, fixed integer literals, and unary operator forms such as `~B` and
+    `+N` are still runtime-only syntax for static checkers
+- for those runtime-only forms, either use targeted ignores or the
+    notebook-style checker-only alias pattern

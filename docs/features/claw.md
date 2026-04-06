@@ -1,11 +1,13 @@
 ---
-title: Import Hook
 description: Package-wide instrumentation with beartype.claw — no per-function decorators.
 ---
 
+<!-- markdownlint-disable-file MD046 -->
+
 # Import Hook (beartype.claw)
 
-If you want package-wide instrumentation rather than decorating individual functions, use `beartype.claw` or shapix's thin wrapper around it.
+If you want package-wide instrumentation rather than decorating individual
+functions, use `beartype.claw` or shapix's thin wrapper around it.
 
 ## Usage
 
@@ -23,11 +25,14 @@ If you want package-wide instrumentation rather than decorating individual funct
     beartype_this_package()
     ```
 
-`shapix_this_package()` is a semantic wrapper around `beartype.claw.beartype_this_package()`. Runtime behavior is the same.
+`shapix_this_package()` is a semantic wrapper around
+`beartype.claw.beartype_this_package()`. Runtime behavior is the same.
 
 ## What it gives you
 
-Once called in `your_package.__init__`, all subsequently imported submodules in that package are instrumented as if their annotated callables had been decorated with `@beartype`.
+Once called in `your_package.__init__`, all subsequently imported submodules in
+that package are instrumented as if their annotated callables had been decorated
+with `@beartype`.
 
 ```python
 # your_package/__init__.py
@@ -42,7 +47,8 @@ def forward(x: F32[N, C]) -> F32[N, C]:
   ...
 ```
 
-Because shapix integrates through standard beartype validators, the usual cross-argument dimension semantics still apply.
+Because shapix integrates through standard beartype validators, the usual
+cross-argument dimension semantics still apply.
 
 ## Configuration
 
@@ -59,7 +65,11 @@ shapix_this_package(conf=BeartypeConf(
 
 ## When to use
 
-| Approach | Best for |
-|----------|----------|
-| `@beartype` per function | Fine-grained control, specific functions |
-| `beartype.claw` / `shapix_this_package` | Entire packages, library-wide checking |
+<!-- markdownlint-disable MD013 -->
+
+| Approach | Best for | | --------------------------------------- |
+---------------------------------------- | | `@beartype` per function |
+Fine-grained control, specific functions | | `beartype.claw` /
+`shapix_this_package` | Entire packages, library-wide checking |
+
+<!-- markdownlint-enable MD013 -->

@@ -1,15 +1,18 @@
 ---
-title: Quick Start
 description: Write your first shape-checked function and learn the core execution model.
 ---
 
+<!-- markdownlint-disable-file MD046 -->
+
 # Quick Start
 
-This page uses NumPy for concreteness, but the same shape language works across `shapix.jax`, `shapix.torch`, and `shapix.cupy`.
+This page uses NumPy for concreteness, but the same shape language works across
+`shapix.jax`, `shapix.torch`, and `shapix.cupy`.
 
 ## 1. Start with standard `@beartype`
 
-Import dimension symbols from the root module and array aliases from a backend module:
+Import dimension symbols from the root module and array aliases from a backend
+module:
 
 ```python
 import numpy as np
@@ -33,11 +36,13 @@ normalize(np.ones((4,), dtype=np.float32))  # Raises: wrong rank
 - the first axis is named `N`
 - the second axis is named `C`
 
-`N` and `C` are runtime dimension symbols. They bind on first use inside one call and are checked everywhere else in that call.
+`N` and `C` are runtime dimension symbols. They bind on first use inside one
+call and are checked everywhere else in that call.
 
 ## 2. Cross-argument consistency is automatic
 
-You do not need a separate decorator to share dimension bindings between parameters:
+You do not need a separate decorator to share dimension bindings between
+parameters:
 
 ```python
 @beartype
@@ -61,7 +66,8 @@ def bad_flatten(x: F32[N, C]) -> F32[N, C]:
   return x.reshape(-1)
 ```
 
-Calling `bad_flatten` raises because the returned array no longer has shape `(N, C)`.
+Calling `bad_flatten` raises because the returned array no longer has shape
+`(N, C)`.
 
 ## 4. Calls are independent
 
@@ -78,7 +84,9 @@ f(np.ones((100,), dtype=np.float32))  # N = 100, no conflict with the prior call
 
 ## 5. Add `@shapix.check` only when you need explicit memo scope
 
-Most code should stop at `@beartype`. Add `@shapix.check` when you want the shared shape memo to be pushed explicitly instead of discovered through the beartype wrapper stack:
+Most code should stop at `@beartype`. Add `@shapix.check` when you want the
+shared shape memo to be pushed explicitly instead of discovered through the
+beartype wrapper stack:
 
 ```python
 import shapix
@@ -104,7 +112,12 @@ If none of those apply, stay with plain `@beartype`.
 
 !!! tip "Next steps"
 
-    - :material-ruler: **[Dimensions](../features/dimensions.md)** — Named, fixed, variadic, broadcastable, symbolic, `Scalar`, and `Value(...)`.
-    - :material-check-decagram: **[Static Typing](../features/static-typing.md)** — What works directly on pyright, mypy, and ty, and where targeted ignores are still required.
-    - :material-grid: **[Array Types](../features/array-types.md)** — Dtype families, structured dtypes, endianness, and backend differences.
-    - :material-file-tree: **[Tree Annotations](../features/tree-annotations.md)** — Leaf checking and structure binding for pytrees.
+    - :material-ruler: **[Dimensions](../features/dimensions.md)** — Named, fixed,
+        variadic, broadcastable, symbolic, `Scalar`, and `Value(...)`.
+    - :material-check-decagram: **[Static Typing](../features/static-typing.md)**
+        pyright, mypy, and ty behavior, plus where targeted ignores are still
+        required.
+    - :material-grid: **[Array Types](../features/array-types.md)** — Dtype
+        families, structured dtypes, endianness, and backend differences.
+    - :material-file-tree: **[Tree Annotations](../features/tree-annotations.md)**
+        Leaf checking and structure binding for pytrees.

@@ -1,5 +1,4 @@
 ---
-title: Examples
 description: Copyable examples covering the main shapix runtime and typing patterns.
 ---
 
@@ -14,12 +13,14 @@ The tour notebook is still the broadest runnable walkthrough in the repository:
 - return checking
 - fixed, variadic, broadcastable, anonymous, and symbolic dimensions
 - `Value(...)`
-- checker-only alias tricks for fixed literal dims and other runtime-only shape tokens
+- checker-only alias tricks for fixed literal dims and other runtime-only shape
+    tokens
 - custom array types
 - explicit memo helpers
 - tree annotations
 
-[:material-notebook: View on GitHub](https://github.com/acecchini/shapix/blob/main/examples/shapix_tour.ipynb){ .md-button .md-button--primary }
+[:material-notebook: View on GitHub](https://github.com/acecchini/shapix/blob/main/examples/shapix_tour.ipynb){
+.md-button .md-button--primary }
 
 ## Example 1: Plain `@beartype`
 
@@ -91,7 +92,8 @@ def accumulate(params: Tree[F32[N], T],
   ...
 ```
 
-Use leaf-only `Tree[F32[N]]` when you want cleaner static typing. Add structure symbols like `T` when you want runtime structure equality too.
+Use leaf-only `Tree[F32[N]]` when you want cleaner static typing. Add structure
+symbols like `T` when you want runtime structure equality too.
 
 ## Example 5: Like inputs and scalar ranges
 
