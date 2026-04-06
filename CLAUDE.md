@@ -11,17 +11,17 @@ Shapix turns annotations such as `F32[N, C]`, `F32Like[~B, C]`, `F32[Value("size
 The repository has two equal product surfaces:
 
 1. **Runtime behavior**: validators, decorators, import boundaries, and error messages.
-2. **Static typing behavior**: the annotation syntax that pyright, mypy, and ty are expected to accept.
+1. **Static typing behavior**: the annotation syntax that pyright, mypy, and ty are expected to accept.
 
 When working in this repo, optimize for:
 
 1. **Runtime correctness and readability of failures**
-2. **Public API and annotation-syntax stability**
-3. **Optional-dependency safety and lightweight imports**
-4. **Static type-checker coherence across pyright, mypy, and ty**
-5. **Docs, examples, and typing fixtures that match real behavior**
-6. **Focused regression coverage for risky changes**
-7. **Small, explicit fixes over clever rewrites**
+1. **Public API and annotation-syntax stability**
+1. **Optional-dependency safety and lightweight imports**
+1. **Static type-checker coherence across pyright, mypy, and ty**
+1. **Docs, examples, and typing fixtures that match real behavior**
+1. **Focused regression coverage for risky changes**
+1. **Small, explicit fixes over clever rewrites**
 
 ## Repository map
 
@@ -317,14 +317,16 @@ Suggested commands:
 
 ```bash
 uv sync
+uv run prek install
+uv run prek run -a
 
 # targeted runtime checks
-uv run pytest -n0 tests/test_decorator.py tests/test_memo.py
-uv run pytest -n0 tests/test_dimensions.py tests/test_shape.py tests/test_dtypes.py
-uv run pytest -n0 tests/test_numpy.py tests/test_jax.py tests/test_torch.py tests/test_cupy.py tests/test_tree.py
+uv run pytest -n auto tests/test_decorator.py tests/test_memo.py
+uv run pytest -n auto tests/test_dimensions.py tests/test_shape.py tests/test_dtypes.py
+uv run pytest -n auto tests/test_numpy.py tests/test_jax.py tests/test_torch.py tests/test_cupy.py tests/test_tree.py
 
 # unified type-check contract
-uv run pytest -n0 tests/test_typecheck.py
+uv run pytest -n auto tests/test_typecheck.py
 uv run pyright src tests/typing
 uv run mypy src tests/typing
 uv run ty check src tests/typing
@@ -333,7 +335,10 @@ uv run ty check src tests/typing
 uv run tox run -e dev
 ```
 
-Use `-n0` for targeted debugging because the default pytest setup uses xdist.
+Use `-n auto` by default. Fall back to `-n0` only when you need fully serial,
+deterministic debugging of a narrow test failure.
+Use `uv run prek ...` for local hook management; this repo no longer uses the
+`pre-commit` CLI directly.
 
 ## Coding standards
 
@@ -363,9 +368,9 @@ Use `-n0` for targeted debugging because the default pytest setup uses xdist.
 Work is done when the changed surface is explicit and verified:
 
 1. Runtime behavior is correct and regression-covered where risk warrants it.
-2. The public API and import boundary remain coherent.
-3. Relevant docs, examples, and typing fixtures match the new reality.
-4. Relevant runtime tests and checker runs pass for the touched area.
-5. Any remaining limitation is documented explicitly instead of being left implicit.
+1. The public API and import boundary remain coherent.
+1. Relevant docs, examples, and typing fixtures match the new reality.
+1. Relevant runtime tests and checker runs pass for the touched area.
+1. Any remaining limitation is documented explicitly instead of being left implicit.
 
 If a change touches memo handling, decorator behavior, shape parsing, dtype normalization, tree validation, or static typing scaffolding, assume the burden of proof is higher and validate more than the minimum happy path.

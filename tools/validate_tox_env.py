@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import sys
 
-PYTHONS = {"py312", "py313", "py314"}
+PYTHONS = {"py310", "py311", "py312", "py313"}
 BEARTYPES = {"bt020", "bt021", "bt022"}
 BACKENDS = {
   "numpy22",

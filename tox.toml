@@ -33,7 +33,7 @@ deps = [
 
   # --- beartype ---
   # env_list uses bt020 and bt022; intermediate versions available for manual testing
-  # e.g. `tox run -e py312-bt021-numpy23`
+  # e.g. `tox run -e py310-bt021-numpy23`
   { replace = "if", condition = "factor.bt020", then = "beartype>=0.20,<0.21" },
   { replace = "if", condition = "factor.bt021", then = "beartype>=0.21,<0.22" },
   { replace = "if", condition = "factor.bt022", then = "beartype>=0.22,<0.23" },
@@ -94,7 +94,7 @@ deps = [
   { replace = "if", condition = "factor.mypy119", then = "mypy>=1.19,<1.20" },
   { replace = "if", condition = "factor.ty", then = "ty" },
 ]
-commands = [["pytest", "tests/", "-n=auto", { replace = "posargs", default = [], extend = true }]]
+commands = [["pytest", "tests/", "-n", "auto", { replace = "posargs", default = [], extend = true }]]
 commands_pre = [["python", "tools/validate_tox_env.py", "{env_name}"]]
 
 # ---------------------------------------------------------------------------
@@ -103,13 +103,14 @@ commands_pre = [["python", "tools/validate_tox_env.py", "{env_name}"]]
 
 [env.dev]
 runner = "uv-venv-lock-runner"
-dependency_groups = ["dev", "optional", "static"]
+dependency_groups = ["dev", "optional", "static", "test"]
 commands_pre = []
 commands = [
   [
     "pytest",
     "tests/",
-    "-n=auto",
+    "-n",
+    "auto",
     "--cov=shapix",
     "--cov-branch",
     "--cov-report=term-missing:skip-covered",
